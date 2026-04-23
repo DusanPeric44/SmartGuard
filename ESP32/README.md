@@ -1,0 +1,1 @@
+# SmartGuard ESP32 scripts and configs

@@ -1,0 +1,158 @@
+############################################
+# GLOBAL
+############################################
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+*.stackdump
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+
+############################################
+# BACKEND - .NET 8 (C#)
+############################################
+
+# Build results
+Backend/**/bin/
+Backend/**/obj/
+Backend/**/out/
+
+# User-specific files
+Backend/**/*.user
+Backend/**/*.rsuser
+Backend/**/*.suo
+
+# Rider / VS / Resharper
+Backend/.idea/
+Backend/.vs/
+Backend/_ReSharper*/
+Backend/*.DotSettings.user
+
+# NuGet
+Backend/packages/
+Backend/**/*.nupkg
+Backend/**/project.assets.json
+Backend/**/project.nuget.cache
+
+# Publish
+Backend/**/publish/
+
+# Logs
+Backend/**/*.log
+
+# Secrets
+Backend/appsettings.Development.json
+Backend/**/secrets.json
+
+############################################
+# FLUTTER (DESKTOP + MOBILE)
+############################################
+
+# Flutter common
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+
+# Generated files
+**/generated_plugin_registrant.dart
+
+# Flutter intl
+**/intl_*.arb
+
+############################################
+# FLUTTER DESKTOP
+############################################
+
+# Windows
+Desktop/windows/flutter/ephemeral/
+Desktop/windows/runner/Debug/
+Desktop/windows/runner/Release/
+
+# macOS
+Desktop/macos/Flutter/ephemeral/
+Desktop/macos/Pods/
+Desktop/macos/Runner.xcworkspace/
+Desktop/macos/Runner.xcodeproj/project.xcworkspace/
+
+# Linux
+Desktop/linux/flutter/ephemeral/
+
+############################################
+# FLUTTER MOBILE (ANDROID)
+############################################
+
+# Android build
+Mobile/android/.gradle/
+Mobile/android/app/build/
+Mobile/android/build/
+
+# Local config
+Mobile/android/local.properties
+
+# Keystore (IMPORTANT - don't commit!)
+Mobile/android/*.jks
+Mobile/android/*.keystore
+Mobile/android/key.properties
+
+# Gradle
+Mobile/android/gradle-wrapper.jar
+
+# IntelliJ/Android Studio
+Mobile/android/.idea/
+Mobile/android/*.iml
+
+############################################
+# TEST / COVERAGE
+############################################
+
+coverage/
+*.lcov
+
+############################################
+# DOCKER (if used later)
+############################################
+
+**/docker-compose.override.yml
+
+############################################
+# MISC
+############################################
+
+*.tmp
+*.temp
+*.swp
+*.bak
+
+############################################
+# OPTIONAL - KEEP EXAMPLES
+############################################
+
+# Keep config templates
+!Backend/appsettings.json
+!Mobile/android/app/src/main/AndroidManifest.xml
