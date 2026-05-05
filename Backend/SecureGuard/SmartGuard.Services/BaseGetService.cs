@@ -27,6 +27,11 @@ namespace SmartGuard.Services
         {
             var query = _context.Set<TDb>().AsQueryable();
 
+            if (typeof(ISoftDeletable).IsAssignableFrom(typeof(TDb)))
+            {
+                query = query.Where(x => !((ISoftDeletable)x).IsDeleted);
+            }
+
             query = AddFilter(query, search);
             query = AddInclude(query, search);
 
@@ -51,7 +56,7 @@ namespace SmartGuard.Services
         public virtual async Task<T> GetByIdAsync(int id)
         {
             var entity = await _context.Set<TDb>().FindAsync(id);
-            if (entity == null)
+            if (entity == null || (entity is ISoftDeletable softDeletable && softDeletable.IsDeleted))
                 return null;
                 
             return entity.Adapt<T>();

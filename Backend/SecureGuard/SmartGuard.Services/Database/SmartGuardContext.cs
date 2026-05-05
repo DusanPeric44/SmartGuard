@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SmartGuard.Services.Database
 {
-    public class SmartGuardContext : IdentityDbContext<IdentityUser, IdentityRole, string>
+    public class SmartGuardContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
     {
         public SmartGuardContext(DbContextOptions<SmartGuardContext> options) : base(options)
         {
@@ -29,17 +29,11 @@ namespace SmartGuard.Services.Database
         public DbSet<ScheduledRecording> ScheduledRecordings { get; set; }
         public DbSet<City> Cities { get; set; }
         public DbSet<Country> Countries { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
-            // Seed Roles
-            builder.Entity<IdentityRole>().HasData(
-                new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN" },
-                new IdentityRole { Id = "2", Name = "HomeOwner", NormalizedName = "HOMEOWNER" },
-                new IdentityRole { Id = "3", Name = "Viewer", NormalizedName = "VIEWER" }
-            );
         }
     }
 }

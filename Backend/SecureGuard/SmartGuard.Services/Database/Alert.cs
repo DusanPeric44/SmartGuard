@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace SmartGuard.Services.Database
 {
-    public class Alert
+    public class Alert : ISoftDeletable
     {
         [Key]
         public int Id { get; set; }
@@ -19,6 +19,8 @@ namespace SmartGuard.Services.Database
         public AlertStatus AlertStatus { get; set; }
 
         public string Description { get; set; }
+        
+        public string? DismissalReason { get; set; }
 
         [ForeignKey("Device")]
         public int DeviceId { get; set; }
@@ -30,7 +32,7 @@ namespace SmartGuard.Services.Database
 
         [ForeignKey("ConfirmedByUser")]
         public string ConfirmedByUserId { get; set; }
-        public IdentityUser ConfirmedByUser { get; set; }
+        public ApplicationUser ConfirmedByUser { get; set; }
 
         public bool IsDeleted { get; set; }
 

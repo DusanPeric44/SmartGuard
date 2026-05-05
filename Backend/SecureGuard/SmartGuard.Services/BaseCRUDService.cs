@@ -47,7 +47,15 @@ namespace SmartGuard.Services
             if (entity == null)
                 return false;
 
-            _context.Set<TDb>().Remove(entity);
+            if (entity is ISoftDeletable softDeletable)
+            {
+                softDeletable.IsDeleted = true;
+            }
+            else
+            {
+                _context.Set<TDb>().Remove(entity);
+            }
+
             await _context.SaveChangesAsync();
             return true;
         }

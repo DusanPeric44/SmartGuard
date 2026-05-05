@@ -4,7 +4,7 @@ using SmartGuard.Model.SearchObjects;
 
 namespace SmartGuard.Model.Interfaces
 {
-    public interface IAuditLogsService : IBaseGetService<AuditLog, AuditLogSearchObject>
+    public interface IAuditLogsService : IBaseCRUDService<AuditLog, AuditLogSearchObject, AuditLogInsertRequest, object>
     {
     }
 }

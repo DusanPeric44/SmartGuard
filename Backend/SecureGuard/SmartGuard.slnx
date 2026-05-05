@@ -2,4 +2,6 @@
   <Project Path="SmartGuard.API/SmartGuard.API.csproj" />
   <Project Path="SmartGuard.Model/SmartGuard.Model.csproj" />
   <Project Path="SmartGuard.Services/SmartGuard.Services.csproj" />
+  <Project Path="SmartGuard.Notifications.Microservice/SmartGuard.Notifications.Microservice.csproj" />
+  <Project Path="SmartGuard.Archive.Microservice/SmartGuard.Archive.Microservice.csproj" />
 </Solution>

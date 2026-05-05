@@ -11,7 +11,7 @@ namespace SmartGuard.Services.Database
 
         [ForeignKey("User")]
         public string UserId { get; set; }
-        public IdentityUser User { get; set; }
+        public ApplicationUser User { get; set; }
 
         [ForeignKey("Person")]
         public int? PersonId { get; set; }

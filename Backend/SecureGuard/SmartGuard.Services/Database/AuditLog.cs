@@ -12,7 +12,7 @@ namespace SmartGuard.Services.Database
 
         [ForeignKey("User")]
         public string UserId { get; set; }
-        public IdentityUser User { get; set; }
+        public ApplicationUser User { get; set; }
 
         public string Action { get; set; }
         public DateTime Timestamp { get; set; }

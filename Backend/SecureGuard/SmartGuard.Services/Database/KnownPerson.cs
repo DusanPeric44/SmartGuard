@@ -17,7 +17,7 @@ namespace SmartGuard.Services.Database
 
         [ForeignKey("Owner")]
         public string OwnerId { get; set; }
-        public IdentityUser Owner { get; set; }
+        public ApplicationUser Owner { get; set; }
 
         public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; }
         public ICollection<UserNotificationPreference> UserNotificationPreferences { get; set; }

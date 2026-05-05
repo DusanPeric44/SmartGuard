@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartGuard.Services.Database
 {
-    public class Recording
+    public class Recording : ISoftDeletable
     {
         [Key]
         public int Id { get; set; }
