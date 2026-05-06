@@ -49,6 +49,49 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Prijavi se'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Device Details'), findsOneWidget);
+    expect(find.text('Camera 01'), findsOneWidget);
+    expect(find.text('Assigned users'), findsOneWidget);
+  });
+
+  testWidgets('non-admin user is blocked from using desktop app', (WidgetTester tester) async {
+    final tokenStore = MemoryTokenStore();
+    late final AuthController auth;
+
+    final api = ApiClient(
+      baseUri: Uri.parse('http://localhost:8080/'),
+      httpClient: MockClient((request) async => http.Response('{}', 200)),
+      tokenProvider: tokenStore.getToken,
+      onUnauthorized: () async => auth.handleUnauthorized(),
+    );
+
+    auth = AuthController(
+      repository: AuthRepository(api: api, tokenStore: tokenStore),
+      tokenStore: tokenStore,
+    );
+    await auth.init();
+
+    final router = buildRouter(
+      initialLocation: '/dashboard',
+      auth: auth,
+    );
+
+    await tester.pumpWidget(
+      SmartGuardRoot(
+        router: router,
+        auth: auth,
+        api: api,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Prijava'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'viewer01');
+    await tester.enterText(find.byType(TextFormField).at(1), 'secret');
+    await tester.tap(find.widgetWithText(FilledButton, 'Prijavi se'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pristup odbijen'), findsOneWidget);
+    expect(find.textContaining('admin korisnicima'), findsOneWidget);
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:smartguard_flutter/core/auth/auth_repository.dart';
 import 'package:smartguard_flutter/core/auth/token_store.dart';
+import 'package:smartguard_flutter/core/auth/user_role.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController({
@@ -18,10 +19,14 @@ class AuthController extends ChangeNotifier {
   bool _isInitializing = true;
   bool get isInitializing => _isInitializing;
 
+  UserRole _role = UserRole.viewer;
+  UserRole get role => _role;
+
   Future<void> init() async {
     _isInitializing = true;
     notifyListeners();
     _isAuthenticated = await _repository.hasToken();
+    _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
     _isInitializing = false;
     notifyListeners();
   }
@@ -32,12 +37,14 @@ class AuthController extends ChangeNotifier {
   }) async {
     await _repository.login(username: username, password: password);
     _isAuthenticated = true;
+    _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
     notifyListeners();
   }
 
   Future<void> logout() async {
     await _repository.logout();
     _isAuthenticated = false;
+    _role = UserRole.viewer;
     notifyListeners();
   }
 
@@ -45,8 +52,8 @@ class AuthController extends ChangeNotifier {
     await _tokenStore.clear();
     if (_isAuthenticated) {
       _isAuthenticated = false;
+      _role = UserRole.viewer;
       notifyListeners();
     }
   }
 }
-

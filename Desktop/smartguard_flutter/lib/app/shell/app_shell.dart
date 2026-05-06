@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/app/navigation/app_nav_items.dart';
+import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/core/config/app_config.dart';
 
 class AppShell extends StatefulWidget {
@@ -70,6 +71,8 @@ class _AppShellState extends State<AppShell> {
                     Text('API base URL: ${AppScope.of(context).api.baseUri}'),
                     const SizedBox(height: 8),
                     Text('Stub auth: ${AppConfig.enableStubAuth ? 'uključen' : 'isključen'}'),
+                    const SizedBox(height: 8),
+                    Text('Role: ${userRoleToWire(AppScope.of(context).auth.role)} (admin-only app)'),
                   ],
                 ),
                 actions: [

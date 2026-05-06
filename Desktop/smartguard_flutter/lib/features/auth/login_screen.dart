@@ -83,10 +83,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Unesite kredencijale da nastavite.',
                       style: theme.textTheme.bodyMedium,
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Napomena: desktop aplikacija je dostupna samo admin korisnicima.',
+                      style: theme.textTheme.bodySmall,
+                    ),
                     if (AppConfig.enableStubAuth) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Skeleton mode: stub autentikacija je uključena i prihvata bilo koje ne-prazne kredencijale.',
+                        'Stub auth je uključen. Za admin pristup koristite username koji počinje sa "admin" (npr. admin01).',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

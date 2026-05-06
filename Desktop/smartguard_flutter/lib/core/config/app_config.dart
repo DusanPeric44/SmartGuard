@@ -7,6 +7,10 @@ class AppConfig {
     'USE_STUB_AUTH',
     defaultValue: true,
   );
+  static const bool enableStubData = bool.fromEnvironment(
+    'USE_STUB_DATA',
+    defaultValue: true,
+  );
 
   static const String _configuredApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',

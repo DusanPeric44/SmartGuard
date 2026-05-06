@@ -29,13 +29,13 @@ const appNavItems = <AppNavItem>[
   ),
   AppNavItem(
     id: 'users',
-    label: 'User Management',
+    label: 'Permissions',
     icon: Icons.people_alt_outlined,
     route: '/users',
   ),
   AppNavItem(
     id: 'recordings',
-    label: 'Recording Archive',
+    label: 'Recordings',
     icon: Icons.video_library_outlined,
     route: '/recordings',
   ),
@@ -70,4 +70,3 @@ const appNavItems = <AppNavItem>[
     route: '/audit',
   ),
 ];
-
