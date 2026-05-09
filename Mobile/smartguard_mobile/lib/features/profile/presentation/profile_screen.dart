@@ -1,37 +1,147 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_dimens.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/ui/app_loading_overlay.dart';
 import '../application/profile_controller.dart';
 import '../application/profile_state.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(profileControllerProvider, (previous, next) {
+      if (previous?.profile != next.profile && next.profile != null) {
+        _fullNameController.text = next.fullName;
+        _emailController.text = next.email;
+      }
+    });
+
     final state = ref.watch(profileControllerProvider);
+    final controller = ref.read(profileControllerProvider.notifier);
+
+    if (state.status == ProfileStatus.idle) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.load();
+      });
+    }
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: AppLoadingOverlay(
+        isLoading: state.isLoading || state.isSaving,
+        child: ListView(
+          padding: AppDimens.pagePadding,
           children: [
             Text(
-              'User Profile (placeholder)',
+              AppStrings.profileTitle,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 16),
-            _StatusLine(state: state),
-            const SizedBox(height: 16),
-            Text('Display name: ${state.displayName ?? '-'}'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: state.status == ProfileStatus.loading
-                  ? null
-                  : () =>
-                        ref.read(profileControllerProvider.notifier).refresh(),
-              child: const Text('Refresh'),
+            const SizedBox(height: AppDimens.spaceM),
+            if (state.errorMessage != null) ...[
+              _ErrorBanner(message: state.errorMessage!),
+              const SizedBox(height: AppDimens.spaceM),
+            ],
+            _SectionCard(
+              title: AppStrings.profileSectionAccount,
+              child: state.isEditing
+                  ? Column(
+                      children: [
+                        TextField(
+                          controller: _fullNameController,
+                          onChanged: controller.setFullName,
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.fullNameLabel,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimens.spaceM),
+                        TextField(
+                          controller: _emailController,
+                          onChanged: controller.setEmail,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.emailLabel,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimens.spaceM),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: controller.cancelEditing,
+                                child: const Text(AppStrings.actionCancel),
+                              ),
+                            ),
+                            const SizedBox(width: AppDimens.spaceM),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: state.canSave ? controller.saveProfile : null,
+                                child: const Text(AppStrings.actionSave),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${AppStrings.profileNamePrefix}: ${state.profile?.fullName ?? '-'}',
+                        ),
+                        const SizedBox(height: AppDimens.spaceS),
+                        Text(
+                          '${AppStrings.profileEmailPrefix}: ${state.profile?.email ?? '-'}',
+                        ),
+                        const SizedBox(height: AppDimens.spaceS),
+                        Text(
+                          '${AppStrings.profileUsernamePrefix}: ${state.profile?.username ?? '-'}',
+                        ),
+                        const SizedBox(height: AppDimens.spaceM),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed:
+                                state.profile == null ? null : controller.startEditing,
+                            child: const Text(AppStrings.profileEdit),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: AppDimens.spaceM),
+            _SectionCard(
+              title: AppStrings.profileSectionSecurity,
+              child: ListTile(
+                title: const Text(AppStrings.profileChangePassword),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showChangePasswordDialog(context, controller),
+              ),
+            ),
+            const SizedBox(height: AppDimens.spaceM),
+            _SectionCard(
+              title: AppStrings.profileSectionSession,
+              child: ListTile(
+                title: const Text(AppStrings.logout),
+                trailing: const Icon(Icons.logout),
+                onTap: () => _confirmLogout(context, controller),
+              ),
             ),
           ],
         ),
@@ -40,34 +150,183 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.state});
+Future<void> _confirmLogout(
+  BuildContext context,
+  ProfileController controller,
+) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(AppStrings.logout),
+        content: const Text(AppStrings.logoutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppStrings.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(AppStrings.logout),
+          ),
+        ],
+      );
+    },
+  );
+  if (result == true) {
+    await controller.logout();
+  }
+}
 
-  final ProfileState state;
+Future<void> _showChangePasswordDialog(
+  BuildContext context,
+  ProfileController controller,
+) async {
+  final currentController = TextEditingController();
+  final newController = TextEditingController();
+  final confirmController = TextEditingController();
+
+  String? errorText;
+
+  Future<void> submit(StateSetter setState) async {
+    final current = currentController.text;
+    final next = newController.text;
+    final confirm = confirmController.text;
+
+    if (current.trim().isEmpty || next.trim().isEmpty || confirm.trim().isEmpty) {
+      setState(() => errorText = AppStrings.validationRequired);
+      return;
+    }
+    if (next != confirm) {
+      setState(() => errorText = AppStrings.validationPasswordsDoNotMatch);
+      return;
+    }
+    setState(() => errorText = null);
+    try {
+      await controller.changePassword(
+        currentPassword: current,
+        newPassword: next,
+      );
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.passwordUpdated)),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.errorUnknown)),
+        );
+      }
+    }
+  }
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text(AppStrings.profileChangePassword),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.currentPasswordLabel,
+                  ),
+                ),
+                const SizedBox(height: AppDimens.spaceM),
+                TextField(
+                  controller: newController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.newPasswordLabel,
+                  ),
+                ),
+                const SizedBox(height: AppDimens.spaceM),
+                TextField(
+                  controller: confirmController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.confirmNewPasswordLabel,
+                  ),
+                ),
+                if (errorText != null) ...[
+                  const SizedBox(height: AppDimens.spaceM),
+                  Text(
+                    errorText!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(AppStrings.actionCancel),
+              ),
+              FilledButton(
+                onPressed: () => submit(setState),
+                child: const Text(AppStrings.actionSave),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  currentController.dispose();
+  newController.dispose();
+  confirmController.dispose();
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (state.status) {
-      ProfileStatus.idle => 'Idle',
-      ProfileStatus.loading => 'Loading',
-      ProfileStatus.ready => 'Ready',
-      ProfileStatus.error => 'Error',
-    };
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppDimens.cardRadius),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.spaceM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppDimens.spaceS),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-    return Row(
-      children: [
-        Text('Status: $label'),
-        if (state.message != null) ...[
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              state.message!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ],
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: AppDimens.cardRadius,
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.spaceM),
+        child: Text(
+          message,
+          style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+        ),
+      ),
     );
   }
 }

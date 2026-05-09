@@ -8,19 +8,23 @@ import '../../../core/constants/app_strings.dart';
 import '../application/auth_controller.dart';
 import '../application/auth_state.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _loginController = TextEditingController();
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  final _loginFocus = FocusNode();
+  final _fullNameFocus = FocusNode();
+  final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
 
   bool _didSetMode = false;
 
@@ -30,16 +34,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _didSetMode) return;
       _didSetMode = true;
-      ref.read(authControllerProvider.notifier).setMode(AuthMode.login);
+      ref.read(authControllerProvider.notifier).setMode(AuthMode.register);
     });
   }
 
   @override
   void dispose() {
-    _loginController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
-    _loginFocus.dispose();
+    _confirmPasswordController.dispose();
+    _fullNameFocus.dispose();
+    _emailFocus.dispose();
     _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
@@ -51,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.loginTitle)),
+      appBar: AppBar(title: const Text(AppStrings.registerTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -71,20 +79,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppDimens.spaceM),
                   ],
                   TextField(
-                    controller: _loginController,
-                    focusNode: _loginFocus,
-                    autofillHints: const [
-                      AutofillHints.username,
-                      AutofillHints.email,
-                    ],
+                    controller: _fullNameController,
+                    focusNode: _fullNameFocus,
+                    autofillHints: const [AutofillHints.name],
+                    textInputAction: TextInputAction.next,
+                    onChanged: controller.setFullName,
+                    onSubmitted: (_) => _emailFocus.requestFocus(),
+                    decoration: InputDecoration(
+                      labelText: AppStrings.fullNameLabel,
+                      errorText: _fieldErrorText(
+                        state.fieldErrors[AuthField.fullName],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppDimens.spaceM),
+                  TextField(
+                    controller: _emailController,
+                    focusNode: _emailFocus,
+                    autofillHints: const [AutofillHints.email],
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    onChanged: controller.setLogin,
+                    onChanged: controller.setEmail,
                     onSubmitted: (_) => _passwordFocus.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: AppStrings.emailOrUsernameLabel,
+                      labelText: AppStrings.emailLabel,
                       errorText: _fieldErrorText(
-                        state.fieldErrors[AuthField.login],
+                        state.fieldErrors[AuthField.email],
                       ),
                     ),
                   ),
@@ -92,11 +112,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: _passwordController,
                     focusNode: _passwordFocus,
-                    autofillHints: const [AutofillHints.password],
+                    autofillHints: const [AutofillHints.newPassword],
                     obscureText: !state.passwordVisible,
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.next,
                     onChanged: controller.setPassword,
-                    onSubmitted: (_) => controller.submit(),
+                    onSubmitted: (_) => _confirmPasswordFocus.requestFocus(),
                     decoration: InputDecoration(
                       labelText: AppStrings.passwordLabel,
                       errorText: _fieldErrorText(
@@ -106,6 +126,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: controller.togglePasswordVisible,
                         icon: Icon(
                           state.passwordVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppDimens.spaceM),
+                  TextField(
+                    controller: _confirmPasswordController,
+                    focusNode: _confirmPasswordFocus,
+                    autofillHints: const [AutofillHints.newPassword],
+                    obscureText: !state.confirmPasswordVisible,
+                    textInputAction: TextInputAction.done,
+                    onChanged: controller.setConfirmPassword,
+                    onSubmitted: (_) => controller.submit(),
+                    decoration: InputDecoration(
+                      labelText: AppStrings.confirmPasswordLabel,
+                      errorText: _fieldErrorText(
+                        state.fieldErrors[AuthField.confirmPassword],
+                      ),
+                      suffixIcon: IconButton(
+                        onPressed: controller.toggleConfirmPasswordVisible,
+                        icon: Icon(
+                          state.confirmPasswordVisible
                               ? Icons.visibility_off
                               : Icons.visibility,
                         ),
@@ -123,12 +167,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text(AppStrings.actionLogin),
+                        : const Text(AppStrings.actionRegister),
                   ),
                   const SizedBox(height: AppDimens.spaceM),
                   TextButton(
-                    onPressed: () => context.go(AppRoutes.register),
-                    child: const Text(AppStrings.actionGoToRegister),
+                    onPressed: () => context.go(AppRoutes.login),
+                    child: const Text(AppStrings.actionGoToLogin),
                   ),
                 ],
               ),

@@ -22,8 +22,8 @@ flutter test --dart-define=API_BASE_URL=http://example.test
 
 - `lib/app.dart`: `MaterialApp.router` + tema + start deep link handler-a
 - `lib/core/config`: konfiguracija (`AppConfig`)
-- `lib/core/network`: `ApiClient`, `ApiError/ApiResult`, response handler, transport sloj + auth transport
-- `lib/core/auth`: session state, token storage (secure storage), refresh stub
+- `lib/core/network`: Dio setup (`dio_provider.dart`) + interceptori (`AuthHeaderInterceptor`, `RefreshTokenInterceptor`, `ApiErrorInterceptor`) + `ApiError`
+- `lib/core/auth`: session state, token storage (secure storage), token refresh (`TokenRefresher`)
 - `lib/core/navigation`: `go_router`, shell (top bar + bottom nav), deep link handler/mapper
 - `lib/core/theme`: osnovni tokens (boje/tipografija) i `ThemeData`
 - `lib/features/<feature>`:
@@ -46,17 +46,19 @@ Tipični koraci:
 
 ## Networking i greške
 
-- Svi HTTP pozivi idu preko `ApiClient` (`lib/core/network/api_client.dart`).
-- Backend validacijske poruke se ne prikrivaju: parsing je u `api_response_handler.dart`, a greška je predstavljena kroz `ApiError`.
+- Svi HTTP pozivi idu preko Dio (`lib/core/network/dio_provider.dart`).
+- `dioProvider` je “main” klijent za REST pozive (auth header + refresh-on-401 + error mapping).
+- `authDioProvider` je “auth-only” klijent za login/refresh pozive (bez refresh interceptora).
+- Backend validacijske poruke se ne prikrivaju: `ApiError.fromHttpResponse(...)` parsira `message` i validation map-u, a UI mapping je u `UiErrorMapper`.
 
 ## Auth i 401
 
 - Tokeni su u secure storage (`lib/core/auth/secure_token_storage.dart`).
-- 401 handling je u `AuthHttpTransport` i radi:
-  - attach access token
-  - single-flight refresh (trenutno stub, vidi `StubTokenRefresher`)
-  - retry original request
-  - logout + redirect na login ako refresh ne uspije
+- 401 handling je u `RefreshTokenInterceptor` i radi:
+  - attach access token preko `AuthHeaderInterceptor`
+  - single-flight refresh preko `SessionController.refreshTokensSingleFlight()`
+  - retry original request jednom sa novim tokenom
+  - logout + redirect na login (router guard) ako refresh ne uspije
 
 ## Deep links
 

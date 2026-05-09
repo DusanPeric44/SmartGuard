@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/navigation/app_router.dart';
 import 'core/navigation/deep_link_handler.dart';
 import 'core/theme/app_theme.dart';
+import 'core/constants/app_strings.dart';
 
 class SmartGuardApp extends ConsumerStatefulWidget {
   const SmartGuardApp({super.key});
@@ -35,7 +36,7 @@ class _SmartGuardAppState extends ConsumerState<SmartGuardApp> {
     final router = ref.watch(goRouterProvider);
 
     return MaterialApp.router(
-      title: 'SmartGuard',
+      title: AppStrings.appTitle,
       theme: AppTheme.light(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../application/dashboard_controller.dart';
 import '../application/dashboard_state.dart';
 
@@ -39,19 +40,19 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _NavTile(
             title: 'Live Stream',
-            onTap: () => context.go('/dashboard/live-stream'),
+            onTap: () => context.go(AppRoutes.dashboardLiveStream),
           ),
           _NavTile(
             title: 'Recording Archive',
-            onTap: () => context.go('/dashboard/recordings'),
+            onTap: () => context.go(AppRoutes.dashboardRecordings),
           ),
           _NavTile(
             title: 'Known Persons',
-            onTap: () => context.go('/dashboard/known-persons'),
+            onTap: () => context.go(AppRoutes.dashboardKnownPersons),
           ),
           _NavTile(
             title: 'Settings',
-            onTap: () => context.go('/dashboard/settings'),
+            onTap: () => context.go(AppRoutes.dashboardSettings),
           ),
         ],
       ),
