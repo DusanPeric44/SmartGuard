@@ -113,15 +113,15 @@ namespace SmartGuard.API.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var email = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(email))
             {
                 return Unauthorized();
             }
 
             try
             {
-                var user = await _authService.GetCurrentUserAsync(userId);
+                var user = await _authService.GetCurrentUserAsync(email);
                 return Ok(user);
             }
             catch (Exception ex)
