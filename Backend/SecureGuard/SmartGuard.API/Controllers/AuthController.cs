@@ -129,5 +129,26 @@ namespace SmartGuard.API.Controllers
                 return NotFound(new { message = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpGet("registration-key")]
+        public async Task<ActionResult<string>> GetRegistrationKey()
+        {
+            var email = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var key = await _authService.GetRegistrationKeyAsync(email);
+                return Ok(new { registrationKey = key });
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
     }
 }

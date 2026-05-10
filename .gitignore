@@ -28,6 +28,7 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln.docstates
+.trae/*
 
 ############################################
 # BACKEND - .NET 8 (C#)

@@ -7,5 +7,6 @@ namespace SmartGuard.Model.Interfaces
 {
     public interface IDevicesService : IBaseCRUDService<Device, DeviceSearchObject, DeviceInsertRequest, DeviceUpdateRequest>
     {
+        Task<Device> RegisterDeviceAsync(DeviceRegistrationRequest request);
     }
 }

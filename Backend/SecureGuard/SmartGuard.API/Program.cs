@@ -8,6 +8,7 @@ using SmartGuard.Services.Database;
 using SmartGuard.Model.Interfaces;
 using Microsoft.OpenApi;
 using SmartGuard.API.Middleware;
+using SmartGuard.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +82,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddSmartGuardServices();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -136,5 +138,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers().RequireAuthorization();
+
+app.MapHub<CameraHub>("/hub/camera");
+app.MapHub<CameraHub>("/hubs/stream");
 
 app.Run();

@@ -11,6 +11,7 @@ namespace SmartGuard.Services.Database
         public string Name { get; set; }
         public string Location { get; set; }
         public string IPAddress { get; set; }
+        public string MacAddress { get; set; }
         public string ApiKey { get; set; }
         
         [ForeignKey("DeviceStatus")]

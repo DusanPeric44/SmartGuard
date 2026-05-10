@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -38,6 +39,63 @@ namespace SmartGuard.Services
                 "stream" => access.CanStream,
                 "download" => access.CanDownload,
                 _ => false
+            };
+        }
+
+        public async Task<Model.DTOs.Device> RegisterDeviceAsync(DeviceRegistrationRequest request)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.RegistrationKey == request.RegistrationKey)
+                ?? throw new UserException("Invalid registration key");
+
+            var device = await _context.Devices
+                .FirstOrDefaultAsync(d => d.MacAddress == request.MacAddress);
+
+            if (device == null)
+            {
+                device = new Database.Device
+                {
+                    MacAddress = request.MacAddress,
+                    Name = $"ESP32-Cam-{request.MacAddress.Replace(":", "").Substring(Math.Max(0, request.MacAddress.Length - 4))}",
+                    Location = "Default",
+                    StatusId = 1, // Online
+                    ApiKey = Guid.NewGuid().ToString() // This will be the Device Token
+                };
+                _context.Devices.Add(device);
+            }
+            else
+            {
+                // If device exists, update its token just in case or keep it
+                device.ApiKey = Guid.NewGuid().ToString();
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Check if user already has access
+            var access = await _context.UserDeviceAccesses
+                .FirstOrDefaultAsync(a => a.UserId == user.Id && a.DeviceId == device.Id);
+
+            if (access == null)
+            {
+                access = new Database.UserDeviceAccess
+                {
+                    UserId = user.Id,
+                    DeviceId = device.Id,
+                    CanStream = true,
+                    CanDownload = true
+                };
+                _context.UserDeviceAccesses.Add(access);
+                await _context.SaveChangesAsync();
+            }
+
+            // Map to DTO
+            return new Model.DTOs.Device
+            {
+                Id = device.Id,
+                Name = device.Name,
+                Location = device.Location,
+                IPAddress = device.IPAddress,
+                ApiKey = device.ApiKey
             };
         }
     }

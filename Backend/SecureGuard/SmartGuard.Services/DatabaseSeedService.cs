@@ -57,7 +57,8 @@ namespace SmartGuard.Services
                     Email = email,
                     FirstName = firstName,
                     LastName = lastName,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    RegistrationKey = Guid.NewGuid().ToString()
                 };
 
                 var createPowerUser = await _userManager.CreateAsync(newUser, password);

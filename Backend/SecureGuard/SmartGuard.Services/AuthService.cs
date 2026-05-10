@@ -60,7 +60,8 @@ namespace SmartGuard.Services
                 Email = request.Email,
                 UserName = request.Email,
                 FirstName = request.FirstName,
-                LastName = request.LastName
+                LastName = request.LastName,
+                RegistrationKey = Guid.NewGuid().ToString()
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -156,8 +157,17 @@ namespace SmartGuard.Services
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                RegistrationKey = user.RegistrationKey,
                 Roles = [.. roles]
             };
+        }
+
+        public async Task<string> GetRegistrationKeyAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email)
+                ?? throw new UserException("User not found");
+
+            return user.RegistrationKey;
         }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user)
@@ -214,6 +224,7 @@ namespace SmartGuard.Services
                     Email = user.Email!,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
+                    RegistrationKey = user.RegistrationKey,
                     Roles = roles.ToList()
                 }
             };
