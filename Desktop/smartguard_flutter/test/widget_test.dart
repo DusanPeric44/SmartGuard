@@ -9,7 +9,9 @@ import 'package:smartguard_flutter/core/auth/token_store.dart';
 import 'package:smartguard_flutter/core/network/api_client.dart';
 
 void main() {
-  testWidgets('login redirects user back to requested route', (WidgetTester tester) async {
+  testWidgets('login redirects user back to requested route', (
+    WidgetTester tester,
+  ) async {
     final tokenStore = MemoryTokenStore();
     late final AuthController auth;
 
@@ -31,11 +33,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      SmartGuardRoot(
-        router: router,
-        auth: auth,
-        api: api,
-      ),
+      SmartGuardRoot(router: router, auth: auth, api: api),
     );
     await tester.pumpAndSettle();
 
@@ -50,13 +48,14 @@ void main() {
     expect(find.text('Assigned users'), findsOneWidget);
   });
 
-  testWidgets('non-admin user is blocked from using desktop app', (WidgetTester tester) async {
+  testWidgets('non-admin user is blocked from using desktop app', (
+    WidgetTester tester,
+  ) async {
     final tokenStore = MemoryTokenStore();
     late final AuthController auth;
 
     final api = ApiClient(
       baseUri: Uri.parse('http://localhost:8080/'),
-      httpClient: MockClient((request) async => http.Response('{}', 200)),
       tokenProvider: tokenStore.getToken,
       onUnauthorized: () async => auth.handleUnauthorized(),
     );
@@ -67,17 +66,10 @@ void main() {
     );
     await auth.init();
 
-    final router = buildRouter(
-      initialLocation: '/dashboard',
-      auth: auth,
-    );
+    final router = buildRouter(initialLocation: '/dashboard', auth: auth);
 
     await tester.pumpWidget(
-      SmartGuardRoot(
-        router: router,
-        auth: auth,
-        api: api,
-      ),
+      SmartGuardRoot(router: router, auth: auth, api: api),
     );
     await tester.pumpAndSettle();
 

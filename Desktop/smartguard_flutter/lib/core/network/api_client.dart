@@ -15,17 +15,18 @@ class ApiClient {
     TokenProvider? tokenProvider,
     UnauthorizedHandler? onUnauthorized,
     Duration timeout = const Duration(seconds: 15),
-  })  : _dio = dio ??
-            Dio(
-              BaseOptions(
-                connectTimeout: timeout,
-                sendTimeout: timeout,
-                receiveTimeout: timeout,
-              ),
-            ),
-        _tokenProvider = tokenProvider,
-        _onUnauthorized = onUnauthorized,
-        _timeout = timeout;
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: timeout,
+               sendTimeout: timeout,
+               receiveTimeout: timeout,
+             ),
+           ),
+       _tokenProvider = tokenProvider,
+       _onUnauthorized = onUnauthorized,
+       _timeout = timeout;
 
   final Uri baseUri;
   final Dio _dio;
@@ -82,7 +83,8 @@ class ApiClient {
 
     Object? encodedBody;
     if (body != null) {
-      mergedHeaders['Content-Type'] = mergedHeaders['Content-Type'] ?? 'application/json';
+      mergedHeaders['Content-Type'] =
+          mergedHeaders['Content-Type'] ?? 'application/json';
       if (body is String || body is List<int>) {
         encodedBody = body;
       } else {
@@ -162,19 +164,16 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } on TimeoutException catch (_) {
-      throw ApiException(
-        ApiError(kind: ApiErrorKind.timeout, uri: uri),
-      );
+      throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
     } on DioException catch (e) {
       final err = e.error;
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
-        throw ApiException(
-          ApiError(kind: ApiErrorKind.timeout, uri: uri),
-        );
+        throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
       }
-      if (e.type == DioExceptionType.connectionError || err is SocketException) {
+      if (e.type == DioExceptionType.connectionError ||
+          err is SocketException) {
         throw ApiException(
           ApiError(
             kind: ApiErrorKind.network,

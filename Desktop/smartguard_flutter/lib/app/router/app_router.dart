@@ -31,23 +31,16 @@ GoRouter buildRouter({
         if (isAccessDenied) return '/login';
         return Uri(
           path: '/login',
-          queryParameters: <String, String>{
-            'from': state.uri.toString(),
-          },
+          queryParameters: <String, String>{'from': state.uri.toString()},
         ).toString();
       }
 
-      final role = auth.role;
-      final canAccess = role == UserRole.admin || role == UserRole.homeowner;
-      if (!canAccess) {
+      final isAdmin = auth.role == UserRole.admin;
+      if (!isAdmin) {
         return isAccessDenied ? null : '/access-denied';
       }
 
       if (isAccessDenied) return '/dashboard';
-
-      if (state.matchedLocation.startsWith('/devices') && role == UserRole.admin) {
-        return '/dashboard';
-      }
 
       if (isLoggingIn) {
         final from = state.uri.queryParameters['from'];
@@ -67,15 +60,10 @@ GoRouter buildRouter({
         builder: (context, state) => const AccessDeniedScreen(),
       ),
       ShellRoute(
-        builder: (context, state, child) => AppShell(
-          currentUri: state.uri,
-          child: child,
-        ),
+        builder: (context, state, child) =>
+            AppShell(currentUri: state.uri, child: child),
         routes: [
-          GoRoute(
-            path: '/',
-            redirect: (context, state) => '/dashboard',
-          ),
+          GoRoute(path: '/', redirect: (context, state) => '/dashboard'),
           GoRoute(
             path: '/dashboard',
             name: 'dashboard',
@@ -108,7 +96,8 @@ GoRouter buildRouter({
           GoRoute(
             path: '/alarms',
             name: 'alarms',
-            builder: (context, state) => const PlaceholderScreen(title: 'Alarm Center'),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'Alarm Center'),
           ),
           GoRoute(
             path: '/known-persons',
@@ -118,7 +107,8 @@ GoRouter buildRouter({
           GoRoute(
             path: '/reports',
             name: 'reports',
-            builder: (context, state) => const PlaceholderScreen(title: 'PDF Reports'),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'PDF Reports'),
           ),
           GoRoute(
             path: '/reference',
@@ -128,7 +118,8 @@ GoRouter buildRouter({
           GoRoute(
             path: '/audit',
             name: 'audit',
-            builder: (context, state) => const PlaceholderScreen(title: 'Audit Logs'),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'Audit Logs'),
           ),
         ],
       ),
@@ -138,18 +129,14 @@ GoRouter buildRouter({
 }
 
 class _NotFoundScreen extends StatelessWidget {
-  const _NotFoundScreen({
-    required this.uri,
-  });
+  const _NotFoundScreen({required this.uri});
 
   final Uri uri;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Text('Route not found: ${uri.toString()}'),
-      ),
+      body: Center(child: Text('Route not found: ${uri.toString()}')),
     );
   }
 }

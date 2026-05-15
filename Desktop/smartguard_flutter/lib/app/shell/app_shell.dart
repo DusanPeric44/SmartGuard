@@ -6,11 +6,7 @@ import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/core/config/app_config.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({
-    super.key,
-    required this.child,
-    required this.currentUri,
-  });
+  const AppShell({super.key, required this.child, required this.currentUri});
 
   final Widget child;
   final Uri currentUri;
@@ -33,22 +29,14 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 900;
-    final role = AppScope.of(context).auth.role;
-    final filteredNavItems = appNavItems.where((it) {
-      if (it.id == 'devices' && role == UserRole.admin) return false;
-      return true;
-    }).toList(growable: false);
-
-    final selectedIndex = _selectedNavIndex(widget.currentUri, filteredNavItems);
-    final pageTitle = _titleForUri(widget.currentUri, filteredNavItems);
+    final selectedIndex = _selectedNavIndex(widget.currentUri);
+    final pageTitle = _titleForUri(widget.currentUri);
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            Expanded(
-              child: Text(pageTitle),
-            ),
+            Expanded(child: Text(pageTitle)),
             if (isWide)
               SizedBox(
                 width: 280,
@@ -76,9 +64,13 @@ class _AppShellState extends State<AppShell> {
                   children: [
                     Text('API base URL: ${AppScope.of(context).api.baseUri}'),
                     const SizedBox(height: 8),
-                    Text('Stub auth: ${AppConfig.enableStubAuth ? 'uključen' : 'isključen'}'),
+                    Text(
+                      'Stub auth: ${AppConfig.enableStubAuth ? 'uključen' : 'isključen'}',
+                    ),
                     const SizedBox(height: 8),
-                    Text('Role: ${userRoleToWire(AppScope.of(context).auth.role)}'),
+                    Text(
+                      'Role: ${userRoleToWire(AppScope.of(context).auth.role)} (admin-only app)',
+                    ),
                   ],
                 ),
                 actions: [
@@ -103,9 +95,9 @@ class _AppShellState extends State<AppShell> {
             onPressed: () async {
               await AppScope.of(context).auth.logout();
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Odjavljeni ste.')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Odjavljeni ste.')));
             },
             icon: const Icon(Icons.logout),
           ),
@@ -116,7 +108,6 @@ class _AppShellState extends State<AppShell> {
           : Drawer(
               child: SafeArea(
                 child: _DrawerNav(
-                  navItems: filteredNavItems,
                   selectedIndex: selectedIndex,
                   onNavigate: (route) {
                     Navigator.of(context).pop();
@@ -131,14 +122,18 @@ class _AppShellState extends State<AppShell> {
             NavigationRail(
               extended: _railExtended,
               selectedIndex: selectedIndex,
-              onDestinationSelected: (index) => context.go(filteredNavItems[index].route),
+              onDestinationSelected: (index) =>
+                  context.go(appNavItems[index].route),
               leading: Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Column(
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: () => setState(() => _railExtended = !_railExtended),
-                      icon: Icon(_railExtended ? Icons.chevron_left : Icons.menu),
+                      onPressed: () =>
+                          setState(() => _railExtended = !_railExtended),
+                      icon: Icon(
+                        _railExtended ? Icons.chevron_left : Icons.menu,
+                      ),
                       label: Text(_railExtended ? 'Collapse' : 'Menu'),
                     ),
                     const SizedBox(height: 12),
@@ -146,7 +141,7 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
               destinations: [
-                for (final item in filteredNavItems)
+                for (final item in appNavItems)
                   NavigationRailDestination(
                     icon: Icon(item.icon),
                     label: Text(item.label),
@@ -165,29 +160,26 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  int _selectedNavIndex(Uri uri, List<AppNavItem> items) {
+  int _selectedNavIndex(Uri uri) {
     final location = uri.path.isEmpty ? '/' : uri.path;
-    final idx = items.indexWhere(
+    final idx = appNavItems.indexWhere(
       (it) => location == it.route || location.startsWith('${it.route}/'),
     );
     return idx >= 0 ? idx : 0;
   }
 
-  String _titleForUri(Uri uri, List<AppNavItem> items) {
+  String _titleForUri(Uri uri) {
     final location = uri.path.isEmpty ? '/' : uri.path;
-    final match = items.where((it) => it.route == location).toList(growable: false);
+    final match = appNavItems
+        .where((it) => it.route == location)
+        .toList(growable: false);
     return match.isNotEmpty ? match.first.label : 'SmartGuard';
   }
 }
 
 class _DrawerNav extends StatelessWidget {
-  const _DrawerNav({
-    required this.navItems,
-    required this.selectedIndex,
-    required this.onNavigate,
-  });
+  const _DrawerNav({required this.selectedIndex, required this.onNavigate});
 
-  final List<AppNavItem> navItems;
   final int selectedIndex;
   final ValueChanged<String> onNavigate;
 
@@ -205,12 +197,12 @@ class _DrawerNav extends StatelessWidget {
           leading: Icon(Icons.shield_outlined),
         ),
         const Divider(height: 1),
-        for (var i = 0; i < navItems.length; i++)
+        for (var i = 0; i < appNavItems.length; i++)
           ListTile(
-            leading: Icon(navItems[i].icon),
-            title: Text(navItems[i].label),
+            leading: Icon(appNavItems[i].icon),
+            title: Text(appNavItems[i].label),
             selected: i == selectedIndex,
-            onTap: () => onNavigate(navItems[i].route),
+            onTap: () => onNavigate(appNavItems[i].route),
           ),
       ],
     );
