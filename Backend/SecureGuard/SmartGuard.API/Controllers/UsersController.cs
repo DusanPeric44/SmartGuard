@@ -10,10 +10,12 @@ namespace SmartGuard.API.Controllers
     public class UsersController : BaseGetController<UserDto, UsersSearchObject>
     {
         private readonly IUsersService _usersService;
+        private readonly IUserPushTokensService _userPushTokensService;
 
-        public UsersController(IUsersService service) : base(service)
+        public UsersController(IUsersService service, IUserPushTokensService userPushTokensService) : base(service)
         {
             _usersService = service;
+            _userPushTokensService = userPushTokensService;
         }
 
         [HttpPost("")]
@@ -37,6 +39,14 @@ namespace SmartGuard.API.Controllers
         public async Task<IActionResult> Delete(string id)
         {
             await _usersService.DeleteAsync(id);
+            return NoContent();
+        }
+
+        [HttpPost("push-token")]
+        [Authorize]
+        public async Task<IActionResult> UpsertPushToken([FromBody] UserPushTokenUpsertRequest request)
+        {
+            await _userPushTokensService.UpsertAsync(request);
             return NoContent();
         }
     }

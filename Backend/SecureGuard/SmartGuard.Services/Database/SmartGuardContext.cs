@@ -24,6 +24,7 @@ namespace SmartGuard.Services.Database
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
         public DbSet<UserDeviceAccess> UserDeviceAccesses { get; set; }
+        public DbSet<UserPushToken> UserPushTokens { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<AIAnalysisResult> AIAnalysisResults { get; set; }
         public DbSet<ScheduledRecording> ScheduledRecordings { get; set; }
