@@ -7,8 +7,8 @@ class AuthController extends ChangeNotifier {
   AuthController({
     required AuthRepository repository,
     required TokenStore tokenStore,
-  })  : _repository = repository,
-        _tokenStore = tokenStore;
+  }) : _repository = repository,
+       _tokenStore = tokenStore;
 
   final AuthRepository _repository;
   final TokenStore _tokenStore;
@@ -32,7 +32,9 @@ class AuthController extends ChangeNotifier {
     _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
     _registrationKey = await _tokenStore.getRegistrationKey();
 
-    if (_isAuthenticated && _role == UserRole.homeowner && _registrationKey == null) {
+    if (_isAuthenticated &&
+        _role == UserRole.admin &&
+        _registrationKey == null) {
       _registrationKey = await _repository.fetchRegistrationKey();
       if (_registrationKey != null) {
         await _tokenStore.setRegistrationKey(_registrationKey!);
@@ -51,7 +53,7 @@ class AuthController extends ChangeNotifier {
     _isAuthenticated = true;
     _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
 
-    if (_role == UserRole.homeowner) {
+    if (_role == UserRole.admin) {
       _registrationKey = await _repository.fetchRegistrationKey();
       if (_registrationKey != null) {
         await _tokenStore.setRegistrationKey(_registrationKey!);

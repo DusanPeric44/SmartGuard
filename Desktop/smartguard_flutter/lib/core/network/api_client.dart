@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/core/network/api_error.dart';
 
 typedef TokenProvider = Future<String?> Function();
@@ -11,17 +11,25 @@ typedef UnauthorizedHandler = Future<void> Function();
 class ApiClient {
   ApiClient({
     required this.baseUri,
-    http.Client? httpClient,
+    Dio? dio,
     TokenProvider? tokenProvider,
     UnauthorizedHandler? onUnauthorized,
     Duration timeout = const Duration(seconds: 15),
-  })  : _http = httpClient ?? http.Client(),
-        _tokenProvider = tokenProvider,
-        _onUnauthorized = onUnauthorized,
-        _timeout = timeout;
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: timeout,
+               sendTimeout: timeout,
+               receiveTimeout: timeout,
+             ),
+           ),
+       _tokenProvider = tokenProvider,
+       _onUnauthorized = onUnauthorized,
+       _timeout = timeout;
 
   final Uri baseUri;
-  final http.Client _http;
+  final Dio _dio;
   final TokenProvider? _tokenProvider;
   final UnauthorizedHandler? _onUnauthorized;
   final Duration _timeout;
@@ -75,7 +83,8 @@ class ApiClient {
 
     Object? encodedBody;
     if (body != null) {
-      mergedHeaders['Content-Type'] = mergedHeaders['Content-Type'] ?? 'application/json';
+      mergedHeaders['Content-Type'] =
+          mergedHeaders['Content-Type'] ?? 'application/json';
       if (body is String || body is List<int>) {
         encodedBody = body;
       } else {
@@ -83,85 +92,103 @@ class ApiClient {
       }
     }
 
-    http.Response response;
     try {
-      final req = http.Request(method, uri);
-      req.headers.addAll(mergedHeaders);
-      if (encodedBody != null) {
-        if (encodedBody is String) {
-          req.body = encodedBody;
-        } else if (encodedBody is List<int>) {
-          req.bodyBytes = encodedBody;
-        } else {
-          req.body = encodedBody.toString();
+      final response = await _dio
+          .requestUri<Object?>(
+            uri,
+            data: encodedBody,
+            options: Options(
+              method: method,
+              headers: mergedHeaders,
+              responseType: ResponseType.bytes,
+              validateStatus: (_) => true,
+              sendTimeout: _timeout,
+              receiveTimeout: _timeout,
+            ),
+          )
+          .timeout(_timeout);
+
+      final statusCode = response.statusCode ?? 0;
+      final bodyBytes = (response.data as List<int>?) ?? const <int>[];
+
+      if (statusCode == 401) {
+        if (!_isHandlingUnauthorized) {
+          _isHandlingUnauthorized = true;
+          try {
+            await _onUnauthorized?.call();
+          } finally {
+            _isHandlingUnauthorized = false;
+          }
         }
+        throw ApiException(
+          ApiError(
+            kind: ApiErrorKind.unauthorized,
+            statusCode: statusCode,
+            uri: uri,
+            message: _extractMessage(bodyBytes),
+            details: _tryDecodeJson(bodyBytes),
+          ),
+        );
       }
 
-      final streamed = await _http.send(req).timeout(_timeout);
-      response = await http.Response.fromStream(streamed);
+      if (statusCode < 200 || statusCode >= 300) {
+        throw ApiException(
+          ApiError(
+            kind: _kindForStatus(statusCode),
+            statusCode: statusCode,
+            uri: uri,
+            message: _extractMessage(bodyBytes),
+            details: _tryDecodeJson(bodyBytes),
+          ),
+        );
+      }
+
+      final json = _tryDecodeJson(bodyBytes);
+      if (decode == null) {
+        return json as T;
+      }
+
+      try {
+        return decode(json);
+      } catch (e) {
+        throw ApiException(
+          ApiError(
+            kind: ApiErrorKind.invalidResponse,
+            statusCode: statusCode,
+            uri: uri,
+            message: 'Ne mogu parsirati odgovor.',
+            details: e,
+          ),
+        );
+      }
+    } on ApiException {
+      rethrow;
     } on TimeoutException catch (_) {
+      throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
+    } on DioException catch (e) {
+      final err = e.error;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
+      }
+      if (e.type == DioExceptionType.connectionError ||
+          err is SocketException) {
+        throw ApiException(
+          ApiError(
+            kind: ApiErrorKind.network,
+            uri: uri,
+            message: err is SocketException ? err.message : null,
+            details: e,
+          ),
+        );
+      }
       throw ApiException(
-        ApiError(kind: ApiErrorKind.timeout, uri: uri),
-      );
-    } on SocketException catch (e) {
-      throw ApiException(
-        ApiError(kind: ApiErrorKind.network, uri: uri, message: e.message),
+        ApiError(kind: ApiErrorKind.unknown, uri: uri, details: e),
       );
     } catch (e) {
       throw ApiException(
         ApiError(kind: ApiErrorKind.unknown, uri: uri, details: e),
-      );
-    }
-
-    if (response.statusCode == 401) {
-      if (!_isHandlingUnauthorized) {
-        _isHandlingUnauthorized = true;
-        try {
-          await _onUnauthorized?.call();
-        } finally {
-          _isHandlingUnauthorized = false;
-        }
-      }
-      throw ApiException(
-        ApiError(
-          kind: ApiErrorKind.unauthorized,
-          statusCode: response.statusCode,
-          uri: uri,
-          message: _extractMessage(response),
-          details: _tryDecodeJson(response.bodyBytes),
-        ),
-      );
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        ApiError(
-          kind: _kindForStatus(response.statusCode),
-          statusCode: response.statusCode,
-          uri: uri,
-          message: _extractMessage(response),
-          details: _tryDecodeJson(response.bodyBytes),
-        ),
-      );
-    }
-
-    if (decode == null) {
-      final json = _tryDecodeJson(response.bodyBytes);
-      return json as T;
-    }
-
-    final json = _tryDecodeJson(response.bodyBytes);
-    try {
-      return decode(json);
-    } catch (e) {
-      throw ApiException(
-        ApiError(
-          kind: ApiErrorKind.invalidResponse,
-          statusCode: response.statusCode,
-          uri: uri,
-          message: 'Ne mogu parsirati odgovor.',
-          details: e,
-        ),
       );
     }
   }
@@ -190,13 +217,13 @@ class ApiClient {
     }
   }
 
-  String? _extractMessage(http.Response response) {
-    final decoded = _tryDecodeJson(response.bodyBytes);
+  String? _extractMessage(List<int> bodyBytes) {
+    final decoded = _tryDecodeJson(bodyBytes);
     if (decoded is Map) {
       final msg = decoded['message'] ?? decoded['error'] ?? decoded['detail'];
       if (msg is String && msg.trim().isNotEmpty) return msg.trim();
     }
-    final text = utf8.decode(response.bodyBytes, allowMalformed: true).trim();
+    final text = utf8.decode(bodyBytes, allowMalformed: true).trim();
     return text.isEmpty ? null : text;
   }
 }

@@ -5,10 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/core/auth/app_capabilities.dart';
 import 'package:smartguard_flutter/core/auth/user_role.dart';
-import 'package:smartguard_flutter/core/config/app_config.dart';
 import 'package:smartguard_flutter/features/devices/data/api_devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/data/devices_repository.dart';
-import 'package:smartguard_flutter/features/devices/data/stub_devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
 import 'package:smartguard_flutter/features/devices/viewmodel/device_details_view_model.dart';
 import 'package:smartguard_flutter/features/devices/viewmodel/device_list_view_model.dart';
@@ -47,12 +45,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   DevicesRepository _buildRepository() {
-    if (AppConfig.enableStubData) {
-      return StubDevicesRepository();
-    }
     return ApiDevicesRepository(api: AppScope.of(context).api);
   }
-
 
   void _onVmChanged() {
     if (!mounted) return;
@@ -78,12 +72,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
             await vm.setStatus(v);
           },
           onRefresh: vm.load,
-          onAddDevice: auth.role == UserRole.homeowner ? _openProvisioningWizard : null,
+          onAddDevice: _openProvisioningWizard,
         ),
         const SizedBox(height: 16),
-        Expanded(
-          child: _buildBody(context, caps, vm),
-        ),
+        Expanded(child: _buildBody(context, caps, vm)),
       ],
     );
   }
@@ -96,7 +88,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final key = auth.registrationKey;
     if (key == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Greška: Registracijski ključ nije dostupan.')),
+        const SnackBar(
+          content: Text('Greška: Registracijski ključ nije dostupan.'),
+        ),
       );
       return;
     }
@@ -104,10 +98,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final deviceId = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _ProvisioningWizard(
-        vm: vm,
-        registrationKey: key,
-      ),
+      builder: (context) => _ProvisioningWizard(vm: vm, registrationKey: key),
     );
 
     if (deviceId != null && mounted) {
@@ -115,7 +106,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
     }
   }
 
-  Widget _buildBody(BuildContext context, AppCapabilities caps, DeviceListViewModel vm) {
+  Widget _buildBody(
+    BuildContext context,
+    AppCapabilities caps,
+    DeviceListViewModel vm,
+  ) {
     if (vm.isLoading && vm.items.isEmpty) {
       return const Center(child: AsyncStatePanel.loading());
     }
@@ -164,24 +159,37 @@ class _DevicesScreenState extends State<DevicesScreen> {
                     for (final d in vm.items)
                       DataRow(
                         cells: [
-                          DataCell(Text(d.name), onTap: () => context.go('/devices/${d.id}')),
+                          DataCell(
+                            Text(d.name),
+                            onTap: () => context.go('/devices/${d.id}'),
+                          ),
                           DataCell(Text(d.ipAddress)),
                           DataCell(_StatusChip(status: d.status)),
-                          DataCell(_StorageCell(used: d.storageUsedGb, total: d.storageTotalGb)),
+                          DataCell(
+                            _StorageCell(
+                              used: d.storageUsedGb,
+                              total: d.storageTotalGb,
+                            ),
+                          ),
                           DataCell(
                             Switch(
                               value: d.isActive,
-                              onChanged: (!caps.canManageDevices || vm.rowBusy[d.id] == true)
+                              onChanged:
+                                  (!caps.canManageDevices ||
+                                      vm.rowBusy[d.id] == true)
                                   ? null
                                   : (v) async {
-                                      final messenger = ScaffoldMessenger.of(context);
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
                                       final ok = await vm.setActive(d.id, v);
                                       if (!mounted) return;
                                       if (!ok) {
                                         messenger.showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              vm.errorMessage ?? 'Greška pri izmjeni statusa.',
+                                              vm.errorMessage ??
+                                                  'Greška pri izmjeni statusa.',
                                             ),
                                           ),
                                         );
@@ -194,14 +202,17 @@ class _DevicesScreenState extends State<DevicesScreen> {
                               children: [
                                 IconButton(
                                   tooltip: 'Open',
-                                  onPressed: () => context.go('/devices/${d.id}'),
+                                  onPressed: () =>
+                                      context.go('/devices/${d.id}'),
                                   icon: const Icon(Icons.open_in_new),
                                 ),
                                 if (vm.rowBusy[d.id] == true)
                                   const SizedBox(
                                     height: 16,
                                     width: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                               ],
                             ),
@@ -231,14 +242,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
       ),
     );
   }
-
 }
 
 class _ProvisioningWizard extends StatefulWidget {
-  const _ProvisioningWizard({
-    required this.vm,
-    required this.registrationKey,
-  });
+  const _ProvisioningWizard({required this.vm, required this.registrationKey});
 
   final DeviceListViewModel vm;
   final String registrationKey;
@@ -279,7 +286,9 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
                   const SizedBox(height: 16),
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],
@@ -331,7 +340,9 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Unesite podatke za vašu kućnu Wi-Fi mrežu na koju želite povezati uređaj.'),
+        const Text(
+          'Unesite podatke za vašu kućnu Wi-Fi mrežu na koju želite povezati uređaj.',
+        ),
         const SizedBox(height: 16),
         TextField(
           controller: _ssid,
@@ -396,7 +407,9 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
   Future<void> _openWifiSettings() async {
     try {
       if (Platform.isWindows) {
-        await Process.run('start', ['ms-settings:network-wifi'], runInShell: true);
+        await Process.run('start', [
+          'ms-settings:network-wifi',
+        ], runInShell: true);
       }
     } catch (_) {
       // Ignore errors opening settings
@@ -428,17 +441,15 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
     } else {
       setState(() {
         _step = 2;
-        _error = 'Uređaj nije pronađen nakon 30 sekundi. Molimo pokušajte ponovo (povežite se na ESP32 AP i ponovite unos).';
+        _error =
+            'Uređaj nije pronađen nakon 30 sekundi. Molimo pokušajte ponovo (povežite se na ESP32 AP i ponovite unos).';
       });
     }
   }
 }
 
 class DeviceDetailsScreen extends StatefulWidget {
-  const DeviceDetailsScreen({
-    super.key,
-    required this.deviceId,
-  });
+  const DeviceDetailsScreen({super.key, required this.deviceId});
 
   final String deviceId;
 
@@ -447,22 +458,49 @@ class DeviceDetailsScreen extends StatefulWidget {
 }
 
 class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
-  late final DevicesRepository _repo;
-  late final DeviceDetailsViewModel _vm;
+  DevicesRepository? _repo;
+  DeviceDetailsViewModel? _vm;
 
   @override
-  void initState() {
-    super.initState();
-    _repo = AppConfig.enableStubData ? StubDevicesRepository() : StubDevicesRepository();
-    _vm = DeviceDetailsViewModel(repository: _repo, deviceId: widget.deviceId);
-    _vm.addListener(_onVmChanged);
-    _vm.init();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_repo != null) return;
+
+    _repo = ApiDevicesRepository(api: AppScope.of(context).api);
+    _vm = DeviceDetailsViewModel(repository: _repo!, deviceId: widget.deviceId);
+    _vm!.addListener(_onVmChanged);
+    _vm!.init();
+  }
+
+  @override
+  void didUpdateWidget(covariant DeviceDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.deviceId == widget.deviceId) return;
+    final repo = _repo;
+    if (repo == null) return;
+
+    final previousVm = _vm;
+    if (previousVm != null) {
+      previousVm.removeListener(_onVmChanged);
+      previousVm.dispose();
+    }
+
+    final newVm = DeviceDetailsViewModel(
+      repository: repo,
+      deviceId: widget.deviceId,
+    );
+    _vm = newVm;
+    newVm.addListener(_onVmChanged);
+    newVm.init();
   }
 
   @override
   void dispose() {
-    _vm.removeListener(_onVmChanged);
-    _vm.dispose();
+    final vm = _vm;
+    if (vm != null) {
+      vm.removeListener(_onVmChanged);
+      vm.dispose();
+    }
     super.dispose();
   }
 
@@ -473,17 +511,22 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final caps = AppCapabilities.fromRole(AppScope.of(context).auth.role);
-    final details = _vm.details;
-
-    if (_vm.isLoading && details == null) {
+    final vm = _vm;
+    if (vm == null) {
       return const Center(child: AsyncStatePanel.loading());
     }
-    if (_vm.errorMessage != null && details == null) {
+
+    final caps = AppCapabilities.fromRole(AppScope.of(context).auth.role);
+    final details = vm.details;
+
+    if (vm.isLoading && details == null) {
+      return const Center(child: AsyncStatePanel.loading());
+    }
+    if (vm.errorMessage != null && details == null) {
       return Center(
         child: AsyncStatePanel.error(
-          errorMessage: _vm.errorMessage!,
-          onRetry: _vm.load,
+          errorMessage: vm.errorMessage!,
+          onRetry: vm.load,
         ),
       );
     }
@@ -501,7 +544,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             ),
             const Spacer(),
             FilledButton.icon(
-              onPressed: (!caps.canManageDevices || _vm.isLoading)
+              onPressed: (!caps.canManageDevices || vm.isLoading)
                   ? null
                   : () => _openAssignUsers(details),
               icon: const Icon(Icons.group_add_outlined),
@@ -538,20 +581,25 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _StorageBar(used: device.storageUsedGb, total: device.storageTotalGb),
+                      _StorageBar(
+                        used: device.storageUsedGb,
+                        total: device.storageTotalGb,
+                      ),
                       const SizedBox(height: 12),
                       SwitchListTile(
                         value: device.isActive,
-                        onChanged: (!caps.canManageDevices || _vm.isLoading)
+                        onChanged: (!caps.canManageDevices || vm.isLoading)
                             ? null
                             : (v) async {
                                 final messenger = ScaffoldMessenger.of(context);
-                                final ok = await _vm.setActive(v);
+                                final ok = await vm.setActive(v);
                                 if (!mounted) return;
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      ok ? 'Sačuvano.' : (_vm.errorMessage ?? 'Greška.'),
+                                      ok
+                                          ? 'Sačuvano.'
+                                          : (vm.errorMessage ?? 'Greška.'),
                                     ),
                                   ),
                                 );
@@ -603,34 +651,34 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   }
 
   Future<void> _openAssignUsers(DeviceDetails details) async {
+    final vm = _vm;
+    if (vm == null) return;
+
     final messenger = ScaffoldMessenger.of(context);
-    final all = _vm.allUsers;
+    final all = vm.allUsers;
     final selected = details.assignedUsers.map((u) => u.id).toSet();
 
     final res = await showDialog<Set<String>>(
       context: context,
-      builder: (context) => _AssignUsersDialog(
-        allUsers: all,
-        selected: selected,
-      ),
+      builder: (context) =>
+          _AssignUsersDialog(allUsers: all, selected: selected),
     );
     if (res == null) return;
 
-    final ok = await _vm.saveAssignments(res.toList(growable: false));
+    final ok = await vm.saveAssignments(res.toList(growable: false));
     if (!mounted) return;
     messenger.showSnackBar(
       SnackBar(
-        content: Text(ok ? 'Dodjela sačuvana.' : (_vm.errorMessage ?? 'Greška.')),
+        content: Text(
+          ok ? 'Dodjela sačuvana.' : (vm.errorMessage ?? 'Greška.'),
+        ),
       ),
     );
   }
 }
 
 class _AssignUsersDialog extends StatefulWidget {
-  const _AssignUsersDialog({
-    required this.allUsers,
-    required this.selected,
-  });
+  const _AssignUsersDialog({required this.allUsers, required this.selected});
 
   final List<DeviceUser> allUsers;
   final Set<String> selected;
@@ -655,8 +703,8 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
     final filtered = q.isEmpty
         ? widget.allUsers
         : widget.allUsers
-            .where((u) => u.username.toLowerCase().contains(q))
-            .toList(growable: false);
+              .where((u) => u.username.toLowerCase().contains(q))
+              .toList(growable: false);
 
     return AlertDialog(
       title: const Text('Assign users'),
@@ -758,10 +806,22 @@ class _FiltersCard extends StatelessWidget {
                 initialValue: status,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: const [
-                  DropdownMenuItem<DeviceStatus?>(value: null, child: Text('All')),
-                  DropdownMenuItem(value: DeviceStatus.online, child: Text('Online')),
-                  DropdownMenuItem(value: DeviceStatus.offline, child: Text('Offline')),
-                  DropdownMenuItem(value: DeviceStatus.maintenance, child: Text('Maintenance')),
+                  DropdownMenuItem<DeviceStatus?>(
+                    value: null,
+                    child: Text('All'),
+                  ),
+                  DropdownMenuItem(
+                    value: DeviceStatus.online,
+                    child: Text('Online'),
+                  ),
+                  DropdownMenuItem(
+                    value: DeviceStatus.offline,
+                    child: Text('Offline'),
+                  ),
+                  DropdownMenuItem(
+                    value: DeviceStatus.maintenance,
+                    child: Text('Maintenance'),
+                  ),
                 ],
                 onChanged: onStatusChanged,
               ),
@@ -886,4 +946,3 @@ String _hhMm(DateTime dt) {
   final m = dt.minute.toString().padLeft(2, '0');
   return '$h:$m';
 }
-

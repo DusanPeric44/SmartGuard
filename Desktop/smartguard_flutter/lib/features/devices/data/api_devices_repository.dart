@@ -38,7 +38,7 @@ class ApiDevicesRepository implements DevicesRepository {
       path,
       decode: (json) {
         if (json is Map<String, dynamic>) {
-          final count = json['count'] as int? ?? 0;
+          final count = (json['count'] as num?)?.toInt() ?? 0;
           final items = json['result'] as List? ?? [];
           return PagedResult<DeviceRow>(
             count: count,
@@ -55,7 +55,7 @@ class ApiDevicesRepository implements DevicesRepository {
   @override
   Future<DeviceDetails> getDetails(String deviceId) async {
     return _api.get<DeviceDetails>(
-      '/devices/$deviceId',
+      '/devices/details/$deviceId',
       decode: (json) => DeviceDetails.fromJson(json as Map<String, dynamic>),
     );
   }
@@ -91,7 +91,7 @@ class ApiDevicesRepository implements DevicesRepository {
               .map((i) => DeviceUser.fromJson(i as Map<String, dynamic>))
               .toList();
         }
-        return [];
+        throw Exception('Invalid response format');
       },
     );
   }

@@ -6,7 +6,8 @@ import 'package:smartguard_flutter/features/devices/data/devices_repository.dart
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
 
 class DeviceListViewModel extends ChangeNotifier {
-  DeviceListViewModel({required DevicesRepository repository}) : _repository = repository;
+  DeviceListViewModel({required DevicesRepository repository})
+    : _repository = repository;
 
   final DevicesRepository _repository;
 
@@ -26,7 +27,7 @@ class DeviceListViewModel extends ChangeNotifier {
   DeviceStatus? _status;
 
   int _page = 1;
-  int _pageSize = 20;
+  final int _pageSize = 20;
   int _totalCount = 0;
   bool _hasMore = false;
 
@@ -48,7 +49,6 @@ class DeviceListViewModel extends ChangeNotifier {
   Future<void> init() async {
     await load();
   }
-
 
   @override
   void dispose() {
@@ -117,7 +117,6 @@ class DeviceListViewModel extends ChangeNotifier {
     }
   }
 
-
   Future<String?> provisionDevice({
     required String ssid,
     required String password,
@@ -141,10 +140,10 @@ class DeviceListViewModel extends ChangeNotifier {
 
       final existingIds = _items.map((e) => e.id).toSet();
       final startTime = DateTime.now();
-      
+
       while (DateTime.now().difference(startTime).inSeconds < 30) {
         await Future<void>.delayed(const Duration(seconds: 3));
-        
+
         try {
           final pagedResult = await _repository.list();
           final currentItems = pagedResult.result;
