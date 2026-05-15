@@ -1,0 +1,7 @@
+namespace SmartGuard.Model.Interfaces
+{
+    public interface IUserContext
+    {
+        string Email { get; }
+    }
+}

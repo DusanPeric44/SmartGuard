@@ -9,6 +9,7 @@ using SmartGuard.Model.Interfaces;
 using Microsoft.OpenApi;
 using SmartGuard.API.Middleware;
 using SmartGuard.API.Hubs;
+using SmartGuard.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +84,8 @@ builder.Services.AddSmartGuardServices();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Services.AddOpenApi();
+builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -131,6 +134,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseWebSockets();
 
 app.UseCors("AllowAll");
 

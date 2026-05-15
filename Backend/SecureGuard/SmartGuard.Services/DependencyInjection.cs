@@ -24,6 +24,7 @@ namespace SmartGuard.Services
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IMailingService, MailingService>();
             services.AddScoped<IDatabaseSeedService, DatabaseSeedService>();
+            services.AddScoped<IUserContext, UserContext>();
             
             // Reference Services
             services.AddScoped<IDeviceStatusesService, DeviceStatusesService>();

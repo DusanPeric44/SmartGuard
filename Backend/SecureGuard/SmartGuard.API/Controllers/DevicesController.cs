@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -15,6 +16,12 @@ namespace SmartGuard.API.Controllers
         public DevicesController(IDevicesService service) : base(service)
         {
             _devicesService = service;
+        }
+
+        [HttpGet("my")]
+        public async Task<PagedResult<Device>> GetMyDevices([FromQuery] DeviceSearchObject search = null)
+        {
+            return await _service.GetAsync(search);
         }
 
         [HttpPatch("{id}/status")]

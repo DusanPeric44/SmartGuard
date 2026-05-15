@@ -108,7 +108,7 @@ namespace SmartGuard.Services
             _context.RefreshTokens.Update(storedRefreshToken);
             await _context.SaveChangesAsync();
 
-            var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            var user = await _userManager.FindByEmailAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
             return await GenerateAuthResponseAsync(user!);
         }
 
@@ -158,7 +158,7 @@ namespace SmartGuard.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 RegistrationKey = user.RegistrationKey,
-                Roles = [.. roles]
+                Role = roles.FirstOrDefault() ?? string.Empty
             };
         }
 
@@ -181,7 +181,7 @@ namespace SmartGuard.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Email!),
                 new Claim("FirstName", user.FirstName),
                 new Claim("LastName", user.LastName)
             };
@@ -225,7 +225,7 @@ namespace SmartGuard.Services
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     RegistrationKey = user.RegistrationKey,
-                    Roles = roles.ToList()
+                    Role = roles.FirstOrDefault() ?? string.Empty
                 }
             };
         }

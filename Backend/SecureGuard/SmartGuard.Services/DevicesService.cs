@@ -10,8 +10,39 @@ namespace SmartGuard.Services
 {
     public class DevicesService : BaseCRUDService<Model.DTOs.Device, Database.Device, DeviceSearchObject, DeviceInsertRequest, DeviceUpdateRequest>, IDevicesService
     {
-        public DevicesService(SmartGuardContext context) : base(context)
+        private readonly IUserContext _userContext;
+
+        public DevicesService(SmartGuardContext context, IUserContext userContext) : base(context)
         {
+            _userContext = userContext;
+        }
+
+        protected override IQueryable<Database.Device> AddFilter(IQueryable<Database.Device> query, DeviceSearchObject search = null)
+        {
+            query = base.AddFilter(query, search);
+
+            var userEmail = _userContext.Email;
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                query = query.Where(d => d.UserDeviceAccesses.Any(a => a.User.Email == userEmail));
+            }
+
+            if (!string.IsNullOrEmpty(search?.Name))
+            {
+                query = query.Where(d => d.Name.Contains(search.Name));
+            }
+
+            if (!string.IsNullOrEmpty(search?.Location))
+            {
+                query = query.Where(d => d.Location.Contains(search.Location));
+            }
+
+            if (search?.StatusId.HasValue == true)
+            {
+                query = query.Where(d => d.StatusId == search.StatusId);
+            }
+
+            return query;
         }
 
         public async Task<bool> UpdateStatusAsync(int id, int statusId)
@@ -56,7 +87,7 @@ namespace SmartGuard.Services
                 device = new Database.Device
                 {
                     MacAddress = request.MacAddress,
-                    Name = $"ESP32-Cam-{request.MacAddress.Replace(":", "").Substring(Math.Max(0, request.MacAddress.Length - 4))}",
+                    Name = $"ESP32-Cam-{request.MacAddress}",
                     Location = "Default",
                     StatusId = 1, // Online
                     ApiKey = Guid.NewGuid().ToString() // This will be the Device Token
@@ -94,7 +125,6 @@ namespace SmartGuard.Services
                 Id = device.Id,
                 Name = device.Name,
                 Location = device.Location,
-                IPAddress = device.IPAddress,
                 ApiKey = device.ApiKey
             };
         }

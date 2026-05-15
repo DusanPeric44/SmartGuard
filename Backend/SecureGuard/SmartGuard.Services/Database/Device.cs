@@ -8,23 +8,22 @@ namespace SmartGuard.Services.Database
     {
         [Key]
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Location { get; set; }
-        public string IPAddress { get; set; }
-        public string MacAddress { get; set; }
-        public string ApiKey { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string MacAddress { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
         
         [ForeignKey("DeviceStatus")]
         public int StatusId { get; set; }
-        public DeviceStatus DeviceStatus { get; set; }
+        public DeviceStatus DeviceStatus { get; set; } = null!;
 
         public long SDCapacity { get; set; }
         public long FreeSpace { get; set; }
 
-        public ICollection<Recording> Recordings { get; set; }
-        public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; }
-        public ICollection<Alert> Alerts { get; set; }
-        public ICollection<UserDeviceAccess> UserDeviceAccesses { get; set; }
-        public ICollection<ScheduledRecording> ScheduledRecordings { get; set; }
+        public ICollection<Recording> Recordings { get; set; } = null!;
+        public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; } = null!;
+        public ICollection<Alert> Alerts { get; set; } = null!;
+        public ICollection<UserDeviceAccess> UserDeviceAccesses { get; set; } = null!;
+        public ICollection<ScheduledRecording> ScheduledRecordings { get; set; } = null!;
     }
 }

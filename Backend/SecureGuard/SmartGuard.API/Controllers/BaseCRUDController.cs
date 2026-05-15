@@ -22,19 +22,19 @@ namespace SmartGuard.API.Controllers
         [HttpPost]
         public virtual async Task<T> Insert([FromBody] TInsert insert)
         {
-            throw new NotImplementedException();
+            return await _crudService.InsertAsync(insert);
         }
 
         [HttpPut("{id}")]
         public virtual async Task<T> Update(int id, [FromBody] TUpdate update)
         {
-            throw new NotImplementedException();
+            return await _crudService.UpdateAsync(id, update);
         }
 
         [HttpDelete("{id}")]
         public virtual async Task<bool> Delete(int id)
         {
-            throw new NotImplementedException();
+            return await _crudService.DeleteAsync(id);
         }
     }
 }

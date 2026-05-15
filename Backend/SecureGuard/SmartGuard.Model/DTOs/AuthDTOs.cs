@@ -15,6 +15,6 @@ namespace SmartGuard.Model.DTOs
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string RegistrationKey { get; set; } = string.Empty;
-        public List<string> Roles { get; set; } = new();
+        public string Role { get; set; } = string.Empty;
     }
 }
