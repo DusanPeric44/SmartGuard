@@ -65,11 +65,14 @@ class ApiDevicesRepository implements DevicesRepository {
     String deviceId,
     List<String> userIds,
   ) async {
-    return _api.post<DeviceDetails>(
-      '/devices/$deviceId/users',
-      body: userIds,
-      decode: (json) => DeviceDetails.fromJson(json as Map<String, dynamic>),
+    await _api.post<Object?>(
+      '/userdeviceaccess',
+      body: <String, Object?>{
+        'deviceId': deviceId,
+        'userIds': userIds,
+      },
     );
+    return getDetails(deviceId);
   }
 
   @override
@@ -88,6 +91,12 @@ class ApiDevicesRepository implements DevicesRepository {
       decode: (json) {
         if (json is List) {
           return json
+              .map((i) => DeviceUser.fromJson(i as Map<String, dynamic>))
+              .toList();
+        }
+        if (json is Map<String, dynamic>) {
+          final items = json['result'] as List? ?? const [];
+          return items
               .map((i) => DeviceUser.fromJson(i as Map<String, dynamic>))
               .toList();
         }

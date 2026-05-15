@@ -29,7 +29,7 @@ const appNavItems = <AppNavItem>[
   ),
   AppNavItem(
     id: 'users',
-    label: 'Permissions',
+    label: 'Manage Users',
     icon: Icons.people_alt_outlined,
     route: '/users',
   ),

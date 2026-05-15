@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/core/auth/app_capabilities.dart';
-import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/devices/data/api_devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/data/devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
@@ -635,7 +634,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                               children: [
                                 const Icon(Icons.person_outline),
                                 const SizedBox(width: 8),
-                                Text(u.username),
+                                Text(u.email),
                               ],
                             ),
                           ),
@@ -703,7 +702,7 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
     final filtered = q.isEmpty
         ? widget.allUsers
         : widget.allUsers
-              .where((u) => u.username.toLowerCase().contains(q))
+              .where((u) => u.email.toLowerCase().contains(q))
               .toList(growable: false);
 
     return AlertDialog(
@@ -739,7 +738,7 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
                         }
                       });
                     },
-                    title: Text(u.username),
+                    title: Text(u.email),
                   );
                 },
               ),

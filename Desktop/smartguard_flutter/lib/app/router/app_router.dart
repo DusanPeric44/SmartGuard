@@ -8,7 +8,7 @@ import 'package:smartguard_flutter/features/auth/login_screen.dart';
 import 'package:smartguard_flutter/features/dashboard/dashboard_screen.dart';
 import 'package:smartguard_flutter/features/devices/devices_screen.dart';
 import 'package:smartguard_flutter/features/known_persons/known_persons_screen.dart';
-import 'package:smartguard_flutter/features/permissions/permissions_screen.dart';
+import 'package:smartguard_flutter/features/manage_users/manage_users_screen.dart';
 import 'package:smartguard_flutter/features/placeholder/placeholder_screen.dart';
 import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
 import 'package:smartguard_flutter/features/reference_data/reference_data_screen.dart';
@@ -86,7 +86,7 @@ GoRouter buildRouter({
           GoRoute(
             path: '/users',
             name: 'users',
-            builder: (context, state) => const PermissionsScreen(),
+            builder: (context, state) => const ManageUsersScreen(),
           ),
           GoRoute(
             path: '/recordings',
