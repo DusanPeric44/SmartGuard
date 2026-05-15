@@ -10,8 +10,9 @@
 #define PIR_PIN 13
 #define SIGNALR_HOST "192.168.8.133"
 #define SIGNALR_PORT 5000
-#define SIGNALR_PATH "/api/esp32/ws?deviceId=esp32-cam-01"
 #define BACKEND_SYNC_URL "http://192.168.8.133:5000/upload"
+
+String webSocketPath;
 
 void setup() {
   Serial.begin(115200);
@@ -75,9 +76,6 @@ void setup() {
   }
 
   // 3. Initialize Components
-  Serial.println("Initializing Stream Manager...");
-  setupStreamManager(SIGNALR_HOST, SIGNALR_PORT, SIGNALR_PATH);
-  
   Serial.println("Initializing Storage Manager...");
   setupStorageManager();
   
@@ -87,13 +85,15 @@ void setup() {
   // 4. Device Registration (if not already registered)
   Serial.println("Checking device registration...");
   String deviceToken = getDeviceToken();
-  if (deviceToken == "") {
-    Serial.println("Device not registered. Attempting registration...");
+  int deviceId = getDeviceId();
+  if (deviceToken == "" || deviceId <= 0) {
+    Serial.println("Device not registered (or missing ID). Attempting registration...");
     String registrationKey = getRegistrationKey();
     if (registrationKey != "") {
-      Serial.println("Attempting to connect with registartion key: " + registrationKey);
+      Serial.println("Attempting to connect with registration key: " + registrationKey);
       if (registerDevice("http://192.168.8.133:5000", registrationKey.c_str())) {
         Serial.println("Device registered successfully!");
+        deviceId = getDeviceId();
       } else {
         Serial.println("Device registration failed.");
       }
@@ -102,6 +102,14 @@ void setup() {
     }
   } else {
     Serial.println("Device already registered with token: " + deviceToken);
+  }
+
+  if (deviceId > 0) {
+    webSocketPath = String("/api/esp32/ws?deviceId=") + String(deviceId);
+    Serial.println("Initializing Stream Manager with path: " + webSocketPath);
+    setupStreamManager(SIGNALR_HOST, SIGNALR_PORT, webSocketPath.c_str());
+  } else {
+    Serial.println("Device ID not available. Stream Manager not started.");
   }
 
   Serial.println("System initialized and ready.");

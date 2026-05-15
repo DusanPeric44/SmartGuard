@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MassTransit;
 using SmartGuard.Services;
 using SmartGuard.Services.Database;
 using SmartGuard.Model.Interfaces;
@@ -80,6 +81,21 @@ builder.Services.AddAuthentication(options =>
  });
 
 // 4. Dependency Injection (Scoped)
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+    });
+});
+
+builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
+builder.Services.AddScoped<IMailingService, RabbitMqMailingService>();
+
 builder.Services.AddSmartGuardServices();
 
 builder.Services.AddControllers();
@@ -145,6 +161,5 @@ app.UseAuthorization();
 app.MapControllers().RequireAuthorization();
 
 app.MapHub<CameraHub>("/hub/camera");
-app.MapHub<CameraHub>("/hubs/stream");
 
 app.Run();
