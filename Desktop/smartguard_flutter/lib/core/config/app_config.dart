@@ -1,11 +1,15 @@
 class AppConfig {
   const AppConfig._();
 
-  static const String defaultApiBaseUrl = 'http://localhost:8080';
+  static const String defaultApiBaseUrl = 'http://localhost:5000';
   static const String appScheme = 'smartguard';
   static const bool enableStubAuth = bool.fromEnvironment(
     'USE_STUB_AUTH',
-    defaultValue: true,
+    defaultValue: false,
+  );
+  static const bool enableStubData = bool.fromEnvironment(
+    'USE_STUB_DATA',
+    defaultValue: false,
   );
 
   static const String _configuredApiBaseUrl = String.fromEnvironment(

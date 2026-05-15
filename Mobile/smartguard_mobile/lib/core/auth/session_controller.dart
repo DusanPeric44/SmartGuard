@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../network/dio_provider.dart';
 import 'secure_token_storage.dart';
 import 'session_manager.dart';
 import 'session_state.dart';
@@ -14,7 +15,7 @@ final tokenStorageProvider = Provider<TokenStorage>((ref) {
 });
 
 final tokenRefresherProvider = Provider<TokenRefresher>((ref) {
-  return const StubTokenRefresher();
+  return ApiTokenRefresher(ref.read(authDioProvider));
 });
 
 final sessionControllerProvider =

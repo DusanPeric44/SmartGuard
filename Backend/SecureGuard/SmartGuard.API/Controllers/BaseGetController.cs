@@ -22,13 +22,13 @@ namespace SmartGuard.API.Controllers
         [HttpGet]
         public virtual async Task<PagedResult<T>> Get([FromQuery] TSearch search = null)
         {
-            throw new NotImplementedException();
+            return await _service.GetAsync(search);
         }
 
         [HttpGet("{id}")]
         public virtual async Task<T> GetById(int id)
         {
-            throw new NotImplementedException();
+            return await _service.GetByIdAsync(id);
         }
     }
 }

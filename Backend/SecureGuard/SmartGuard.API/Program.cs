@@ -7,6 +7,9 @@ using SmartGuard.Services;
 using SmartGuard.Services.Database;
 using SmartGuard.Model.Interfaces;
 using Microsoft.OpenApi;
+using SmartGuard.API.Middleware;
+using SmartGuard.API.Hubs;
+using SmartGuard.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,11 +53,10 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -63,25 +65,27 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidateAudience = true,
         ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ValidateLifetime = true
     };
 })
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["Google:ClientId"] ?? "dummy";
-    options.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? "dummy";
-})
-.AddMicrosoftAccount(options =>
-{
-    options.ClientId = builder.Configuration["AzureAd:ClientId"] ?? "dummy";
-    options.ClientSecret = builder.Configuration["AzureAd:ClientSecret"] ?? "dummy";
-});
+ .AddGoogle(options =>
+ {
+     options.ClientId = builder.Configuration["Google:ClientId"] ?? "dummy";
+     options.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? "dummy";
+ })
+ .AddMicrosoftAccount(options =>
+ {
+     options.ClientId = builder.Configuration["AzureAd:ClientId"] ?? "dummy";
+     options.ClientSecret = builder.Configuration["AzureAd:ClientSecret"] ?? "dummy";
+ });
 
 // 4. Dependency Injection (Scoped)
 builder.Services.AddSmartGuardServices();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddOpenApi();
+builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -97,11 +101,11 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.Http,
         Scheme = JwtBearerDefaults.AuthenticationScheme,
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+        Description = "JWT Authorization header using the Bearer scheme."
     });
 
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
@@ -111,6 +115,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Seed Database
 using (var scope = app.Services.CreateScope())
@@ -129,11 +135,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseWebSockets();
+
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers().RequireAuthorization();
+
+app.MapHub<CameraHub>("/hub/camera");
+app.MapHub<CameraHub>("/hubs/stream");
 
 app.Run();

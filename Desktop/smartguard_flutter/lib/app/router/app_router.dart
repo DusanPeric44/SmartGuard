@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/shell/app_shell.dart';
 import 'package:smartguard_flutter/core/auth/auth_controller.dart';
+import 'package:smartguard_flutter/core/auth/user_role.dart';
+import 'package:smartguard_flutter/features/auth/access_denied_screen.dart';
 import 'package:smartguard_flutter/features/auth/login_screen.dart';
 import 'package:smartguard_flutter/features/dashboard/dashboard_screen.dart';
 import 'package:smartguard_flutter/features/devices/devices_screen.dart';
 import 'package:smartguard_flutter/features/known_persons/known_persons_screen.dart';
+import 'package:smartguard_flutter/features/permissions/permissions_screen.dart';
 import 'package:smartguard_flutter/features/placeholder/placeholder_screen.dart';
+import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
+import 'package:smartguard_flutter/features/reference_data/reference_data_screen.dart';
 
 GoRouter buildRouter({
   required String initialLocation,
@@ -19,14 +24,29 @@ GoRouter buildRouter({
       if (auth.isInitializing) return null;
 
       final isLoggingIn = state.matchedLocation == '/login';
+      final isAccessDenied = state.matchedLocation == '/access-denied';
+
       if (!auth.isAuthenticated) {
         if (isLoggingIn) return null;
+        if (isAccessDenied) return '/login';
         return Uri(
           path: '/login',
           queryParameters: <String, String>{
             'from': state.uri.toString(),
           },
         ).toString();
+      }
+
+      final role = auth.role;
+      final canAccess = role == UserRole.admin || role == UserRole.homeowner;
+      if (!canAccess) {
+        return isAccessDenied ? null : '/access-denied';
+      }
+
+      if (isAccessDenied) return '/dashboard';
+
+      if (state.matchedLocation.startsWith('/devices') && role == UserRole.admin) {
+        return '/dashboard';
       }
 
       if (isLoggingIn) {
@@ -40,6 +60,11 @@ GoRouter buildRouter({
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/access-denied',
+        name: 'access-denied',
+        builder: (context, state) => const AccessDeniedScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(
@@ -73,14 +98,12 @@ GoRouter buildRouter({
           GoRoute(
             path: '/users',
             name: 'users',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'User Management'),
+            builder: (context, state) => const PermissionsScreen(),
           ),
           GoRoute(
             path: '/recordings',
             name: 'recordings',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Recording Archive'),
+            builder: (context, state) => const RecordingsScreen(),
           ),
           GoRoute(
             path: '/alarms',
@@ -100,8 +123,7 @@ GoRouter buildRouter({
           GoRoute(
             path: '/reference',
             name: 'reference',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Reference Data'),
+            builder: (context, state) => const ReferenceDataScreen(),
           ),
           GoRoute(
             path: '/audit',

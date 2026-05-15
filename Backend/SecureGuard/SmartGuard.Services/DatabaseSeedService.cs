@@ -44,6 +44,38 @@ namespace SmartGuard.Services
             await SeedUserAsync("admin@smartguard.com", "Admin123!", "Admin", "Admin", "SmartGuard", "Admin");
             await SeedUserAsync("homeowner@smartguard.com", "HomeOwner123!", "HomeOwner", "John", "Doe", "HomeOwner");
             await SeedUserAsync("viewer@smartguard.com", "Viewer123!", "Viewer", "Jane", "Smith", "Viewer");
+
+            // 4. Seed Alert Statuses
+            string[] alertStatuses = { "Pending", "Confirmed", "Dismissed", "Resolved" };
+            foreach (var status in alertStatuses)
+            {
+                if (!await _context.AlertStatuses.AnyAsync(x => x.Name == status))
+                {
+                    _context.AlertStatuses.Add(new AlertStatus { Name = status });
+                }
+            }
+
+            // 5. Seed Recording Statuses
+            string[] recordingStatuses = { "Pending", "Uploading", "Completed", "Failed", "Archived" };
+            foreach (var status in recordingStatuses)
+            {
+                if (!await _context.RecordingStatuses.AnyAsync(x => x.Name == status))
+                {
+                    _context.RecordingStatuses.Add(new RecordingStatus { Name = status });
+                }
+            }
+
+            // 6. Seed Device Statuses
+            string[] deviceStatuses = { "Online", "Offline", "Recording", "Maintenance" };
+            foreach (var status in deviceStatuses)
+            {
+                if (!await _context.DeviceStatuses.AnyAsync(x => x.Name == status))
+                {
+                    _context.DeviceStatuses.Add(new DeviceStatus { Name = status });
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         private async Task SeedUserAsync(string email, string password, string userName, string firstName, string lastName, string role)
@@ -57,7 +89,8 @@ namespace SmartGuard.Services
                     Email = email,
                     FirstName = firstName,
                     LastName = lastName,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    RegistrationKey = Guid.NewGuid().ToString()
                 };
 
                 var createPowerUser = await _userManager.CreateAsync(newUser, password);

@@ -1,3 +1,4 @@
+using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -18,7 +19,7 @@ namespace SmartGuard.Services
         public override async Task<Model.DTOs.Alert> UpdateAsync(int id, AlertUpdateRequest update)
         {
             var entity = await _context.Alerts.FindAsync(id);
-            if (entity == null) throw new Exception("Alert not found");
+            if (entity == null) throw new UserException("Alert not found");
 
             if (update.StatusId.HasValue)
             {
@@ -27,7 +28,7 @@ namespace SmartGuard.Services
                 if (update.StatusId.Value == 3) // Dismissed
                 {
                     if (string.IsNullOrWhiteSpace(update.DismissalReason))
-                        throw new Exception("Dismissal reason is mandatory for dismissing an alert");
+                        throw new UserException("Dismissal reason is mandatory for dismissing an alert");
 
                     entity.DismissalReason = update.DismissalReason;
 
@@ -58,7 +59,7 @@ namespace SmartGuard.Services
             };
 
             if (!isValid)
-                throw new Exception($"Invalid status transition from {currentStatusId} to {newStatusId}");
+                throw new UserException($"Invalid status transition from {currentStatusId} to {newStatusId}");
         }
     }
 }

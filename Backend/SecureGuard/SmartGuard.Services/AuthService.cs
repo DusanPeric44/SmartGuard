@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -51,7 +52,7 @@ namespace SmartGuard.Services
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                throw new Exception("User already exists");
+                throw new UserException("User already exists");
             }
 
             var user = new ApplicationUser
@@ -59,13 +60,14 @@ namespace SmartGuard.Services
                 Email = request.Email,
                 UserName = request.Email,
                 FirstName = request.FirstName,
-                LastName = request.LastName
+                LastName = request.LastName,
+                RegistrationKey = Guid.NewGuid().ToString()
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
-                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+                throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
             // Assign default role
@@ -87,7 +89,7 @@ namespace SmartGuard.Services
 
             if (expiryDateTimeUtc > DateTime.UtcNow)
             {
-                throw new Exception("Token has not expired yet");
+                throw new UserException("Token has not expired yet");
             }
 
             var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
@@ -106,7 +108,7 @@ namespace SmartGuard.Services
             _context.RefreshTokens.Update(storedRefreshToken);
             await _context.SaveChangesAsync();
 
-            var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            var user = await _userManager.FindByEmailAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
             return await GenerateAuthResponseAsync(user!);
         }
 
@@ -133,19 +135,19 @@ namespace SmartGuard.Services
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new UserException("User not found");
 
             var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
             if (!result.Succeeded)
             {
-                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+                throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
             }
         }
 
-        public async Task<UserDto> GetCurrentUserAsync(string userId)
+        public async Task<UserDto> GetCurrentUserAsync(string email)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) throw new Exception("User not found");
+            var user = await _userManager.FindByEmailAsync(email) 
+                ?? throw new UserException("User not found");
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -155,8 +157,17 @@ namespace SmartGuard.Services
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Roles = roles.ToList()
+                RegistrationKey = user.RegistrationKey,
+                Role = roles.FirstOrDefault() ?? string.Empty
             };
+        }
+
+        public async Task<string> GetRegistrationKeyAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email)
+                ?? throw new UserException("User not found");
+
+            return user.RegistrationKey;
         }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user)
@@ -170,7 +181,7 @@ namespace SmartGuard.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Email!),
                 new Claim("FirstName", user.FirstName),
                 new Claim("LastName", user.LastName)
             };
@@ -213,7 +224,8 @@ namespace SmartGuard.Services
                     Email = user.Email!,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    Roles = roles.ToList()
+                    RegistrationKey = user.RegistrationKey,
+                    Role = roles.FirstOrDefault() ?? string.Empty
                 }
             };
         }

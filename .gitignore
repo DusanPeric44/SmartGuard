@@ -28,6 +28,7 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln.docstates
+.trae/*
 
 ############################################
 # BACKEND - .NET 8 (C#)
@@ -96,6 +97,8 @@ Backend/**/secrets.json
 Desktop/windows/flutter/ephemeral/
 Desktop/windows/runner/Debug/
 Desktop/windows/runner/Release/
+Desktop/.trae/
+Desktop/SmartGuardDesktop/
 
 # macOS
 Desktop/macos/Flutter/ephemeral/
@@ -114,6 +117,8 @@ Desktop/linux/flutter/ephemeral/
 Mobile/android/.gradle/
 Mobile/android/app/build/
 Mobile/android/build/
+Mobile/.trae/
+Mobile/SmartGuardMobile/
 
 # Local config
 Mobile/android/local.properties

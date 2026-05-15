@@ -322,6 +322,10 @@ namespace SmartGuard.Services.Database.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("RegistrationKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -429,11 +433,11 @@ namespace SmartGuard.Services.Database.Migrations
                     b.Property<long>("FreeSpace")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("IPAddress")
+                    b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Location")
+                    b.Property<string>("MacAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
