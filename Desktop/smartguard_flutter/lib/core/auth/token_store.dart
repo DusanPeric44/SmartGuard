@@ -6,12 +6,15 @@ abstract class TokenStore {
   Future<void> setToken(String token);
   Future<UserRole?> getRole();
   Future<void> setRole(UserRole role);
+  Future<String?> getRegistrationKey();
+  Future<void> setRegistrationKey(String key);
   Future<void> clear();
 }
 
 class MemoryTokenStore implements TokenStore {
   String? _token;
   UserRole? _role;
+  String? _registrationKey;
 
   @override
   Future<String?> getToken() async => _token;
@@ -30,9 +33,18 @@ class MemoryTokenStore implements TokenStore {
   }
 
   @override
+  Future<String?> getRegistrationKey() async => _registrationKey;
+
+  @override
+  Future<void> setRegistrationKey(String key) async {
+    _registrationKey = key;
+  }
+
+  @override
   Future<void> clear() async {
     _token = null;
     _role = null;
+    _registrationKey = null;
   }
 }
 
@@ -41,6 +53,7 @@ class SharedPrefsTokenStore implements TokenStore {
 
   static const _tokenKey = 'smartguard.auth.token';
   static const _roleKey = 'smartguard.auth.role';
+  static const _registrationKey = 'smartguard.auth.registration_key';
 
   final SharedPreferences _prefs;
 
@@ -70,8 +83,17 @@ class SharedPrefsTokenStore implements TokenStore {
   }
 
   @override
+  Future<String?> getRegistrationKey() async => _prefs.getString(_registrationKey);
+
+  @override
+  Future<void> setRegistrationKey(String key) async {
+    await _prefs.setString(_registrationKey, key);
+  }
+
+  @override
   Future<void> clear() async {
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_roleKey);
+    await _prefs.remove(_registrationKey);
   }
 }

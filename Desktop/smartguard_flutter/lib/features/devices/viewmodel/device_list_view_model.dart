@@ -25,14 +25,30 @@ class DeviceListViewModel extends ChangeNotifier {
   String _search = '';
   DeviceStatus? _status;
 
+  int _page = 1;
+  int _pageSize = 20;
+  int _totalCount = 0;
+  bool _hasMore = false;
+
   Timer? _debounce;
+
+  bool _isProvisioning = false;
+  bool get isProvisioning => _isProvisioning;
+
+  String? _provisioningStatus;
+  String? get provisioningStatus => _provisioningStatus;
 
   String get search => _search;
   DeviceStatus? get status => _status;
+  int get page => _page;
+  int get pageSize => _pageSize;
+  int get totalCount => _totalCount;
+  bool get hasMore => _hasMore;
 
   Future<void> init() async {
     await load();
   }
+
 
   @override
   void dispose() {
@@ -54,15 +70,113 @@ class DeviceListViewModel extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    _page = 1;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _items = await _repository.list(search: _search, status: _status);
+      final pagedResult = await _repository.list(
+        search: _search,
+        status: _status,
+        page: _page,
+        pageSize: _pageSize,
+      );
+      _items = pagedResult.result;
+      _totalCount = pagedResult.count;
+      _hasMore = _items.length < _totalCount;
     } catch (e) {
       _errorMessage = UiErrorMapper.toMessage(e);
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) return;
+
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _page++;
+      final pagedResult = await _repository.list(
+        search: _search,
+        status: _status,
+        page: _page,
+        pageSize: _pageSize,
+      );
+      _items = [..._items, ...pagedResult.result];
+      _totalCount = pagedResult.count;
+      _hasMore = _items.length < _totalCount;
+    } catch (e) {
+      _errorMessage = UiErrorMapper.toMessage(e);
+      _page--; // Revert page on error
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+  Future<String?> provisionDevice({
+    required String ssid,
+    required String password,
+    required String registrationKey,
+  }) async {
+    _isProvisioning = true;
+    _provisioningStatus = 'Slanje podataka uređaju...';
+    notifyListeners();
+
+    try {
+      // 1. Send to ESP32 via repository
+      await _repository.provisionDevice(
+        ssid: ssid,
+        password: password,
+        registrationKey: registrationKey,
+      );
+
+      // 2. Poll for new device
+      _provisioningStatus = 'Čekanje na registraciju uređaja...';
+      notifyListeners();
+
+      final existingIds = _items.map((e) => e.id).toSet();
+      final startTime = DateTime.now();
+      
+      while (DateTime.now().difference(startTime).inSeconds < 30) {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        
+        try {
+          final pagedResult = await _repository.list();
+          final currentItems = pagedResult.result;
+          final newDevice = currentItems.firstWhere(
+            (it) => !existingIds.contains(it.id),
+            orElse: () => const DeviceRow(
+              id: '',
+              name: '',
+              ipAddress: '',
+              status: DeviceStatus.offline,
+              isActive: false,
+              storageUsedGb: 0,
+              storageTotalGb: 0,
+            ),
+          );
+
+          if (newDevice.id.isNotEmpty) {
+            _items = currentItems;
+            return newDevice.id;
+          }
+        } catch (_) {
+          // Ignore polling errors
+        }
+      }
+
+      return null;
+    } catch (e) {
+      _errorMessage = UiErrorMapper.toMessage(e);
+      return null;
+    } finally {
+      _isProvisioning = false;
+      _provisioningStatus = null;
       notifyListeners();
     }
   }

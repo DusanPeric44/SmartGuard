@@ -13,7 +13,7 @@ void setupStreamManager(const char* host, int port, const char* path);
 /**
  * Handles the background tasks for streaming.
  */
-void handleStream();
+void handleStream(camera_fb_t* fb);
 
 /**
  * Starts streaming if a user is connected.

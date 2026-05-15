@@ -10,7 +10,7 @@
 #define PIR_PIN 13
 #define SIGNALR_HOST "192.168.100.60"
 #define SIGNALR_PORT 5000
-#define SIGNALR_PATH "/hub/camera"
+#define SIGNALR_PATH "/api/esp32/ws?deviceId=esp32-cam-01"
 #define BACKEND_SYNC_URL "http://192.168.100.60:5000/upload"
 
 void setup() {
@@ -18,8 +18,11 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
-  // 1. WiFi Provisioning
-  setupWifiProvisioning();
+  // 1. WiFi Connection or Provisioning
+  if (!connectToStoredWifi()) {
+    Serial.println("Starting WiFi Provisioning...");
+    setupWifiProvisioning();
+  }
 
   // 2. Camera Initialization
   Serial.println("Initializing Camera...");
@@ -108,7 +111,7 @@ unsigned long lastSyncTime = 0;
 const unsigned long SYNC_INTERVAL = 300000; // Sync every 5 minutes
 
 void loop() {
-  // Capture a frame for security and recording
+  // Capture a single frame for all components
   camera_fb_t* fb = esp_camera_fb_get();
   
   if (fb) {
@@ -119,11 +122,14 @@ void loop() {
     handleRecording(motionDetected);
     recordFrame(fb);
 
-    esp_camera_fb_return(fb);
-  }
+    // 6. Streaming (Pass the existing frame)
+    handleStream(fb);
 
-  // 6. SignalR Communication & Streaming
-  handleStream();
+    esp_camera_fb_return(fb);
+  } else {
+    // If no frame, still call handleStream to process WebSocket events/pings
+    handleStream(NULL);
+  }
 
   // 7. Background Sync
   if (millis() - lastSyncTime > SYNC_INTERVAL) {

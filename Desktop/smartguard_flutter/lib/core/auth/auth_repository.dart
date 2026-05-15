@@ -4,11 +4,9 @@ import 'package:smartguard_flutter/core/config/app_config.dart';
 import 'package:smartguard_flutter/core/network/api_client.dart';
 
 class AuthRepository {
-  AuthRepository({
-    required ApiClient api,
-    required TokenStore tokenStore,
-  })  : _api = api,
-        _tokenStore = tokenStore;
+  AuthRepository({required ApiClient api, required TokenStore tokenStore})
+    : _api = api,
+      _tokenStore = tokenStore;
 
   final ApiClient _api;
   final TokenStore _tokenStore;
@@ -25,10 +23,7 @@ class AuthRepository {
 
     final json = await _api.post<Object?>(
       '/auth/login',
-      body: {
-        'username': username,
-        'password': password,
-      },
+      body: {'email': username, 'password': password},
     );
 
     final token = _extractToken(json);
@@ -38,6 +33,23 @@ class AuthRepository {
 
     await _tokenStore.setToken(token);
     await _tokenStore.setRole(_extractRole(json) ?? UserRole.viewer);
+  }
+
+  Future<String?> fetchRegistrationKey() async {
+    if (AppConfig.enableStubAuth) {
+      return 'stub-registration-key-123';
+    }
+
+    try {
+      final json = await _api.get<Object?>('/auth/registration-key');
+      if (json is Map && json.containsKey('registrationKey')) {
+        return json['registrationKey'] as String?;
+      }
+      if (json is String) return json;
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> logout() async {

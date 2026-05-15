@@ -45,7 +45,12 @@ class StubDevicesRepository implements DevicesRepository {
   late final Map<String, Set<String>> _assignments;
 
   @override
-  Future<List<DeviceRow>> list({String? search, DeviceStatus? status}) async {
+  Future<PagedResult<DeviceRow>> list({
+    String? search,
+    DeviceStatus? status,
+    int? page,
+    int? pageSize,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 180));
     Iterable<DeviceRow> items = _devices;
     if (status != null) {
@@ -59,8 +64,23 @@ class StubDevicesRepository implements DevicesRepository {
             d.ipAddress.toLowerCase().contains(q);
       });
     }
-    return items.toList(growable: false);
+
+    final totalCount = items.length;
+    if (page != null && pageSize != null) {
+      final start = (page - 1) * pageSize;
+      if (start < items.length) {
+        items = items.skip(start).take(pageSize);
+      } else {
+        items = const [];
+      }
+    }
+
+    return PagedResult(
+      count: totalCount,
+      result: items.toList(growable: false),
+    );
   }
+
 
   @override
   Future<DeviceDetails> getDetails(String deviceId) async {
@@ -96,6 +116,29 @@ class StubDevicesRepository implements DevicesRepository {
   Future<List<DeviceUser>> listUsers() async {
     await Future<void>.delayed(const Duration(milliseconds: 160));
     return List<DeviceUser>.from(_users);
+  }
+
+  @override
+  Future<void> provisionDevice({
+    required String ssid,
+    required String password,
+    required String registrationKey,
+  }) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    // Simulate device appearing in the list after some time
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      final newId = 'camera-${(_devices.length + 1).toString().padLeft(2, '0')}';
+      _devices.add(DeviceRow(
+        id: newId,
+        name: 'New Camera',
+        ipAddress: '192.168.1.${100 + _devices.length}',
+        status: DeviceStatus.online,
+        storageTotalGb: 512,
+        storageUsedGb: 0,
+        isActive: true,
+      ));
+      _assignments[newId] = {'u2'};
+    });
   }
 }
 

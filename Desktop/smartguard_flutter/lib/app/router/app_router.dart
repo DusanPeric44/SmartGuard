@@ -37,12 +37,17 @@ GoRouter buildRouter({
         ).toString();
       }
 
-      final isAdmin = auth.role == UserRole.admin;
-      if (!isAdmin) {
+      final role = auth.role;
+      final canAccess = role == UserRole.admin || role == UserRole.homeowner;
+      if (!canAccess) {
         return isAccessDenied ? null : '/access-denied';
       }
 
       if (isAccessDenied) return '/dashboard';
+
+      if (state.matchedLocation.startsWith('/devices') && role == UserRole.admin) {
+        return '/dashboard';
+      }
 
       if (isLoggingIn) {
         final from = state.uri.queryParameters['from'];

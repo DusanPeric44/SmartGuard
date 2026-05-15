@@ -11,6 +11,12 @@
 void setupWifiProvisioning();
 
 /**
+ * Attempts to connect to WiFi using stored credentials.
+ * Returns true if connected, false otherwise.
+ */
+bool connectToStoredWifi();
+
+/**
  * Returns the registration key (apiKey) received during provisioning.
  */
 String getRegistrationKey();

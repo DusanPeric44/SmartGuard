@@ -22,11 +22,23 @@ class AuthController extends ChangeNotifier {
   UserRole _role = UserRole.viewer;
   UserRole get role => _role;
 
+  String? _registrationKey;
+  String? get registrationKey => _registrationKey;
+
   Future<void> init() async {
     _isInitializing = true;
     notifyListeners();
     _isAuthenticated = await _repository.hasToken();
     _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
+    _registrationKey = await _tokenStore.getRegistrationKey();
+
+    if (_isAuthenticated && _role == UserRole.homeowner && _registrationKey == null) {
+      _registrationKey = await _repository.fetchRegistrationKey();
+      if (_registrationKey != null) {
+        await _tokenStore.setRegistrationKey(_registrationKey!);
+      }
+    }
+
     _isInitializing = false;
     notifyListeners();
   }
@@ -38,6 +50,14 @@ class AuthController extends ChangeNotifier {
     await _repository.login(username: username, password: password);
     _isAuthenticated = true;
     _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
+
+    if (_role == UserRole.homeowner) {
+      _registrationKey = await _repository.fetchRegistrationKey();
+      if (_registrationKey != null) {
+        await _tokenStore.setRegistrationKey(_registrationKey!);
+      }
+    }
+
     notifyListeners();
   }
 
@@ -45,6 +65,7 @@ class AuthController extends ChangeNotifier {
     await _repository.logout();
     _isAuthenticated = false;
     _role = UserRole.viewer;
+    _registrationKey = null;
     notifyListeners();
   }
 
@@ -53,6 +74,7 @@ class AuthController extends ChangeNotifier {
     if (_isAuthenticated) {
       _isAuthenticated = false;
       _role = UserRole.viewer;
+      _registrationKey = null;
       notifyListeners();
     }
   }

@@ -21,8 +21,6 @@ void setupSecurityManager(int pirPin) {
   _pirPin = pirPin;
   pinMode(_pirPin, INPUT);
 
-  preferences.begin("smartguard", false);
-
   // Initialize face detection config (copied from boilerplate)
   mtmn_config.type = FAST;
   mtmn_config.min_face = 80;
@@ -66,7 +64,9 @@ bool registerDevice(const char* serverUrl, const char* registrationKey) {
     
     String deviceToken = resDoc["apiKey"];
     if (deviceToken != "") {
+      preferences.begin("smartguard", false);
       preferences.putString("device_token", deviceToken);
+      preferences.end();
       Serial.println("Device registered successfully. Token saved.");
       success = true;
     }
@@ -80,7 +80,10 @@ bool registerDevice(const char* serverUrl, const char* registrationKey) {
 }
 
 String getDeviceToken() {
-  return preferences.getString("device_token", "");
+  preferences.begin("smartguard", true);
+  String token = preferences.getString("device_token", "");
+  preferences.end();
+  return token;
 }
 
 void sendIntruderAlert(camera_fb_t* fb, int faceId) {
