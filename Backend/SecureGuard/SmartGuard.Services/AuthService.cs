@@ -39,6 +39,10 @@ namespace SmartGuard.Services
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted)
+            {
+                throw new UnauthorizedAccessException("Invalid email or password");
+            }
             if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
@@ -109,6 +113,10 @@ namespace SmartGuard.Services
             await _context.SaveChangesAsync();
 
             var user = await _userManager.FindByEmailAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted)
+            {
+                throw new UnauthorizedAccessException("Invalid token");
+            }
             return await GenerateAuthResponseAsync(user!);
         }
 
@@ -123,6 +131,7 @@ namespace SmartGuard.Services
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null) return; // Don't reveal that the user doesn't exist
+            if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted) return;
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             
@@ -135,7 +144,8 @@ namespace SmartGuard.Services
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null) throw new UserException("User not found");
+            if (user == null || (user is ISoftDeletable softDeletable && softDeletable.IsDeleted))
+                throw new UserException("User not found");
 
             var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
             if (!result.Succeeded)

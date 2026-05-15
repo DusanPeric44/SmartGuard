@@ -36,4 +36,9 @@ bool registerDevice(const char* serverUrl, const char* registrationKey);
  */
 String getDeviceToken();
 
+/**
+ * Retrieves the device id from NVS.
+ */
+int getDeviceId();
+
 #endif

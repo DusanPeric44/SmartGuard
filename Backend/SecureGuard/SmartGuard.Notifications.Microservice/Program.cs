@@ -1,4 +1,5 @@
 using MassTransit;
+using SmartGuard.Model.Options;
 using SmartGuard.Notifications.Microservice.Consumers;
 using SmartGuard.Notifications.Microservice.Interfaces;
 using SmartGuard.Notifications.Microservice.Services;
@@ -6,6 +7,7 @@ using SmartGuard.Notifications.Microservice.Services;
 var builder = Host.CreateApplicationBuilder(args);
 
 // Add Services
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 builder.Services.AddSingleton<IMailingService, MailingService>();
 builder.Services.AddSingleton<IFCMService, FCMService>();
 

@@ -56,6 +56,7 @@ void startNewSegment() {
 }
 
 void handleRecording(bool isTriggered) {
+  return;
   if (!isSDInitialized) return;
 
   if (!isRecording) {

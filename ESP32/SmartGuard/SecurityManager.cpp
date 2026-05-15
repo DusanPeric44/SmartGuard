@@ -62,13 +62,22 @@ bool registerDevice(const char* serverUrl, const char* registrationKey) {
     JsonDocument resDoc;
     deserializeJson(resDoc, response);
     
-    String deviceToken = resDoc["apiKey"];
-    if (deviceToken != "") {
+    String deviceToken = resDoc["apiKey"] | "";
+    int deviceId = resDoc["id"] | 0;
+    if (deviceId <= 0) deviceId = resDoc["Id"] | 0;
+
+    if (deviceToken != "" && deviceId > 0) {
       preferences.begin("smartguard", false);
       preferences.putString("device_token", deviceToken);
+      preferences.putInt("device_id", deviceId);
       preferences.end();
-      Serial.println("Device registered successfully. Token saved.");
+      Serial.printf("Device registered successfully. Token and ID saved (id=%d).\n", deviceId);
       success = true;
+    } else {
+      Serial.print("Registration response missing required fields. tokenLength=");
+      Serial.print(deviceToken.length());
+      Serial.print(" deviceId=");
+      Serial.println(deviceId);
     }
   } else {
     Serial.print("Error on registration: ");
@@ -84,6 +93,13 @@ String getDeviceToken() {
   String token = preferences.getString("device_token", "");
   preferences.end();
   return token;
+}
+
+int getDeviceId() {
+  preferences.begin("smartguard", true);
+  int id = preferences.getInt("device_id", 0);
+  preferences.end();
+  return id;
 }
 
 void sendIntruderAlert(camera_fb_t* fb, int faceId) {
