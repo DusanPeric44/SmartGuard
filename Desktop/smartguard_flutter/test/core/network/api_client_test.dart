@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/core/network/api_client.dart';
 import 'package:smartguard_flutter/core/network/api_error.dart';
 
@@ -9,11 +10,24 @@ void main() {
     test('invokes unauthorized handler on 401 response', () async {
       var unauthorizedCalled = false;
 
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 401,
+                data: utf8.encode('{"message":"Token expired"}'),
+              ),
+            );
+          },
+        ),
+      );
+
       final client = ApiClient(
         baseUri: Uri.parse('http://localhost:8080/'),
-        httpClient: MockClient((request) async {
-          return http.Response('{"message":"Token expired"}', 401);
-        }),
+        dio: dio,
         onUnauthorized: () async {
           unauthorizedCalled = true;
         },

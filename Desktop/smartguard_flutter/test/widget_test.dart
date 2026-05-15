@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
 import 'package:smartguard_flutter/app/app.dart';
 import 'package:smartguard_flutter/app/router/app_router.dart';
@@ -17,7 +15,6 @@ void main() {
 
     final api = ApiClient(
       baseUri: Uri.parse('http://localhost:8080/'),
-      httpClient: MockClient((request) async => http.Response('{}', 200)),
       tokenProvider: tokenStore.getToken,
       onUnauthorized: () async => auth.handleUnauthorized(),
     );
