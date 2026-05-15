@@ -40,6 +40,9 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   signalr_netcore: ^1.4.3
   dio: ^5.9.0
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
