@@ -91,6 +91,12 @@ class ApiDevicesRepository implements DevicesRepository {
               .map((i) => DeviceUser.fromJson(i as Map<String, dynamic>))
               .toList();
         }
+        if (json is Map<String, dynamic>) {
+          final items = json['result'] as List? ?? const [];
+          return items
+              .map((i) => DeviceUser.fromJson(i as Map<String, dynamic>))
+              .toList();
+        }
         throw Exception('Invalid response format');
       },
     );

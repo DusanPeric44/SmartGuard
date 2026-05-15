@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+  import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/app/app.dart';
 import 'package:smartguard_flutter/app/router/app_router.dart';
 import 'package:smartguard_flutter/core/auth/auth_controller.dart';
@@ -15,8 +18,98 @@ void main() {
     final tokenStore = MemoryTokenStore();
     late final AuthController auth;
 
+    final dio = Dio();
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final path = options.uri.path;
+
+          if (path == '/auth/login' && options.method == 'POST') {
+            final raw = options.data?.toString() ?? '{}';
+            final body = jsonDecode(raw) as Map<String, dynamic>;
+            final email = body['email']?.toString() ?? '';
+            final role = email.toLowerCase().startsWith('admin') ? 'admin' : 'viewer';
+
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: utf8.encode(
+                  jsonEncode({'accessToken': 'stub-token', 'role': role}),
+                ),
+              ),
+            );
+            return;
+          }
+
+          if (path == '/auth/registration-key' && options.method == 'GET') {
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: utf8.encode(jsonEncode({'registrationKey': 'stub-key'})),
+              ),
+            );
+            return;
+          }
+
+          if (path == '/devices/details/camera-01' && options.method == 'GET') {
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: utf8.encode(
+                  jsonEncode({
+                    'device': {
+                      'id': 'camera-01',
+                      'name': 'Camera 01',
+                      'ipAddress': '192.168.1.10',
+                      'status': 'online',
+                      'storageTotalGb': 512,
+                      'storageUsedGb': 12,
+                      'isActive': true,
+                    },
+                    'assignedUsers': [
+                      {'id': 'u2', 'username': 'home01'},
+                    ],
+                    'lastSeenAt': DateTime.now().toIso8601String(),
+                  }),
+                ),
+              ),
+            );
+            return;
+          }
+
+          if (path == '/users' && options.method == 'GET') {
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: utf8.encode(
+                  jsonEncode([
+                    {'id': 'u1', 'username': 'admin01'},
+                    {'id': 'u2', 'username': 'home01'},
+                  ]),
+                ),
+              ),
+            );
+            return;
+          }
+
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 404,
+              data: utf8.encode(jsonEncode({'message': 'Not found'})),
+            ),
+          );
+        },
+      ),
+    );
+
     final api = ApiClient(
       baseUri: Uri.parse('http://localhost:8080/'),
+      dio: dio,
       tokenProvider: tokenStore.getToken,
       onUnauthorized: () async => auth.handleUnauthorized(),
     );
@@ -54,8 +147,44 @@ void main() {
     final tokenStore = MemoryTokenStore();
     late final AuthController auth;
 
+    final dio = Dio();
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final path = options.uri.path;
+
+          if (path == '/auth/login' && options.method == 'POST') {
+            final raw = options.data?.toString() ?? '{}';
+            final body = jsonDecode(raw) as Map<String, dynamic>;
+            final email = body['email']?.toString() ?? '';
+            final role = email.toLowerCase().startsWith('admin') ? 'admin' : 'viewer';
+
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: utf8.encode(
+                  jsonEncode({'accessToken': 'stub-token', 'role': role}),
+                ),
+              ),
+            );
+            return;
+          }
+
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 404,
+              data: utf8.encode(jsonEncode({'message': 'Not found'})),
+            ),
+          );
+        },
+      ),
+    );
+
     final api = ApiClient(
       baseUri: Uri.parse('http://localhost:8080/'),
+      dio: dio,
       tokenProvider: tokenStore.getToken,
       onUnauthorized: () async => auth.handleUnauthorized(),
     );

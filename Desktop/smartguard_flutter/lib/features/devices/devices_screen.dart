@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/core/auth/app_capabilities.dart';
-import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/devices/data/api_devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/data/devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
