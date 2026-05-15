@@ -92,7 +92,7 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   HTTPClient http;
   // Use a generic approach or a passed-in host. For now, let's use a placeholder that won't crash.
   // Ideally, this should be configured in setupSecurityManager
-  String url = "http://192.168.100.60:5000/security/intruder"; 
+  String url = "http://192.168.8.133:5000/security/intruder"; 
   http.begin(url);
   http.addHeader("Content-Type", "image/jpeg");
   http.addHeader("X-Face-ID", String(faceId));
@@ -106,7 +106,7 @@ void sendSafeMotionAlert() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin("http://192.168.100.60:5000/security/safe-motion");
+  http.begin("http://192.168.8.133:5000/security/safe-motion");
   http.POST("{\"message\": \"Safe person detected\"}");
   http.end();
 }

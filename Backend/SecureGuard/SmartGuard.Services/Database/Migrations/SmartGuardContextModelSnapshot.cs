@@ -186,7 +186,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("FaceEventId");
 
-                    b.ToTable("AIAnalysisResults");
+                    b.ToTable("AIAnalysisResults", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.Alert", b =>
@@ -235,7 +235,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("TypeId");
 
-                    b.ToTable("Alerts");
+                    b.ToTable("Alerts", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.AlertStatus", b =>
@@ -252,7 +252,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AlertStatuses");
+                    b.ToTable("AlertStatuses", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.AlertType", b =>
@@ -269,7 +269,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AlertTypes");
+                    b.ToTable("AlertTypes", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.ApplicationUser", b =>
@@ -376,7 +376,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.City", b =>
@@ -398,7 +398,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("CountryId");
 
-                    b.ToTable("Cities");
+                    b.ToTable("Cities", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.Country", b =>
@@ -415,7 +415,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Countries", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.Device", b =>
@@ -455,7 +455,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("StatusId");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.DeviceStatus", b =>
@@ -472,7 +472,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DeviceStatuses");
+                    b.ToTable("DeviceStatuses", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.FaceDetectionEvent", b =>
@@ -506,7 +506,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("PersonId");
 
-                    b.ToTable("FaceDetectionEvents");
+                    b.ToTable("FaceDetectionEvents", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.KnownPerson", b =>
@@ -545,7 +545,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("KnownPersons");
+                    b.ToTable("KnownPersons", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.Notification", b =>
@@ -578,7 +578,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.Recording", b =>
@@ -622,7 +622,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("TypeId");
 
-                    b.ToTable("Recordings");
+                    b.ToTable("Recordings", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.RecordingStatus", b =>
@@ -639,7 +639,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RecordingStatuses");
+                    b.ToTable("RecordingStatuses", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.RecordingType", b =>
@@ -656,7 +656,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RecordingTypes");
+                    b.ToTable("RecordingTypes", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.RefreshToken", b =>
@@ -695,7 +695,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.ScheduledRecording", b =>
@@ -726,7 +726,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("DeviceId");
 
-                    b.ToTable("ScheduledRecordings");
+                    b.ToTable("ScheduledRecordings", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.UserDeviceAccess", b =>
@@ -756,7 +756,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDeviceAccesses");
+                    b.ToTable("UserDeviceAccesses", (string)null);
                 });
 
             modelBuilder.Entity("SmartGuard.Services.Database.UserNotificationPreference", b =>
@@ -791,7 +791,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserNotificationPreferences");
+                    b.ToTable("UserNotificationPreferences", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

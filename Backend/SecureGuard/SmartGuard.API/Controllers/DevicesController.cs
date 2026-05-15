@@ -21,7 +21,15 @@ namespace SmartGuard.API.Controllers
         [HttpGet("my")]
         public async Task<PagedResult<Device>> GetMyDevices([FromQuery] DeviceSearchObject search = null)
         {
-            return await _service.GetAsync(search);
+            return await _devicesService.GetAsync(search);
+        }
+
+        [HttpGet("details/{id}")]
+        public new async Task<ActionResult<DeviceDetails>> GetById(int id)
+        {
+            var result = await _devicesService.GetDetailsAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
         }
 
         [HttpPatch("{id}/status")]

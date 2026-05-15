@@ -5,6 +5,7 @@ using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
 using SmartGuard.Services.Database;
+using Mapster;
 
 namespace SmartGuard.Services
 {
@@ -127,6 +128,30 @@ namespace SmartGuard.Services
                 Location = device.Location,
                 ApiKey = device.ApiKey
             };
+        }
+
+        public async Task<DeviceDetails> GetDetailsAsync(int id)
+        {
+            var entity = await _context.Devices
+                .Include(d => d.DeviceStatus)
+                .Include(d => d.UserDeviceAccesses)
+                    .ThenInclude(a => a.User)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (entity == null) return null;
+
+            var details = new DeviceDetails
+            {
+                Device = entity.Adapt<Model.DTOs.Device>(),
+                AssignedUsers = entity.UserDeviceAccesses.Select(a => new DeviceUserDto
+                {
+                    Id = a.User.Id,
+                    Username = a.User.UserName
+                }).ToList(),
+                LastSeenAt = DateTime.Now // TODO: Track actual last seen time if needed
+            };
+
+            return details;
         }
     }
 }

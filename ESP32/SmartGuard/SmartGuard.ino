@@ -8,10 +8,10 @@
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "192.168.100.60"
+#define SIGNALR_HOST "192.168.8.133"
 #define SIGNALR_PORT 5000
 #define SIGNALR_PATH "/api/esp32/ws?deviceId=esp32-cam-01"
-#define BACKEND_SYNC_URL "http://192.168.100.60:5000/upload"
+#define BACKEND_SYNC_URL "http://192.168.8.133:5000/upload"
 
 void setup() {
   Serial.begin(115200);
@@ -92,7 +92,7 @@ void setup() {
     String registrationKey = getRegistrationKey();
     if (registrationKey != "") {
       Serial.println("Attempting to connect with registartion key: " + registrationKey);
-      if (registerDevice("http://192.168.100.60:5000", registrationKey.c_str())) {
+      if (registerDevice("http://192.168.8.133:5000", registrationKey.c_str())) {
         Serial.println("Device registered successfully!");
       } else {
         Serial.println("Device registration failed.");
@@ -111,6 +111,9 @@ unsigned long lastSyncTime = 0;
 const unsigned long SYNC_INTERVAL = 300000; // Sync every 5 minutes
 
 void loop() {
+  // Ensure WebSocket is serviced even if subsequent operations take time
+  handleStream(NULL);
+
   // Capture a single frame for all components
   camera_fb_t* fb = esp_camera_fb_get();
   

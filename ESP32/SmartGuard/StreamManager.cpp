@@ -41,8 +41,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
     case WStype_DISCONNECTED:
       Serial.println("[Stream] Disconnected from WebSocket Bridge");
+      if (length > 0) {
+        Serial.printf("[Stream] Disconnect reason: %s\n", (char*)payload);
+      }
       isHubConnected = false;
       isStreamingEnabled = false;
+      break;
+    case WStype_ERROR:
+      Serial.printf("[Stream] WebSocket Error: %s\n", (char*)payload);
       break;
     case WStype_CONNECTED:
       Serial.println("[Stream] Connected to WebSocket Bridge.");
@@ -88,6 +94,9 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 }
 
 void setupStreamManager(const char* host, int port, const char* path) {
+  // Disable WiFi sleep for better performance and to prevent handshake timeouts
+  WiFi.setSleep(false);
+  
   // Use the parameters passed from SmartGuard.ino
   webSocket.begin(host, port, path);
   webSocket.onEvent(webSocketEvent);

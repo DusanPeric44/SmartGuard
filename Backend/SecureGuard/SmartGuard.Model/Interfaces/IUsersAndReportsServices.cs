@@ -1,8 +1,9 @@
 using SmartGuard.Model.SearchObjects;
+using SmartGuard.Model.DTOs;
 
 namespace SmartGuard.Model.Interfaces
 {
-    public interface IUsersService : IBaseGetService<object, BaseSearchObject>
+    public interface IUsersService : IBaseGetService<UserDto, BaseSearchObject>
     {
     }
 
