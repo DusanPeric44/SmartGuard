@@ -70,7 +70,7 @@ void main() {
                       'isActive': true,
                     },
                     'assignedUsers': [
-                      {'id': 'u2', 'username': 'home01'},
+                      {'id': 'u2', 'email': 'home01@example.com'},
                     ],
                     'lastSeenAt': DateTime.now().toIso8601String(),
                   }),
@@ -87,8 +87,8 @@ void main() {
                 statusCode: 200,
                 data: utf8.encode(
                   jsonEncode([
-                    {'id': 'u1', 'username': 'admin01'},
-                    {'id': 'u2', 'username': 'home01'},
+                    {'id': 'u1', 'email': 'admin01@example.com'},
+                    {'id': 'u2', 'email': 'home01@example.com'},
                   ]),
                 ),
               ),

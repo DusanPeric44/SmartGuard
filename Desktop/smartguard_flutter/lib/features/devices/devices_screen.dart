@@ -634,7 +634,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                               children: [
                                 const Icon(Icons.person_outline),
                                 const SizedBox(width: 8),
-                                Text(u.username),
+                                Text(u.email),
                               ],
                             ),
                           ),
@@ -702,7 +702,7 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
     final filtered = q.isEmpty
         ? widget.allUsers
         : widget.allUsers
-              .where((u) => u.username.toLowerCase().contains(q))
+              .where((u) => u.email.toLowerCase().contains(q))
               .toList(growable: false);
 
     return AlertDialog(
@@ -738,7 +738,7 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
                         }
                       });
                     },
-                    title: Text(u.username),
+                    title: Text(u.email),
                   );
                 },
               ),

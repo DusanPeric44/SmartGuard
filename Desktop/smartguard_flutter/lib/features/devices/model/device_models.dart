@@ -1,10 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum DeviceStatus {
-  online,
-  offline,
-  maintenance,
-}
+enum DeviceStatus { online, offline, maintenance }
 
 @immutable
 class DeviceRow {
@@ -81,18 +77,15 @@ class DeviceRow {
 
 @immutable
 class DeviceUser {
-  const DeviceUser({
-    required this.id,
-    required this.username,
-  });
+  const DeviceUser({required this.id, required this.email});
 
   final String id;
-  final String username;
+  final String email;
 
   factory DeviceUser.fromJson(Map<String, dynamic> json) {
     return DeviceUser(
       id: json['id']?.toString() ?? '',
-      username: json['username']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
     );
   }
 }
@@ -113,22 +106,22 @@ class DeviceDetails {
     final users = json['assignedUsers'] as List?;
     return DeviceDetails(
       device: DeviceRow.fromJson(json['device'] as Map<String, dynamic>),
-      assignedUsers: users?.map((u) => DeviceUser.fromJson(u as Map<String, dynamic>)).toList() ?? [],
-      lastSeenAt: DateTime.tryParse(json['lastSeenAt']?.toString() ?? '') ?? DateTime.now(),
+      assignedUsers:
+          users
+              ?.map((u) => DeviceUser.fromJson(u as Map<String, dynamic>))
+              .toList() ??
+          [],
+      lastSeenAt:
+          DateTime.tryParse(json['lastSeenAt']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 }
 
-
 @immutable
 class PagedResult<T> {
-  const PagedResult({
-    required this.count,
-    required this.result,
-  });
+  const PagedResult({required this.count, required this.result});
 
   final int count;
   final List<T> result;
 }
-
-
