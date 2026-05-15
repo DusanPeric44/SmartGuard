@@ -19,6 +19,7 @@ namespace SmartGuard.Services
             services.AddScoped<IScheduledRecordingsService, ScheduledRecordingsService>();
             services.AddScoped<IUserDeviceAccessService, UserDeviceAccessService>();
             services.AddScoped<IUserNotificationPreferencesService, UserNotificationPreferencesService>();
+            services.AddScoped<IUserPushTokensService, UserPushTokensService>();
             services.AddScoped<IUsersService, UsersService>();
             services.AddScoped<IReportsService, ReportsService>();
             services.AddScoped<IAuthService, AuthService>();

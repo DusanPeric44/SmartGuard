@@ -106,12 +106,12 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  // Use a generic approach or a passed-in host. For now, let's use a placeholder that won't crash.
-  // Ideally, this should be configured in setupSecurityManager
-  String url = "http://192.168.8.133:5000/security/intruder"; 
+  String url = "http://192.168.8.133:5000/faceDetectionEvents/detect";
   http.begin(url);
   http.addHeader("Content-Type", "image/jpeg");
-  http.addHeader("X-Face-ID", String(faceId));
+  http.addHeader("X-Face-Id", String(faceId));
+  http.addHeader("X-Device-Id", String(getDeviceId()));
+  http.addHeader("X-Device-Token", getDeviceToken());
   
   int response = http.POST(fb->buf, fb->len);
   Serial.println("Intruder alert sent. Response: " + String(response));
