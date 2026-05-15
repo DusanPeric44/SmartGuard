@@ -9,7 +9,6 @@ class ApiPaths {
   static const String updateMe = '/users/me';
   static const String changePassword = '/users/change-password';
 
-  static const String devices = '/devices';
+  static const String devices = '/devices/my';
   static String deviceById(String id) => '/devices/$id';
 }
-

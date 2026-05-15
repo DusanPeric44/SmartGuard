@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/constants/api_paths.dart';
-import 'device.dart';
+import 'devices_response.dart';
 
 abstract interface class DevicesRepository {
-  Future<List<Device>> fetchDevices();
+  Future<DevicesResponse> fetchDevices();
 }
 
 class ApiDevicesRepository implements DevicesRepository {
@@ -13,10 +13,8 @@ class ApiDevicesRepository implements DevicesRepository {
   final Dio _dio;
 
   @override
-  Future<List<Device>> fetchDevices() async {
+  Future<DevicesResponse> fetchDevices() async {
     final response = await _dio.get<Object?>(ApiPaths.devices);
-    final data = response.data;
-    if (data is! List) return const <Device>[];
-    return data.map(Device.fromJson).toList(growable: false);
+    return DevicesResponse.fromJson(response.data);
   }
 }

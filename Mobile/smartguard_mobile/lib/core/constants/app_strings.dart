@@ -19,7 +19,7 @@ class AppStrings {
   static const String actionSave = 'Save';
   static const String actionCancel = 'Cancel';
   static const String actionRetry = 'Retry';
-  static const String actionConnect = 'Connect';
+  static const String actionConnect = 'Start Stream';
   static const String actionDisconnect = 'Disconnect';
   static const String actionReconnect = 'Reconnect';
 

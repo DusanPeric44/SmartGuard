@@ -9,6 +9,7 @@ class DevicesState {
   const DevicesState({
     required this.status,
     required this.devices,
+    required this.count,
     required this.selectedDeviceId,
     required this.errorMessage,
   });
@@ -16,11 +17,13 @@ class DevicesState {
   const DevicesState.initial()
     : status = DevicesStatus.idle,
       devices = const [],
+      count = 0,
       selectedDeviceId = null,
       errorMessage = null;
 
   final DevicesStatus status;
   final List<Device> devices;
+  final int count;
   final String? selectedDeviceId;
   final String? errorMessage;
 
@@ -36,15 +39,16 @@ class DevicesState {
   DevicesState copyWith({
     DevicesStatus? status,
     List<Device>? devices,
+    int? count,
     String? selectedDeviceId,
     String? errorMessage,
   }) {
     return DevicesState(
       status: status ?? this.status,
       devices: devices ?? this.devices,
+      count: count ?? this.count,
       selectedDeviceId: selectedDeviceId ?? this.selectedDeviceId,
       errorMessage: errorMessage,
     );
   }
 }
-

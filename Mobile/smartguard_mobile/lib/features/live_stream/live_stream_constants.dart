@@ -1,7 +1,7 @@
 class LiveStreamHub {
   const LiveStreamHub._();
 
-  static const String hubPath = '/hubs/stream';
+  static const String hubPath = '/hub/camera';
 
   static const String methodStartStream = 'StartStream';
   static const String methodStopStream = 'StopStream';
