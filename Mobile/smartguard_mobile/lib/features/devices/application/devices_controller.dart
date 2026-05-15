@@ -26,12 +26,14 @@ class DevicesController extends Notifier<DevicesState> {
   Future<void> load() async {
     state = state.copyWith(status: DevicesStatus.loading, errorMessage: null);
     try {
-      final devices = await ref.read(devicesRepositoryProvider).fetchDevices();
+      final response = await ref.read(devicesRepositoryProvider).fetchDevices();
+      final devices = response.result;
       final selected =
           state.selectedDeviceId ?? (devices.isNotEmpty ? devices.first.id : null);
       state = state.copyWith(
         status: DevicesStatus.ready,
         devices: devices,
+        count: response.count,
         selectedDeviceId: selected,
       );
     } catch (e) {
