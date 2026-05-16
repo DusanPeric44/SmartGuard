@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "536317188240",
+    "project_id": "smartguard-service",
+    "storage_bucket": "smartguard-service.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536317188240:android:138693a39545f19d0a2015",
+        "android_client_info": {
+          "package_name": "com.smartguard.smart_guard_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc-scDwdK8bGrwHKmD4y5TO-leqKY70Z8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/push/push_providers.dart';
 import '../domain/settings_repository.dart';
 import 'settings_state.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
-  return const StubSettingsRepository();
+  return SecureSettingsRepository();
 });
 
 final settingsControllerProvider =
@@ -34,6 +35,9 @@ class SettingsController extends Notifier<SettingsState> {
       await ref
           .read(settingsRepositoryProvider)
           .setPushNotificationsEnabled(enabled);
+      await ref
+          .read(pushNotificationsHandlerProvider)
+          .onPushEnabledChanged(enabled);
     } catch (_) {
       state = const SettingsState.error('Neuspješno spremanje postavki');
     }

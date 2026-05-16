@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/navigation/app_router.dart';
 import 'core/navigation/deep_link_handler.dart';
+import 'core/push/push_providers.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
 
@@ -21,7 +22,9 @@ class _SmartGuardAppState extends ConsumerState<SmartGuardApp> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _deepLinkHandler.start(ref.read(goRouterProvider));
+      final router = ref.read(goRouterProvider);
+      _deepLinkHandler.start(router);
+      ref.read(pushNotificationsHandlerProvider).start(ref, router);
     });
   }
 
