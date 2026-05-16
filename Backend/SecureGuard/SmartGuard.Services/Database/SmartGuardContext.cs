@@ -35,6 +35,11 @@ namespace SmartGuard.Services.Database
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<KnownPerson>()
+                .HasIndex(x => x.FaceId)
+                .IsUnique()
+                .HasFilter("[FaceId] IS NOT NULL");
         }
     }
 }

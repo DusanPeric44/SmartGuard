@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Identity;
 
 namespace SmartGuard.Services.Database
 {
@@ -9,17 +7,15 @@ namespace SmartGuard.Services.Database
     {
         [Key]
         public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Description { get; set; }
-        public byte[] FaceEmbedding { get; set; }
-        public string Picture { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Picture { get; set; } = string.Empty;
 
-        [ForeignKey("Owner")]
-        public string OwnerId { get; set; }
-        public ApplicationUser Owner { get; set; }
+        public int? FaceId { get; set; }
+        public int DetectionCount { get; set; }
 
-        public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; }
-        public ICollection<UserNotificationPreference> UserNotificationPreferences { get; set; }
+        public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; } = null!;
+        public ICollection<UserNotificationPreference> UserNotificationPreferences { get; set; } = null!;
     }
 }

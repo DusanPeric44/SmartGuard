@@ -25,6 +25,8 @@ namespace SmartGuard.Services
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IDatabaseSeedService, DatabaseSeedService>();
             services.AddScoped<IUserContext, UserContext>();
+            services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddScoped<MediaDbMigrationService>();
             
             // Reference Services
             services.AddScoped<IDeviceStatusesService, DeviceStatusesService>();

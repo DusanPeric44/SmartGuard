@@ -8,9 +8,9 @@
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "192.168.8.133"
+#define SIGNALR_HOST "10.15.225.19"
 #define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://192.168.8.133:5000/upload"
+#define BACKEND_SYNC_URL "http://10.15.225.19:5000/upload"
 
 String webSocketPath;
 
@@ -91,7 +91,7 @@ void setup() {
     String registrationKey = getRegistrationKey();
     if (registrationKey != "") {
       Serial.println("Attempting to connect with registration key: " + registrationKey);
-      if (registerDevice("http://192.168.8.133:5000", registrationKey.c_str())) {
+      if (registerDevice("http://10.15.225.19:5000", registrationKey.c_str())) {
         Serial.println("Device registered successfully!");
         deviceId = getDeviceId();
       } else {
