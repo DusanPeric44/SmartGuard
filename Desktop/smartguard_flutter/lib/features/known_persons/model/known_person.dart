@@ -6,29 +6,26 @@ class KnownPerson {
     required this.id,
     required this.firstName,
     required this.lastName,
-    required this.photoUrl,
+    required this.picture,
     required this.lastSeenAt,
     required this.location,
-    required this.detections,
+    required this.detectionCount,
   });
 
   final String id;
   final String firstName;
   final String lastName;
-  final String photoUrl;
+  final String picture;
   final DateTime lastSeenAt;
   final String location;
-  final int detections;
+  final int detectionCount;
 
   String get fullName => '${firstName.trim()} ${lastName.trim()}'.trim();
 
   bool get isIntruder => fullName.toLowerCase().contains('intruder');
 
   Map<String, Object?> toUpdateJson() {
-    return <String, Object?>{
-      'firstName': firstName,
-      'lastName': lastName,
-    };
+    return <String, Object?>{'firstName': firstName, 'lastName': lastName};
   }
 
   factory KnownPerson.fromJson(Map<String, dynamic> json) {
@@ -36,12 +33,12 @@ class KnownPerson {
       id: json['id']?.toString() ?? '',
       firstName: json['firstName']?.toString() ?? '',
       lastName: json['lastName']?.toString() ?? '',
-      photoUrl: json['photoUrl']?.toString() ?? '',
+      picture: json['picture']?.toString() ?? '',
       lastSeenAt:
           DateTime.tryParse(json['lastSeenAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       location: json['location']?.toString() ?? '',
-      detections: (json['detections'] as num?)?.toInt() ?? 0,
+      detectionCount: (json['detectionCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -58,11 +55,10 @@ class KnownPerson {
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
-      photoUrl: photoUrl ?? this.photoUrl,
+      picture: photoUrl ?? this.picture,
       lastSeenAt: lastSeenAt ?? this.lastSeenAt,
       location: location ?? this.location,
-      detections: detections ?? this.detections,
+      detectionCount: detections ?? this.detectionCount,
     );
   }
 }
-

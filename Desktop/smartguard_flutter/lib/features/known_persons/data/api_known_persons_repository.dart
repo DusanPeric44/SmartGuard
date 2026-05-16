@@ -24,7 +24,7 @@ class ApiKnownPersonsRepository implements KnownPersonsRepository {
     }
 
     final path = Uri(
-      path: '/known-persons',
+      path: '/knownPersons/search',
       queryParameters: queryParameters,
     ).toString();
 
@@ -54,21 +54,14 @@ class ApiKnownPersonsRepository implements KnownPersonsRepository {
   }) {
     return _api.request<KnownPerson>(
       method: 'PUT',
-      path: '/known-persons/$id',
-      body: <String, Object?>{
-        'firstName': firstName,
-        'lastName': lastName,
-      },
+      path: '/knownPersons/$id',
+      body: <String, Object?>{'firstName': firstName, 'lastName': lastName},
       decode: (json) => KnownPerson.fromJson(json as Map<String, dynamic>),
     );
   }
 
   @override
   Future<void> delete(String id) async {
-    await _api.request<Object?>(
-      method: 'DELETE',
-      path: '/known-persons/$id',
-    );
+    await _api.request<Object?>(method: 'DELETE', path: '/knownPersons/$id');
   }
 }
-

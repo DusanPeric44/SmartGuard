@@ -335,7 +335,7 @@ class _KnownPersonCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Photo(
-              photoUrl: person.photoUrl,
+              photoUrl: person.picture,
               fallbackBase64: KnownPersonsScreen._sampleAvatarBase64,
               badgeText: person.isIntruder ? 'Intruder' : 'Known',
               badgeColor: badgeColor,
@@ -375,7 +375,7 @@ class _KnownPersonCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 _MetaRow(
                   label: 'Detections',
-                  value: '${person.detections}',
+                  value: '${person.detectionCount}',
                   valueColor: Colors.lightBlueAccent.shade400,
                 ),
               ],
