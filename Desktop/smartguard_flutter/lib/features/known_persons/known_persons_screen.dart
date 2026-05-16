@@ -1,95 +1,543 @@
 import 'package:flutter/material.dart';
+import 'package:smartguard_flutter/app/app_scope.dart';
+import 'package:smartguard_flutter/features/known_persons/data/api_known_persons_repository.dart';
+import 'package:smartguard_flutter/features/known_persons/data/known_persons_repository.dart';
+import 'package:smartguard_flutter/features/known_persons/model/known_person.dart';
+import 'package:smartguard_flutter/features/known_persons/viewmodel/known_persons_view_model.dart';
 import 'package:smartguard_flutter/shared/widgets/cached_base64_image.dart';
+import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
-class KnownPersonsScreen extends StatelessWidget {
+class KnownPersonsScreen extends StatefulWidget {
   const KnownPersonsScreen({super.key});
 
   static const _sampleAvatarBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WnHCqQAAAAASUVORK5CYII=';
 
   @override
+  State<KnownPersonsScreen> createState() => _KnownPersonsScreenState();
+}
+
+class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
+  KnownPersonsRepository? _repo;
+  KnownPersonsViewModel? _vm;
+  final _searchController = TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_repo != null) return;
+
+    _repo = ApiKnownPersonsRepository(api: AppScope.of(context).api);
+    _vm = KnownPersonsViewModel(repository: _repo!);
+    _vm!.addListener(_onVmChanged);
+    _vm!.init();
+  }
+
+  @override
+  void dispose() {
+    _vm?.removeListener(_onVmChanged);
+    _vm?.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onVmChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final vm = _vm;
+    if (vm == null) return const Center(child: AsyncStatePanel.loading());
+
     final theme = Theme.of(context);
 
-    return ListView(
+    return Column(
       children: [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Known Persons',
-                  style: theme.textTheme.headlineSmall,
-                ),
+                Text('Known Persons', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Primjer shared widget-a koji dekodira base64 jednom i kešira rezultat van build() metode.',
+                  'Manage Face ID recognition database',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
-                const _PersonTile(
-                  name: 'John Carter',
-                  role: 'Security Lead',
-                  base64Value: _sampleAvatarBase64,
-                ),
-                const SizedBox(height: 12),
-                const _PersonTile(
-                  name: 'Amira Hadzic',
-                  role: 'Operator',
-                  base64Value: _sampleAvatarBase64,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 360,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: vm.setTerm,
+                        decoration: const InputDecoration(
+                          labelText: 'Search',
+                          hintText: 'Name...',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                      ),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: vm.load,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh'),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(child: _buildBody(vm)),
+      ],
+    );
+  }
+
+  Widget _buildBody(KnownPersonsViewModel vm) {
+    if (vm.isLoading && vm.items.isEmpty) {
+      return const Center(child: AsyncStatePanel.loading());
+    }
+    if (vm.errorMessage != null && vm.items.isEmpty) {
+      return Center(
+        child: AsyncStatePanel.error(
+          errorMessage: vm.errorMessage!,
+          onRetry: vm.load,
+        ),
+      );
+    }
+    if (vm.items.isEmpty) {
+      return Center(
+        child: AsyncStatePanel.content(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'No known persons.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              for (final p in vm.items)
+                SizedBox(
+                  width: 260,
+                  child: _KnownPersonCard(
+                    person: p,
+                    isBusy: vm.rowBusy[p.id] == true,
+                    onEdit: () => _openEditDialog(vm, p),
+                    onDelete: () => _confirmDelete(vm, p),
+                  ),
+                ),
+            ],
+          ),
+          if (vm.hasMore)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: OutlinedButton(
+                  onPressed: vm.isLoading ? null : vm.loadMore,
+                  child: vm.isLoading
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Load more'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openEditDialog(
+    KnownPersonsViewModel vm,
+    KnownPerson person,
+  ) async {
+    final first = TextEditingController(text: person.firstName);
+    final last = TextEditingController(text: person.lastName);
+
+    final res = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return ListenableBuilder(
+          listenable: vm,
+          builder: (context, _) {
+            final busy = vm.rowBusy[person.id] == true;
+            return AlertDialog(
+              title: const Text('Edit person'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: first,
+                      enabled: !busy,
+                      decoration: const InputDecoration(
+                        labelText: 'First name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: last,
+                      enabled: !busy,
+                      decoration: const InputDecoration(
+                        labelText: 'Last name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          final f = first.text.trim();
+                          final l = last.text.trim();
+                          if (f.isEmpty || l.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'First and last name are required.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          final ok = await vm.updatePerson(
+                            id: person.id,
+                            firstName: f,
+                            lastName: l,
+                          );
+                          if (!context.mounted) return;
+                          if (ok) {
+                            Navigator.of(context).pop(true);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(vm.errorMessage ?? 'Error.'),
+                              ),
+                            );
+                          }
+                        },
+                  child: busy
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    first.dispose();
+    last.dispose();
+
+    if (res == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Updated.')));
+    }
+  }
+
+  Future<void> _confirmDelete(
+    KnownPersonsViewModel vm,
+    KnownPerson person,
+  ) async {
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove person'),
+        content: Text('Remove ${person.fullName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (res != true) return;
+
+    final ok = await vm.deletePerson(person.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Removed.' : (vm.errorMessage ?? 'Error.'))),
+    );
+  }
+}
+
+class _KnownPersonCard extends StatelessWidget {
+  const _KnownPersonCard({
+    required this.person,
+    required this.isBusy,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final KnownPerson person;
+  final bool isBusy;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final lastSeenLabel = _relativeLastSeen(person.lastSeenAt);
+    final badgeColor = person.isIntruder
+        ? Colors.redAccent.shade400
+        : Colors.greenAccent.shade400;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Photo(
+              photoUrl: person.photoUrl,
+              fallbackBase64: KnownPersonsScreen._sampleAvatarBase64,
+              badgeText: person.isIntruder ? 'Intruder' : 'Known',
+              badgeColor: badgeColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              person.fullName,
+              style: Theme.of(context).textTheme.titleMedium,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Last seen $lastSeenLabel',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetaRow(
+                    label: 'Location',
+                    value: person.location,
+                    valueColor: null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _MetaRow(
+                  label: 'Detections',
+                  value: '${person.detections}',
+                  valueColor: Colors.lightBlueAccent.shade400,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: isBusy ? null : onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: isBusy ? null : onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remove'),
+                  ),
+                ),
+              ],
+            ),
+            if (isBusy) ...[
+              const SizedBox(height: 10),
+              const Center(
+                child: SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(color: valueColor),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
   }
 }
 
-class _PersonTile extends StatelessWidget {
-  const _PersonTile({
-    required this.name,
-    required this.role,
-    required this.base64Value,
+class _Photo extends StatelessWidget {
+  const _Photo({
+    required this.photoUrl,
+    required this.fallbackBase64,
+    required this.badgeText,
+    required this.badgeColor,
   });
 
-  final String name;
-  final String role;
-  final String base64Value;
+  final String photoUrl;
+  final String fallbackBase64;
+  final String badgeText;
+  final Color badgeColor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
+    final image = photoUrl.trim().isEmpty
+        ? _fallback()
+        : Image.network(
+            photoUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: 160,
+            errorBuilder: (context, error, stackTrace) => _fallback(),
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return SizedBox(
+                width: double.infinity,
+                height: 160,
+                child: Center(
+                  child: SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: progress.expectedTotalBytes == null
+                          ? null
+                          : (progress.cumulativeBytesLoaded /
+                                    (progress.expectedTotalBytes ?? 1))
+                                .clamp(0.0, 1.0),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
         children: [
-          CachedBase64Image(
-            base64Value: base64Value,
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(role),
-              ],
+          SizedBox(width: double.infinity, height: 160, child: image),
+          Positioned(
+            left: 10,
+            top: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: badgeColor.withValues(alpha: 0.55)),
+              ),
+              child: Text(badgeText),
             ),
           ),
-          const Icon(Icons.chevron_right),
         ],
       ),
     );
   }
+
+  Widget _fallback() {
+    return CachedBase64Image(
+      base64Value: fallbackBase64,
+      width: double.infinity,
+      height: 160,
+      borderRadius: 0,
+    );
+  }
+}
+
+String _relativeLastSeen(DateTime value) {
+  final now = DateTime.now();
+  var diff = now.difference(value);
+  if (diff.isNegative) diff = Duration.zero;
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+  if (diff.inDays < 1) return '${diff.inHours} hours ago';
+  return '${diff.inDays} days ago';
 }
