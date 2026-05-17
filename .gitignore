@@ -8,6 +8,14 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# Trae
+.trae/*
+Backend/SecureGuard/.trae/*
+Desktop/smartguard_flutter/.trae/*
+Desktop/.trae/*
+Mobile/.trae/*
+Mobile/smartguard_mobile/.trae/*
+
 # Logs
 *.log
 logs/
@@ -100,7 +108,7 @@ Backend/**/uploads/*
 Desktop/windows/flutter/ephemeral/
 Desktop/windows/runner/Debug/
 Desktop/windows/runner/Release/
-Desktop/.trae/
+Desktop/smartguard_flutter/.trae/
 Desktop/SmartGuardDesktop/
 
 # macOS
