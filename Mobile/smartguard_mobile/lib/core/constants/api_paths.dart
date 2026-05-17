@@ -11,7 +11,7 @@ class ApiPaths {
   static const String pushToken = '/users/push-token';
 
   static const String knownPersonsPreferencesSearch =
-      '/UserNotificationPreference/search';
+      '/UserNotificationPreferences';
   static String userNotificationPreferences(String personId) =>
       '/UserNotificationPreferences/$personId';
 

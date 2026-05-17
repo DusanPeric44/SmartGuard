@@ -32,7 +32,7 @@ class UserNotificationPreferencesResponse {
     }
 
     final result = rawResult
-        .map(UserNotificationPreference.fromJson)
+        .map((e) => UserNotificationPreference.fromJson(e))
         .toList(growable: false);
     final count = parseInt(map['count']);
 
@@ -42,4 +42,3 @@ class UserNotificationPreferencesResponse {
     );
   }
 }
-
