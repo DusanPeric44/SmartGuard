@@ -26,9 +26,16 @@ struct FaceIdSequenceTracker {
 };
 
 static FaceIdSequenceTracker g_faceSeq = {{0, 0, 0}, 0};
+static bool g_notifyFaceEvent = false;
 
 static void resetFaceIdSequence() {
   g_faceSeq.len = 0;
+}
+
+bool consumeNotifyFaceEvent() {
+  if (!g_notifyFaceEvent) return false;
+  g_notifyFaceEvent = false;
+  return true;
 }
 
 static bool sequenceContainsFaceId(int faceId) {
@@ -269,6 +276,7 @@ bool checkSecurity(camera_fb_t* fb) {
         if (matched_id >= 0) {
           bool shouldNotify = trackFaceIdForSequence(matched_id);
           if (shouldNotify) {
+            g_notifyFaceEvent = true;
             int faceIdToSend = matched_id;
             if (isFaceSafe(faceIdToSend)) {
               Serial.println("Safe person detected: " + String(faceIdToSend));

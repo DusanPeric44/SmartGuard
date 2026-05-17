@@ -14,6 +14,7 @@ using SmartGuard.API.Services;
 using SmartGuard.Model.Options;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using SmartGuard.API.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,12 +87,21 @@ builder.Services.AddAuthentication(options =>
 // 4. Dependency Injection (Scoped)
 builder.Services.AddMassTransit(x =>
 {
+    x.AddConsumer<RecordingUploadStartedConsumer>();
+    x.AddConsumer<RecordingUploadCompletedConsumer>();
+
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
         {
             h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+
+        cfg.ReceiveEndpoint("api-recording-upload-events", e =>
+        {
+            e.ConfigureConsumer<RecordingUploadStartedConsumer>(context);
+            e.ConfigureConsumer<RecordingUploadCompletedConsumer>(context);
         });
     });
 });

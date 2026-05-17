@@ -12,7 +12,7 @@
 #define PIR_PIN 13
 #define SIGNALR_HOST "192.168.8.138"
 #define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://192.168.8.138:5000/upload"
+#define BACKEND_SYNC_URL "http://192.168.8.138:5001/upload"
 #define BACKEND_BASE_URL "http://192.168.8.138:5000"
 
 String webSocketPath;
@@ -183,9 +183,6 @@ void setup() {
   Serial.println("System initialized and ready.");
 }
 
-unsigned long lastSyncTime = 0;
-const unsigned long SYNC_INTERVAL = 300000; // Sync every 5 minutes
-
 void loop() {
   // Ensure WebSocket is serviced even if subsequent operations take time
   handleStream(NULL);
@@ -196,9 +193,10 @@ void loop() {
   if (fb) {
     // 4. Security Check (PIR + Face)
     bool motionDetected = checkSecurity(fb);
+    bool notifyFaceEvent = consumeNotifyFaceEvent();
 
     // 5. Recording Logic
-    handleRecording(motionDetected);
+    handleRecording(motionDetected, notifyFaceEvent, BACKEND_SYNC_URL);
     recordFrame(fb);
 
     // 6. Streaming (Pass the existing frame)
@@ -208,12 +206,6 @@ void loop() {
   } else {
     // If no frame, still call handleStream to process WebSocket events/pings
     handleStream(NULL);
-  }
-
-  // 7. Background Sync
-  if (millis() - lastSyncTime > SYNC_INTERVAL) {
-    syncFilesToBackend(BACKEND_SYNC_URL);
-    lastSyncTime = millis();
   }
 
   delay(10);

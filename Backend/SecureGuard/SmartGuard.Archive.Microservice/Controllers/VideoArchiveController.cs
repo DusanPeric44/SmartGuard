@@ -9,11 +9,13 @@ namespace SmartGuard.Archive.Microservice.Controllers
     public class VideoArchiveController : ControllerBase
     {
         private readonly ArchiveDbContext _context;
+        private readonly IWebHostEnvironment _environment;
         private readonly ILogger<VideoArchiveController> _logger;
 
-        public VideoArchiveController(ArchiveDbContext context, ILogger<VideoArchiveController> logger)
+        public VideoArchiveController(ArchiveDbContext context, IWebHostEnvironment environment, ILogger<VideoArchiveController> logger)
         {
             _context = context;
+            _environment = environment;
             _logger = logger;
         }
 
@@ -39,6 +41,24 @@ namespace SmartGuard.Archive.Microservice.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { filePath });
+        }
+
+        [HttpGet("download/{fileName}")]
+        public IActionResult Download(string fileName)
+        {
+            var safeFileName = Path.GetFileName(fileName ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(safeFileName) || !string.Equals(safeFileName, fileName, StringComparison.Ordinal))
+            {
+                return BadRequest("Invalid file name.");
+            }
+
+            var physicalPath = Path.Combine(_environment.ContentRootPath, "uploads", "videos", safeFileName);
+            if (!System.IO.File.Exists(physicalPath))
+            {
+                return NotFound();
+            }
+
+            return PhysicalFile(physicalPath, "application/octet-stream", safeFileName, enableRangeProcessing: true);
         }
     }
 }

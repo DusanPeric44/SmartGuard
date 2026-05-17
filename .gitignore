@@ -79,6 +79,7 @@ Backend/**/secrets.json
 Backend/**/firebase-service-account.json
 Backend/**/firebase*.json
 Backend/**/uploads/*
+Backend/**/ffmpeg/*
 
 ############################################
 # FLUTTER (DESKTOP + MOBILE)
