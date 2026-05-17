@@ -68,4 +68,10 @@ class AppStrings {
   static const String newPasswordLabel = 'New password';
   static const String confirmNewPasswordLabel = 'Confirm new password';
   static const String passwordUpdated = 'Password updated';
+
+  static const String knownPersonsTitle = 'Known Persons';
+  static const String knownPersonsInfo =
+      'Manage recognized individuals and their notification preferences. Toggle notifications to receive alerts when these persons are detected by your cameras.';
+  static const String knownPersonsNotificationsLabel = 'Notifications';
+  static const String knownPersonsEmpty = 'No known persons found.';
 }

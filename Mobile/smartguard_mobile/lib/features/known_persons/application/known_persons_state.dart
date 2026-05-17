@@ -1,33 +1,45 @@
+import 'package:flutter/foundation.dart';
+
+import '../domain/user_notification_preference.dart';
+
 enum KnownPersonsStatus { idle, loading, ready, error }
 
+@immutable
 class KnownPersonsState {
-  const KnownPersonsState._({
+  const KnownPersonsState({
     required this.status,
-    required this.names,
-    required this.message,
+    required this.items,
+    required this.count,
+    required this.updatingPersonIds,
+    required this.errorMessage,
   });
 
-  const KnownPersonsState.idle()
-    : this._(status: KnownPersonsStatus.idle, names: const [], message: null);
-
-  const KnownPersonsState.loading()
-    : this._(
-        status: KnownPersonsStatus.loading,
-        names: const [],
-        message: null,
-      );
-
-  const KnownPersonsState.ready(List<String> names)
-    : this._(status: KnownPersonsStatus.ready, names: names, message: null);
-
-  const KnownPersonsState.error(String message)
-    : this._(
-        status: KnownPersonsStatus.error,
-        names: const [],
-        message: message,
-      );
+  const KnownPersonsState.initial()
+    : status = KnownPersonsStatus.idle,
+      items = const [],
+      count = 0,
+      updatingPersonIds = const {},
+      errorMessage = null;
 
   final KnownPersonsStatus status;
-  final List<String> names;
-  final String? message;
+  final List<UserNotificationPreference> items;
+  final int count;
+  final Set<String> updatingPersonIds;
+  final String? errorMessage;
+
+  KnownPersonsState copyWith({
+    KnownPersonsStatus? status,
+    List<UserNotificationPreference>? items,
+    int? count,
+    Set<String>? updatingPersonIds,
+    String? errorMessage,
+  }) {
+    return KnownPersonsState(
+      status: status ?? this.status,
+      items: items ?? this.items,
+      count: count ?? this.count,
+      updatingPersonIds: updatingPersonIds ?? this.updatingPersonIds,
+      errorMessage: errorMessage,
+    );
+  }
 }
