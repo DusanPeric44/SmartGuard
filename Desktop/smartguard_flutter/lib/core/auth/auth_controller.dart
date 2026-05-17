@@ -13,6 +13,8 @@ class AuthController extends ChangeNotifier {
   final AuthRepository _repository;
   final TokenStore _tokenStore;
 
+  Future<String?> get accessToken => _tokenStore.getToken();
+
   bool _isAuthenticated = false;
   bool get isAuthenticated => _isAuthenticated;
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-  import 'dart:convert';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/app/app.dart';
@@ -28,7 +28,9 @@ void main() {
             final raw = options.data?.toString() ?? '{}';
             final body = jsonDecode(raw) as Map<String, dynamic>;
             final email = body['email']?.toString() ?? '';
-            final role = email.toLowerCase().startsWith('admin') ? 'admin' : 'viewer';
+            final role = email.toLowerCase().startsWith('admin')
+                ? 'admin'
+                : 'viewer';
 
             handler.resolve(
               Response(
@@ -72,7 +74,6 @@ void main() {
                     'assignedUsers': [
                       {'id': 'u2', 'email': 'home01@example.com'},
                     ],
-                    'lastSeenAt': DateTime.now().toIso8601String(),
                   }),
                 ),
               ),
@@ -157,7 +158,9 @@ void main() {
             final raw = options.data?.toString() ?? '{}';
             final body = jsonDecode(raw) as Map<String, dynamic>;
             final email = body['email']?.toString() ?? '';
-            final role = email.toLowerCase().startsWith('admin') ? 'admin' : 'viewer';
+            final role = email.toLowerCase().startsWith('admin')
+                ? 'admin'
+                : 'viewer';
 
             handler.resolve(
               Response(

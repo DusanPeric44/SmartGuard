@@ -4,14 +4,10 @@ import 'package:smartguard_flutter/features/known_persons/data/api_known_persons
 import 'package:smartguard_flutter/features/known_persons/data/known_persons_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/model/known_person.dart';
 import 'package:smartguard_flutter/features/known_persons/viewmodel/known_persons_view_model.dart';
-import 'package:smartguard_flutter/shared/widgets/cached_base64_image.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
 class KnownPersonsScreen extends StatefulWidget {
   const KnownPersonsScreen({super.key});
-
-  static const _sampleAvatarBase64 =
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WnHCqQAAAAASUVORK5CYII=';
 
   @override
   State<KnownPersonsScreen> createState() => _KnownPersonsScreenState();
@@ -175,100 +171,13 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
     KnownPersonsViewModel vm,
     KnownPerson person,
   ) async {
-    final first = TextEditingController(text: person.firstName);
-    final last = TextEditingController(text: person.lastName);
-
     final res = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return ListenableBuilder(
-          listenable: vm,
-          builder: (context, _) {
-            final busy = vm.rowBusy[person.id] == true;
-            return AlertDialog(
-              title: const Text('Edit person'),
-              content: SizedBox(
-                width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: first,
-                      enabled: !busy,
-                      decoration: const InputDecoration(
-                        labelText: 'First name',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: last,
-                      enabled: !busy,
-                      decoration: const InputDecoration(
-                        labelText: 'Last name',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: busy
-                      ? null
-                      : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: busy
-                      ? null
-                      : () async {
-                          final f = first.text.trim();
-                          final l = last.text.trim();
-                          if (f.isEmpty || l.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'First and last name are required.',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                          final ok = await vm.updatePerson(
-                            id: person.id,
-                            firstName: f,
-                            lastName: l,
-                          );
-                          if (!context.mounted) return;
-                          if (ok) {
-                            Navigator.of(context).pop(true);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(vm.errorMessage ?? 'Error.'),
-                              ),
-                            );
-                          }
-                        },
-                  child: busy
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
+        return _EditKnownPersonDialog(vm: vm, person: person);
       },
     );
-
-    first.dispose();
-    last.dispose();
 
     if (res == true && mounted) {
       ScaffoldMessenger.of(
@@ -323,7 +232,6 @@ class _KnownPersonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lastSeenLabel = _relativeLastSeen(person.lastSeenAt);
     final badgeColor = person.isIntruder
         ? Colors.redAccent.shade400
         : Colors.greenAccent.shade400;
@@ -335,8 +243,8 @@ class _KnownPersonCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Photo(
-              photoUrl: person.picture,
-              fallbackBase64: KnownPersonsScreen._sampleAvatarBase64,
+              photoUrl:
+                  AppScope.of(context).api.baseUri.toString() + person.picture,
               badgeText: person.isIntruder ? 'Intruder' : 'Known',
               badgeColor: badgeColor,
             ),
@@ -346,21 +254,6 @@ class _KnownPersonCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.schedule, size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Last seen $lastSeenLabel',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 10),
             Row(
@@ -456,26 +349,23 @@ class _MetaRow extends StatelessWidget {
 class _Photo extends StatelessWidget {
   const _Photo({
     required this.photoUrl,
-    required this.fallbackBase64,
     required this.badgeText,
     required this.badgeColor,
   });
 
   final String photoUrl;
-  final String fallbackBase64;
   final String badgeText;
   final Color badgeColor;
 
   @override
   Widget build(BuildContext context) {
     final image = photoUrl.trim().isEmpty
-        ? _fallback()
+        ? CircleAvatar()
         : Image.network(
             photoUrl,
             fit: BoxFit.cover,
             width: double.infinity,
             height: 160,
-            errorBuilder: (context, error, stackTrace) => _fallback(),
             loadingBuilder: (context, child, progress) {
               if (progress == null) return child;
               return SizedBox(
@@ -521,23 +411,112 @@ class _Photo extends StatelessWidget {
       ),
     );
   }
-
-  Widget _fallback() {
-    return CachedBase64Image(
-      base64Value: fallbackBase64,
-      width: double.infinity,
-      height: 160,
-      borderRadius: 0,
-    );
-  }
 }
 
-String _relativeLastSeen(DateTime value) {
-  final now = DateTime.now();
-  var diff = now.difference(value);
-  if (diff.isNegative) diff = Duration.zero;
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inHours < 1) return '${diff.inMinutes} min ago';
-  if (diff.inDays < 1) return '${diff.inHours} hours ago';
-  return '${diff.inDays} days ago';
+class _EditKnownPersonDialog extends StatefulWidget {
+  const _EditKnownPersonDialog({required this.vm, required this.person});
+
+  final KnownPersonsViewModel vm;
+  final KnownPerson person;
+
+  @override
+  State<_EditKnownPersonDialog> createState() => _EditKnownPersonDialogState();
+}
+
+class _EditKnownPersonDialogState extends State<_EditKnownPersonDialog> {
+  late final TextEditingController _first = TextEditingController(
+    text: widget.person.firstName,
+  );
+  late final TextEditingController _last = TextEditingController(
+    text: widget.person.lastName,
+  );
+
+  @override
+  void dispose() {
+    _first.dispose();
+    _last.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.vm,
+      builder: (context, _) {
+        final busy = widget.vm.rowBusy[widget.person.id] == true;
+        return AlertDialog(
+          title: const Text('Edit person'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _first,
+                  enabled: !busy,
+                  decoration: const InputDecoration(
+                    labelText: 'First name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _last,
+                  enabled: !busy,
+                  decoration: const InputDecoration(
+                    labelText: 'Last name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: busy ? null : () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final f = _first.text.trim();
+                      final l = _last.text.trim();
+                      if (f.isEmpty || l.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('First and last name are required.'),
+                          ),
+                        );
+                        return;
+                      }
+                      final ok = await widget.vm.updatePerson(
+                        id: widget.person.id,
+                        firstName: f,
+                        lastName: l,
+                      );
+                      if (!context.mounted) return;
+                      if (ok) {
+                        Navigator.of(context).pop(true);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(widget.vm.errorMessage ?? 'Error.'),
+                          ),
+                        );
+                      }
+                    },
+              child: busy
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
