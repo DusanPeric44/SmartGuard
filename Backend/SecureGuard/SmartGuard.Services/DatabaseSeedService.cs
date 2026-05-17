@@ -65,7 +65,17 @@ namespace SmartGuard.Services
                 }
             }
 
-            // 6. Seed Device Statuses
+            // 6. Seed Recording Types
+            string[] recordingTypes = { "Motion" };
+            foreach (var type in recordingTypes)
+            {
+                if (!await _context.RecordingTypes.AnyAsync(x => x.Name == type))
+                {
+                    _context.RecordingTypes.Add(new RecordingType { Name = type });
+                }
+            }
+
+            // 7. Seed Device Statuses
             string[] deviceStatuses = { "Online", "Offline", "Recording", "Maintenance" };
             foreach (var status in deviceStatuses)
             {

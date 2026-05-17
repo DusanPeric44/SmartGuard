@@ -26,6 +26,11 @@ void markFaceAsSafe(int faceId);
 bool isFaceSafe(int faceId);
 
 /**
+ * Returns true once when the face sequence reaches the notify condition.
+ */
+bool consumeNotifyFaceEvent();
+
+/**
  * Registers the device with the backend using the provided registration key.
  * Stores the returned device token in NVS.
  */

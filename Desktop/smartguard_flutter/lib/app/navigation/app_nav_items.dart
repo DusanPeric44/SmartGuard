@@ -58,12 +58,6 @@ const appNavItems = <AppNavItem>[
     route: '/reports',
   ),
   AppNavItem(
-    id: 'reference',
-    label: 'Reference Data',
-    icon: Icons.storage_outlined,
-    route: '/reference',
-  ),
-  AppNavItem(
     id: 'audit',
     label: 'Audit Logs',
     icon: Icons.history_outlined,

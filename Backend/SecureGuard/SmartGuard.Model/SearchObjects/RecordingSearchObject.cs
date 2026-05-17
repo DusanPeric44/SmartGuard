@@ -4,10 +4,11 @@ namespace SmartGuard.Model.SearchObjects
 {
     public class RecordingSearchObject : BaseSearchObject
     {
-        public int? DeviceId { get; set; }
-        public int? TypeId { get; set; }
-        public int? StatusId { get; set; }
-        public DateTime? From { get; set; }
-        public DateTime? To { get; set; }
+        public string Term { get; set; } = string.Empty;
+        public int DeviceId { get; set; }
+        public int RecordingTypeId { get; set; }
+        public int RecordingStatusId { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
     }
 }

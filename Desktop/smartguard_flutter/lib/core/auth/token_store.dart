@@ -4,6 +4,8 @@ import 'package:smartguard_flutter/core/auth/user_role.dart';
 abstract class TokenStore {
   Future<String?> getToken();
   Future<void> setToken(String token);
+  Future<String?> getRefreshToken();
+  Future<void> setRefreshToken(String token);
   Future<UserRole?> getRole();
   Future<void> setRole(UserRole role);
   Future<String?> getRegistrationKey();
@@ -13,6 +15,7 @@ abstract class TokenStore {
 
 class MemoryTokenStore implements TokenStore {
   String? _token;
+  String? _refreshToken;
   UserRole? _role;
   String? _registrationKey;
 
@@ -22,6 +25,14 @@ class MemoryTokenStore implements TokenStore {
   @override
   Future<void> setToken(String token) async {
     _token = token;
+  }
+
+  @override
+  Future<String?> getRefreshToken() async => _refreshToken;
+
+  @override
+  Future<void> setRefreshToken(String token) async {
+    _refreshToken = token;
   }
 
   @override
@@ -43,6 +54,7 @@ class MemoryTokenStore implements TokenStore {
   @override
   Future<void> clear() async {
     _token = null;
+    _refreshToken = null;
     _role = null;
     _registrationKey = null;
   }
@@ -52,6 +64,7 @@ class SharedPrefsTokenStore implements TokenStore {
   SharedPrefsTokenStore._(this._prefs);
 
   static const _tokenKey = 'smartguard.auth.token';
+  static const _refreshTokenKey = 'smartguard.auth.refresh_token';
   static const _roleKey = 'smartguard.auth.role';
   static const _registrationKey = 'smartguard.auth.registration_key';
 
@@ -68,6 +81,14 @@ class SharedPrefsTokenStore implements TokenStore {
   @override
   Future<void> setToken(String token) async {
     await _prefs.setString(_tokenKey, token);
+  }
+
+  @override
+  Future<String?> getRefreshToken() async => _prefs.getString(_refreshTokenKey);
+
+  @override
+  Future<void> setRefreshToken(String token) async {
+    await _prefs.setString(_refreshTokenKey, token);
   }
 
   @override
@@ -93,6 +114,7 @@ class SharedPrefsTokenStore implements TokenStore {
   @override
   Future<void> clear() async {
     await _prefs.remove(_tokenKey);
+    await _prefs.remove(_refreshTokenKey);
     await _prefs.remove(_roleKey);
     await _prefs.remove(_registrationKey);
   }

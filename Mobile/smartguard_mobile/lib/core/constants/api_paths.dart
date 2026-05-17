@@ -3,7 +3,7 @@ class ApiPaths {
 
   static const String login = '/auth/login';
   static const String register = '/auth/register';
-  static const String refresh = '/auth/refresh';
+  static const String refresh = '/auth/refresh-token';
 
   static const String me = '/users/me';
   static const String updateMe = '/users/me';

@@ -17,6 +17,7 @@ class AuthRepository {
   }) async {
     if (AppConfig.enableStubAuth) {
       await _tokenStore.setToken('stub-token:${username.trim()}');
+      await _tokenStore.setRefreshToken('stub-refresh-token:${username.trim()}');
       await _tokenStore.setRole(_roleForStubUsername(username));
       return;
     }
@@ -31,7 +32,13 @@ class AuthRepository {
       throw StateError('Login odgovor ne sadrži token.');
     }
 
+    final refreshToken = _extractRefreshToken(json);
+    if (refreshToken == null || refreshToken.isEmpty) {
+      throw StateError('Login odgovor ne sadrži refreshToken.');
+    }
+
     await _tokenStore.setToken(token);
+    await _tokenStore.setRefreshToken(refreshToken);
     await _tokenStore.setRole(_extractRole(json) ?? UserRole.viewer);
   }
 
@@ -67,6 +74,19 @@ class AuthRepository {
         json['accessToken'],
         json['access_token'],
         json['token'],
+      ];
+      for (final c in candidates) {
+        if (c is String && c.trim().isNotEmpty) return c.trim();
+      }
+    }
+    return null;
+  }
+
+  String? _extractRefreshToken(Object? json) {
+    if (json is Map) {
+      final candidates = <Object?>[
+        json['refreshToken'],
+        json['refresh_token'],
       ];
       for (final c in candidates) {
         if (c is String && c.trim().isNotEmpty) return c.trim();

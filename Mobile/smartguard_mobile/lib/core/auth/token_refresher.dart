@@ -5,7 +5,10 @@ import 'session_tokens.dart';
 import 'session_tokens_parser.dart';
 
 abstract interface class TokenRefresher {
-  Future<SessionTokens?> refresh({required String refreshToken});
+  Future<SessionTokens?> refresh({
+    required String token,
+    required String refreshToken,
+  });
 }
 
 class ApiTokenRefresher implements TokenRefresher {
@@ -16,11 +19,14 @@ class ApiTokenRefresher implements TokenRefresher {
   final _parser = const SessionTokensParser();
 
   @override
-  Future<SessionTokens?> refresh({required String refreshToken}) async {
+  Future<SessionTokens?> refresh({
+    required String token,
+    required String refreshToken,
+  }) async {
     try {
       final response = await _dio.post<Object?>(
         path,
-        data: {'refreshToken': refreshToken},
+        data: {'token': token, 'refreshToken': refreshToken},
       );
       return _parser.fromJson(response.data);
     } catch (_) {
