@@ -64,8 +64,12 @@ class SessionController extends Notifier<SessionState>
     final existing = _refreshInFlight;
     if (existing != null) return existing;
 
+    final token = state.tokens?.accessToken;
     final refreshToken = state.tokens?.refreshToken;
-    if (refreshToken == null || refreshToken.trim().isEmpty) {
+    if (token == null ||
+        token.trim().isEmpty ||
+        refreshToken == null ||
+        refreshToken.trim().isEmpty) {
       return Future.value(null);
     }
 
@@ -76,7 +80,7 @@ class SessionController extends Notifier<SessionState>
       try {
         final refreshed = await ref
             .read(tokenRefresherProvider)
-            .refresh(refreshToken: refreshToken);
+            .refresh(token: token, refreshToken: refreshToken);
         if (refreshed != null) {
           await setTokens(refreshed);
         }

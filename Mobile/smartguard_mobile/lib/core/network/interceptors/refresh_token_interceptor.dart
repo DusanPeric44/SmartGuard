@@ -77,7 +77,7 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
 
   bool _isRefreshRequest(RequestOptions options) {
     final p = options.path.toLowerCase();
-    return p.contains('/auth/refresh') || p.endsWith('auth/refresh');
+    return p.contains('/auth/refresh-token') || p.endsWith('auth/refresh-token');
   }
 
   Future<SessionTokens?> _tryRefresh() {
