@@ -11,6 +11,7 @@ using Microsoft.OpenApi;
 using SmartGuard.API.Middleware;
 using SmartGuard.API.Hubs;
 using SmartGuard.API.Services;
+using SmartGuard.Model.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,10 +99,22 @@ builder.Services.AddScoped<IMailingService, RabbitMqMailingService>();
 
 builder.Services.AddSmartGuardServices();
 
+var uploadsRootPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsRootPath);
+Directory.CreateDirectory(Path.Combine(uploadsRootPath, "images"));
+
+builder.Services.Configure<FileStorageOptions>(o =>
+{
+    o.UploadsRootPath = uploadsRootPath;
+    o.UrlPrefix = "/uploads";
+    o.ImagesSubfolder = "images";
+});
+
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
+builder.Services.AddHostedService<MediaDbMigrationHostedService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

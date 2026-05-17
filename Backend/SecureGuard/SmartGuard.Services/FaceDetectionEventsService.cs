@@ -13,10 +13,12 @@ namespace SmartGuard.Services
     public class FaceDetectionEventsService : BaseCRUDService<Model.DTOs.FaceDetectionEvent, Database.FaceDetectionEvent, FaceDetectionEventSearchObject, FaceDetectionEventInsertRequest, FaceDetectionEventUpdateRequest>, IFaceDetectionEventsService
     {
         private readonly IPublishEndpoint _publishEndpoint;
+        private readonly IFileStorageService _fileStorage;
 
-        public FaceDetectionEventsService(SmartGuardContext context, IPublishEndpoint publishEndpoint) : base(context)
+        public FaceDetectionEventsService(SmartGuardContext context, IPublishEndpoint publishEndpoint, IFileStorageService fileStorage) : base(context)
         {
             _publishEndpoint = publishEndpoint;
+            _fileStorage = fileStorage;
         }
 
         public async Task<Model.DTOs.FaceDetectionEvent> DetectAsync(int deviceId, int faceId, string deviceToken, byte[] jpegBytes)
@@ -43,18 +45,71 @@ namespace SmartGuard.Services
             }
 
             var timestamp = DateTime.UtcNow;
+            var imageUrl = await _fileStorage.SaveImageAsync(jpegBytes, ".jpg");
+
+            var knownPerson = await _context.KnownPersons.SingleOrDefaultAsync(x => x.FaceId == faceId);
+            if (knownPerson != null)
+            {
+                knownPerson.DetectionCount += 1;
+            }
+            else
+            {
+                var n = await _context.KnownPersons.CountAsync() + 1;
+                knownPerson = new Database.KnownPerson
+                {
+                    FirstName = "Intruder",
+                    LastName = n.ToString(),
+                    Description = string.Empty,
+                    Picture = imageUrl,
+                    FaceId = faceId,
+                    DetectionCount = 1
+                };
+
+                await _context.KnownPersons.AddAsync(knownPerson);
+            }
+
             var entity = new Database.FaceDetectionEvent
             {
                 DeviceId = deviceId,
                 FaceId = faceId,
-                PersonId = null,
-                Image = Convert.ToBase64String(jpegBytes),
+                Person = knownPerson,
+                Image = imageUrl,
                 Timestamp = timestamp,
                 Embedding = Array.Empty<byte>()
             };
 
-            await _context.FaceDetectionEvents.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.FaceDetectionEvents.AddAsync(entity);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException) when (entity.Id == 0)
+            {
+                _context.ChangeTracker.Clear();
+
+                knownPerson = await _context.KnownPersons.SingleOrDefaultAsync(x => x.FaceId == faceId);
+                if (knownPerson == null)
+                {
+                    throw;
+                }
+
+                knownPerson.DetectionCount += 1;
+
+                var retryEntity = new Database.FaceDetectionEvent
+                {
+                    DeviceId = deviceId,
+                    FaceId = faceId,
+                    Person = knownPerson,
+                    Image = imageUrl,
+                    Timestamp = timestamp,
+                    Embedding = Array.Empty<byte>()
+                };
+
+                await _context.FaceDetectionEvents.AddAsync(retryEntity);
+                await _context.SaveChangesAsync();
+
+                entity = retryEntity;
+            }
 
             var userIds = await _context.UserDeviceAccesses
                 .Where(x => x.DeviceId == deviceId)

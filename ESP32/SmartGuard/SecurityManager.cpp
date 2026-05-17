@@ -17,6 +17,14 @@ Preferences preferences;
 static mtmn_config_t mtmn_config = {0};
 static face_id_list id_list = {0};
 
+int allocateFallbackFaceId() {
+  preferences.begin("smartguard", false);
+  int next = preferences.getInt("fallback_face_id", 1000);
+  preferences.putInt("fallback_face_id", next + 1);
+  preferences.end();
+  return next;
+}
+
 void setupSecurityManager(int pirPin) {
   _pirPin = pirPin;
   pinMode(_pirPin, INPUT);
@@ -106,7 +114,7 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  String url = "http://192.168.8.133:5000/faceDetectionEvents/detect";
+  String url = "http://10.15.225.19:5000/faceDetectionEvents/detect";
   http.begin(url);
   http.addHeader("Content-Type", "image/jpeg");
   http.addHeader("X-Face-Id", String(faceId));
@@ -114,7 +122,7 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   http.addHeader("X-Device-Token", getDeviceToken());
   
   int response = http.POST(fb->buf, fb->len);
-  Serial.println("Intruder alert sent. Response: " + String(response));
+  Serial.println("Face detection event sent. Response: " + String(response));
   http.end();
 }
 
@@ -122,7 +130,7 @@ void sendSafeMotionAlert() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin("http://192.168.8.133:5000/security/safe-motion");
+  http.begin("http://10.15.225.19:5000/security/safe-motion");
   http.POST("{\"message\": \"Safe person detected\"}");
   http.end();
 }
@@ -143,13 +151,19 @@ bool checkSecurity(camera_fb_t* fb) {
         if (align_face(net_boxes, image_matrix, aligned_face) == ESP_OK) {
           int matched_id = recognize_face(&id_list, aligned_face);
           
-          if (isFaceSafe(matched_id)) {
-            Serial.println("Safe person detected: " + String(matched_id));
-            sendSafeMotionAlert();
+          int faceIdToSend = matched_id;
+          if (faceIdToSend < 0) {
+            int enrolledId = enroll_face(&id_list, aligned_face);
+            faceIdToSend = enrolledId >= 0 ? enrolledId : allocateFallbackFaceId();
+          }
+
+          if (isFaceSafe(faceIdToSend)) {
+            Serial.println("Safe person detected: " + String(faceIdToSend));
           } else {
             Serial.println("Intruder detected!");
-            sendIntruderAlert(fb, matched_id);
           }
+
+          sendIntruderAlert(fb, faceIdToSend);
         }
         dl_matrix3du_free(aligned_face);
         dl_lib_free(net_boxes->score);
