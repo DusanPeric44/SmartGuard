@@ -37,7 +37,11 @@ void main() {
                 requestOptions: options,
                 statusCode: 200,
                 data: utf8.encode(
-                  jsonEncode({'accessToken': 'stub-token', 'role': role}),
+                  jsonEncode({
+                    'accessToken': 'stub-token',
+                    'refreshToken': 'stub-refresh',
+                    'role': role,
+                  }),
                 ),
               ),
             );
@@ -167,7 +171,11 @@ void main() {
                 requestOptions: options,
                 statusCode: 200,
                 data: utf8.encode(
-                  jsonEncode({'accessToken': 'stub-token', 'role': role}),
+                  jsonEncode({
+                    'accessToken': 'stub-token',
+                    'refreshToken': 'stub-refresh',
+                    'role': role,
+                  }),
                 ),
               ),
             );

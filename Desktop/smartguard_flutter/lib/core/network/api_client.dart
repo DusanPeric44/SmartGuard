@@ -6,13 +6,18 @@ import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/core/network/api_error.dart';
 
 typedef TokenProvider = Future<String?> Function();
+typedef RefreshTokenProvider = Future<String?> Function();
 typedef UnauthorizedHandler = Future<void> Function();
+typedef TokenRefreshedHandler =
+    Future<void> Function(String token, String refreshToken);
 
 class ApiClient {
   ApiClient({
     required this.baseUri,
     Dio? dio,
     TokenProvider? tokenProvider,
+    RefreshTokenProvider? refreshTokenProvider,
+    TokenRefreshedHandler? onTokenRefreshed,
     UnauthorizedHandler? onUnauthorized,
     Duration timeout = const Duration(seconds: 15),
   }) : _dio =
@@ -25,15 +30,22 @@ class ApiClient {
              ),
            ),
        _tokenProvider = tokenProvider,
+       _refreshTokenProvider = refreshTokenProvider,
+       _onTokenRefreshed = onTokenRefreshed,
        _onUnauthorized = onUnauthorized,
        _timeout = timeout;
 
   final Uri baseUri;
   final Dio _dio;
   final TokenProvider? _tokenProvider;
+  final RefreshTokenProvider? _refreshTokenProvider;
+  final TokenRefreshedHandler? _onTokenRefreshed;
   final UnauthorizedHandler? _onUnauthorized;
   final Duration _timeout;
   bool _isHandlingUnauthorized = false;
+  Completer<bool>? _refreshCompleter;
+
+  static const String _refreshPath = '/auth/refresh-token';
 
   Future<T> get<T>(
     String path, {
@@ -71,20 +83,10 @@ class ApiClient {
     T Function(Object? json)? decode,
   }) async {
     final uri = _resolve(path);
-    final mergedHeaders = <String, String>{
-      'Accept': 'application/json',
-      ...?headers,
-    };
-
-    final token = await _tokenProvider?.call();
-    if (token != null && token.isNotEmpty) {
-      mergedHeaders['Authorization'] = 'Bearer $token';
-    }
-
     Object? encodedBody;
+    String? contentType;
     if (body != null) {
-      mergedHeaders['Content-Type'] =
-          mergedHeaders['Content-Type'] ?? 'application/json';
+      contentType = headers?['Content-Type'] ?? 'application/json';
       if (body is String || body is List<int>) {
         encodedBody = body;
       } else {
@@ -93,42 +95,56 @@ class ApiClient {
     }
 
     try {
-      final response = await _dio
-          .requestUri<Object?>(
-            uri,
-            data: encodedBody,
-            options: Options(
-              method: method,
-              headers: mergedHeaders,
-              responseType: ResponseType.bytes,
-              validateStatus: (_) => true,
-              sendTimeout: _timeout,
-              receiveTimeout: _timeout,
-            ),
-          )
-          .timeout(_timeout);
+      Future<Response<Object?>> doCall() async {
+        final mergedHeaders = <String, String>{
+          'Accept': 'application/json',
+          ...?headers,
+        };
 
-      final statusCode = response.statusCode ?? 0;
-      final bodyBytes = (response.data as List<int>?) ?? const <int>[];
+        final token = await _tokenProvider?.call();
+        if (token != null && token.isNotEmpty) {
+          mergedHeaders['Authorization'] = 'Bearer $token';
+        }
+        if (contentType != null) {
+          mergedHeaders['Content-Type'] =
+              mergedHeaders['Content-Type'] ?? contentType;
+        }
+
+        return _dio
+            .requestUri<Object?>(
+              uri,
+              data: encodedBody,
+              options: Options(
+                method: method,
+                headers: mergedHeaders,
+                responseType: ResponseType.bytes,
+                validateStatus: (_) => true,
+                sendTimeout: _timeout,
+                receiveTimeout: _timeout,
+              ),
+            )
+            .timeout(_timeout);
+      }
+
+      var response = await doCall();
+      var statusCode = response.statusCode ?? 0;
+      var bodyBytes = (response.data as List<int>?) ?? const <int>[];
 
       if (statusCode == 401) {
-        if (!_isHandlingUnauthorized) {
-          _isHandlingUnauthorized = true;
-          try {
-            await _onUnauthorized?.call();
-          } finally {
-            _isHandlingUnauthorized = false;
+        final normalized = uri.path;
+        final canRefresh =
+            _refreshTokenProvider != null && _onTokenRefreshed != null;
+        if (normalized != _refreshPath && canRefresh) {
+          final refreshed = await _ensureRefreshed();
+          if (refreshed) {
+            response = await doCall();
+            statusCode = response.statusCode ?? 0;
+            bodyBytes = (response.data as List<int>?) ?? const <int>[];
           }
         }
-        throw ApiException(
-          ApiError(
-            kind: ApiErrorKind.unauthorized,
-            statusCode: statusCode,
-            uri: uri,
-            message: _extractMessage(bodyBytes),
-            details: _tryDecodeJson(bodyBytes),
-          ),
-        );
+        if (statusCode == 401) {
+          await _throwUnauthorized(uri, statusCode, bodyBytes);
+        }
       }
 
       if (statusCode < 200 || statusCode >= 300) {
@@ -191,6 +207,93 @@ class ApiClient {
         ApiError(kind: ApiErrorKind.unknown, uri: uri, details: e),
       );
     }
+  }
+
+  Future<bool> _ensureRefreshed() async {
+    final existing = _refreshCompleter;
+    if (existing != null) return existing.future;
+
+    final completer = Completer<bool>();
+    _refreshCompleter = completer;
+    try {
+      final ok = await _refreshTokens();
+      completer.complete(ok);
+    } catch (_) {
+      completer.complete(false);
+    } finally {
+      _refreshCompleter = null;
+    }
+    return completer.future;
+  }
+
+  Future<bool> _refreshTokens() async {
+    final token = await _tokenProvider?.call();
+    final refreshToken = await _refreshTokenProvider?.call();
+    if (token == null || token.isEmpty) return false;
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    final refreshUri = _resolve(_refreshPath);
+    final response = await _dio
+        .requestUri<Object?>(
+          refreshUri,
+          data: jsonEncode(<String, Object?>{
+            'token': token,
+            'refreshToken': refreshToken,
+          }),
+          options: Options(
+            method: 'POST',
+            headers: const <String, String>{
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            responseType: ResponseType.bytes,
+            validateStatus: (_) => true,
+            sendTimeout: _timeout,
+            receiveTimeout: _timeout,
+          ),
+        )
+        .timeout(_timeout);
+
+    final statusCode = response.statusCode ?? 0;
+    final bodyBytes = (response.data as List<int>?) ?? const <int>[];
+    if (statusCode < 200 || statusCode >= 300) return false;
+
+    final decoded = _tryDecodeJson(bodyBytes);
+    if (decoded is! Map) return false;
+
+    final newToken = decoded['token']?.toString().trim();
+    final newRefresh = decoded['refreshToken']?.toString().trim();
+    if (newToken == null || newToken.isEmpty) return false;
+    if (newRefresh == null || newRefresh.isEmpty) return false;
+
+    final handler = _onTokenRefreshed;
+    if (handler == null) return false;
+    await handler(newToken, newRefresh);
+    return true;
+  }
+
+  Future<Never> _throwUnauthorized(
+    Uri uri,
+    int statusCode,
+    List<int> bodyBytes,
+  ) async {
+    if (!_isHandlingUnauthorized) {
+      _isHandlingUnauthorized = true;
+      try {
+        await _onUnauthorized?.call();
+      } finally {
+        _isHandlingUnauthorized = false;
+      }
+    }
+    throw ApiException(
+      ApiError(
+        kind: ApiErrorKind.unauthorized,
+        statusCode: statusCode,
+        uri: uri,
+        message: _extractMessage(bodyBytes),
+        details: _tryDecodeJson(bodyBytes),
+      ),
+    );
   }
 
   Uri _resolve(String path) {

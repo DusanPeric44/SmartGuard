@@ -53,6 +53,11 @@ class _SmartGuardAppState extends State<SmartGuardApp> {
     final api = ApiClient(
       baseUri: AppConfig.apiBaseUri,
       tokenProvider: tokenStore.getToken,
+      refreshTokenProvider: tokenStore.getRefreshToken,
+      onTokenRefreshed: (token, refreshToken) async {
+        await tokenStore.setToken(token);
+        await tokenStore.setRefreshToken(refreshToken);
+      },
       onUnauthorized: () async => auth.handleUnauthorized(),
     );
     final authRepository = AuthRepository(api: api, tokenStore: tokenStore);
