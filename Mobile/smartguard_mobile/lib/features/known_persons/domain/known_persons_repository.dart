@@ -1,12 +1,42 @@
+import 'package:dio/dio.dart';
+
+import '../../../core/constants/api_paths.dart';
+import 'user_notification_preferences_response.dart';
+
 abstract interface class KnownPersonsRepository {
-  Future<List<String>> loadKnownPersonNames();
+  Future<UserNotificationPreferencesResponse> search({
+    required int page,
+    required int pageSize,
+  });
+
+  Future<void> setEnabled({required String personId, required bool enabled});
 }
 
-class StubKnownPersonsRepository implements KnownPersonsRepository {
-  const StubKnownPersonsRepository();
+class ApiKnownPersonsRepository implements KnownPersonsRepository {
+  ApiKnownPersonsRepository(this._dio);
+
+  final Dio _dio;
 
   @override
-  Future<List<String>> loadKnownPersonNames() async {
-    return const [];
+  Future<UserNotificationPreferencesResponse> search({
+    required int page,
+    required int pageSize,
+  }) async {
+    final response = await _dio.get<Object?>(
+      ApiPaths.knownPersonsPreferencesSearch,
+      queryParameters: <String, Object?>{'page': page, 'pageSize': pageSize},
+    );
+    return UserNotificationPreferencesResponse.fromJson(response.data);
+  }
+
+  @override
+  Future<void> setEnabled({
+    required String personId,
+    required bool enabled,
+  }) async {
+    await _dio.put<Object?>(
+      ApiPaths.userNotificationPreferences(personId),
+      data: {'enabled': enabled},
+    );
   }
 }

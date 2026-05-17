@@ -170,7 +170,6 @@ class PushNotificationsHandler {
     String? token;
     try {
       token = await FirebaseMessaging.instance.getToken();
-      print('Firebase token: $token');
     } catch (_) {
       token = null;
     }
