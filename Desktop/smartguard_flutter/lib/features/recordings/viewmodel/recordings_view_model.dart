@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:smartguard_flutter/core/ui/error_mapper.dart';
 import 'package:smartguard_flutter/features/recordings/data/recordings_repository.dart';
+import 'package:smartguard_flutter/features/recordings/model/recording_device_option.dart';
 import 'package:smartguard_flutter/features/recordings/model/recording_models.dart';
 
 class RecordingsViewModel extends ChangeNotifier {
-  RecordingsViewModel({
-    required RecordingsRepository repository,
-  }) : _repository = repository;
+  RecordingsViewModel({required RecordingsRepository repository})
+    : _repository = repository;
 
   final RecordingsRepository _repository;
 
@@ -17,6 +17,9 @@ class RecordingsViewModel extends ChangeNotifier {
 
   PageResult<RecordingRow>? _page;
   PageResult<RecordingRow>? get page => _page;
+
+  List<RecordingDeviceOption> _devices = const [];
+  List<RecordingDeviceOption> get devices => _devices;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -31,6 +34,7 @@ class RecordingsViewModel extends ChangeNotifier {
   int _reqId = 0;
 
   Future<void> init() async {
+    await loadDevices();
     await load();
   }
 
@@ -74,14 +78,14 @@ class RecordingsViewModel extends ChangeNotifier {
   }
 
   Future<void> applyFilters({
-    String? deviceId,
+    int? deviceId,
     RecordingType? type,
     RecordingStatus? status,
     DateTime? from,
     DateTime? to,
   }) async {
     _query = _query.copyWith(
-      deviceId: (deviceId == null || deviceId.trim().isEmpty) ? null : deviceId,
+      deviceId: deviceId,
       type: type,
       status: status,
       from: from,
@@ -107,13 +111,17 @@ class RecordingsViewModel extends ChangeNotifier {
     await load();
   }
 
-  Future<void> changeSort(RecordingsSortBy sortBy, SortDir dir) async {
-    _query = _query.copyWith(sortBy: sortBy, sortDir: dir, page: 1);
-    await load();
+  Future<void> loadDevices() async {
+    try {
+      final res = await _repository.listDevices();
+      _devices = res;
+      notifyListeners();
+    } catch (_) {}
   }
 
-  Future<void> softDelete(String recordingId) async {
-    _rowBusy[recordingId] = true;
+  Future<void> softDelete(int recordingId) async {
+    final key = recordingId.toString();
+    _rowBusy[key] = true;
     notifyListeners();
     try {
       await _repository.softDelete(recordingId);
@@ -122,22 +130,22 @@ class RecordingsViewModel extends ChangeNotifier {
       _errorMessage = UiErrorMapper.toMessage(e);
       notifyListeners();
     } finally {
-      _rowBusy.remove(recordingId);
+      _rowBusy.remove(key);
       notifyListeners();
     }
   }
 
-  Future<Uint8List?> download(String recordingId) async {
-    _rowBusy[recordingId] = true;
+  Future<Uint8List?> download(String rowKey, String fileName) async {
+    _rowBusy[rowKey] = true;
     notifyListeners();
     try {
-      return await _repository.download(recordingId);
+      return await _repository.download(fileName);
     } catch (e) {
       _errorMessage = UiErrorMapper.toMessage(e);
       notifyListeners();
       return null;
     } finally {
-      _rowBusy.remove(recordingId);
+      _rowBusy.remove(rowKey);
       notifyListeners();
     }
   }
