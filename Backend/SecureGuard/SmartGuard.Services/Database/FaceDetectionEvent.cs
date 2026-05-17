@@ -24,6 +24,5 @@ namespace SmartGuard.Services.Database
         public byte[] Embedding { get; set; }
 
         public ICollection<Alert> Alerts { get; set; }
-        public ICollection<AIAnalysisResult> AIAnalysisResults { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartGuard.Services.Database;
 
@@ -11,9 +12,11 @@ using SmartGuard.Services.Database;
 namespace SmartGuard.Services.Database.Migrations
 {
     [DbContext(typeof(SmartGuardContext))]
-    partial class SmartGuardContextModelSnapshot : ModelSnapshot
+    [Migration("20260517223033_RemoveAIAnalysisResults")]
+    partial class RemoveAIAnalysisResults
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -742,13 +745,14 @@ namespace SmartGuard.Services.Database.Migrations
                     b.Property<int?>("AlertTypeId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Enabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<int?>("PersonId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("ReceiveEmail")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ReceivePush")
+                        .HasColumnType("bit");
 
                     b.Property<string>("UserId")
                         .IsRequired()

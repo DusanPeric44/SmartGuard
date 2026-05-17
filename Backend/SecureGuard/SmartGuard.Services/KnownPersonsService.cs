@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
@@ -9,8 +10,11 @@ namespace SmartGuard.Services
 {
     public class KnownPersonsService : BaseCRUDService<Model.DTOs.KnownPerson, Database.KnownPerson, KnownPersonSearchObject, KnownPersonInsertRequest, KnownPersonUpdateRequest>, IKnownPersonsService
     {
-        public KnownPersonsService(SmartGuardContext context) : base(context)
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public KnownPersonsService(SmartGuardContext context, UserManager<ApplicationUser> userManager) : base(context)
         {
+            _userManager = userManager;
         }
 
         protected override IQueryable<Database.KnownPerson> AddFilter(IQueryable<Database.KnownPerson> query, KnownPersonSearchObject search = null)
@@ -29,8 +33,35 @@ namespace SmartGuard.Services
 
         public override async Task<Model.DTOs.KnownPerson> InsertAsync(KnownPersonInsertRequest insert)
         {
-            // Logic for handling face embedding and picture path could go here
-            return await base.InsertAsync(insert);
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
+            var person = await base.InsertAsync(insert);
+
+            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+            var homeOwnerUsers = await _userManager.GetUsersInRoleAsync("HomeOwner");
+
+            var targetUsers = adminUsers
+                .Concat(homeOwnerUsers)
+                .Where(x => !x.IsDeleted)
+                .GroupBy(x => x.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            if (targetUsers.Count > 0)
+            {
+                var preferences = targetUsers.Select(u => new Database.UserNotificationPreference
+                {
+                    UserId = u.Id,
+                    PersonId = person.Id,
+                    Enabled = true
+                });
+
+                _context.UserNotificationPreferences.AddRange(preferences);
+                await _context.SaveChangesAsync();
+            }
+
+            await tx.CommitAsync();
+            return person;
         }
 
         public async Task<bool> UpdatePictureAsync(int id, string picturePath)
@@ -49,6 +80,15 @@ namespace SmartGuard.Services
             if (person == null) return false;
 
             await using var tx = await _context.Database.BeginTransactionAsync();
+
+            var relatedPreferences = await _context.UserNotificationPreferences
+                .Where(x => x.PersonId == id)
+                .ToListAsync();
+
+            if (relatedPreferences.Count > 0)
+            {
+                _context.UserNotificationPreferences.RemoveRange(relatedPreferences);
+            }
 
             var faceId = person.FaceId;
             if (faceId.HasValue)

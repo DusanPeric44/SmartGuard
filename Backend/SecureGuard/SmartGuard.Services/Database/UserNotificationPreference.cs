@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Identity;
 
 namespace SmartGuard.Services.Database
 {
@@ -21,7 +20,6 @@ namespace SmartGuard.Services.Database
         public int? AlertTypeId { get; set; }
         public AlertType AlertType { get; set; }
 
-        public bool ReceivePush { get; set; }
-        public bool ReceiveEmail { get; set; }
+        public bool Enabled { get; set; } = true;
     }
 }

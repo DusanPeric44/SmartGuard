@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
@@ -35,7 +34,5 @@ namespace SmartGuard.Services.Database
         public ApplicationUser ConfirmedByUser { get; set; }
 
         public bool IsDeleted { get; set; }
-
-        public ICollection<AIAnalysisResult> AIAnalysisResults { get; set; }
     }
 }
