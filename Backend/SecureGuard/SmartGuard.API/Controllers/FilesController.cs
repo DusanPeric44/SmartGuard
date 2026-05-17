@@ -18,8 +18,7 @@ namespace SmartGuard.API.Controllers
         }
 
         [HttpPost("images")]
-        [RequestSizeLimit(5_000_000)]
-        public async Task<ActionResult<object>> UploadImage([FromForm] IFormFile file)
+        public async Task<ActionResult<object>> UploadImage(IFormFile file)
         {
             if (file == null || file.Length == 0)
             {

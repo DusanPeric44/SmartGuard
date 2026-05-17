@@ -9,5 +9,6 @@ namespace SmartGuard.Model.Interfaces
     {
         Task<Device> RegisterDeviceAsync(DeviceRegistrationRequest request);
         Task<DeviceDetails> GetDetailsAsync(int id);
+        Task<bool> ValidateAsync(int deviceId, string deviceToken);
     }
 }
