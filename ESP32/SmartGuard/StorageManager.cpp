@@ -106,10 +106,9 @@ void syncFilesToBackend(const char* serverUrl) {
       
       int httpResponseCode = http.sendRequest("POST", &file, file.size());
       
-      if (httpResponseCode > 0) {
+      if (httpResponseCode == 200) {
         Serial.println("Sync successful: " + String(httpResponseCode));
-        // Optionally delete after sync if the user wants
-        // SD_MMC.remove(path); 
+        SD_MMC.remove(path); 
       } else {
         Serial.println("Sync failed: " + String(httpResponseCode));
       }

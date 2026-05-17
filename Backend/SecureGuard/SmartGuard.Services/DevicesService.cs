@@ -153,5 +153,18 @@ namespace SmartGuard.Services
 
             return details;
         }
+
+        public async Task<bool> ValidateAsync(int deviceId, string deviceToken)
+        {
+            if (deviceId <= 0 || string.IsNullOrWhiteSpace(deviceToken)) return false;
+
+            var device = await _context.Devices
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == deviceId);
+
+            if (device == null) return false;
+
+            return device.ApiKey == deviceToken;
+        }
     }
 }

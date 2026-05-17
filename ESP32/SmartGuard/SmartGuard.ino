@@ -1,5 +1,7 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <Preferences.h>
 #include "camera_pins.h"
 #include "WifiProvisioner.h"
 #include "StreamManager.h"
@@ -8,11 +10,39 @@
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "10.15.225.19"
+#define SIGNALR_HOST "192.168.8.138"
 #define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://10.15.225.19:5000/upload"
+#define BACKEND_SYNC_URL "http://192.168.8.138:5000/upload"
+#define BACKEND_BASE_URL "http://192.168.8.138:5000"
 
 String webSocketPath;
+Preferences devicePrefs;
+
+bool validateDevice(const char* serverBaseUrl) {
+  if (WiFi.status() != WL_CONNECTED) return false;
+
+  String token = getDeviceToken();
+  int id = getDeviceId();
+  if (token == "" || id <= 0) return false;
+
+  HTTPClient http;
+  String url = String(serverBaseUrl) + "/Devices/validate";
+  http.begin(url);
+  http.addHeader("X-Device-Id", String(id));
+  http.addHeader("X-Device-Token", token);
+
+  int responseCode = http.GET();
+  http.end();
+
+  return responseCode == 200;
+}
+
+void clearDeviceCredentials() {
+  devicePrefs.begin("smartguard", false);
+  devicePrefs.remove("device_token");
+  devicePrefs.remove("device_id");
+  devicePrefs.end();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -56,16 +86,16 @@ void setup() {
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 10000000; // Lowered from 20MHz for better stability during probe
+  config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
   
   if(psramFound()){
     config.frame_size = FRAMESIZE_VGA; // Use VGA for better performance with face detection
-    config.jpeg_quality = 12;
+    config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
     config.frame_size = FRAMESIZE_QVGA;
-    config.jpeg_quality = 12;
+    config.jpeg_quality = 10;
     config.fb_count = 1;
   }
 
@@ -73,6 +103,26 @@ void setup() {
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
+  }
+
+  sensor_t *s = esp_camera_sensor_get();
+  if (s) {
+    s->set_brightness(s, 1);
+    s->set_contrast(s, 1);
+    s->set_saturation(s, 0);
+    s->set_sharpness(s, 1);
+    s->set_denoise(s, 1);
+    s->set_special_effect(s, 0);
+    s->set_whitebal(s, 1);
+    s->set_awb_gain(s, 1);
+    s->set_wb_mode(s, 0);
+    s->set_exposure_ctrl(s, 1);
+    s->set_aec2(s, 1);
+    s->set_ae_level(s, 0);
+    s->set_gain_ctrl(s, 1);
+    s->set_agc_gain(s, 5);
+    s->set_hmirror(s, 0);
+    s->set_vflip(s, 0);
   }
 
   // 3. Initialize Components
@@ -86,16 +136,34 @@ void setup() {
   Serial.println("Checking device registration...");
   String deviceToken = getDeviceToken();
   int deviceId = getDeviceId();
+
+  if (deviceToken != "" && deviceId > 0) {
+    Serial.println("Validating device registration with backend...");
+    if (!validateDevice(BACKEND_BASE_URL)) {
+      Serial.println("Device validation failed. Clearing credentials and waiting for Flutter provisioning...");
+      clearDeviceCredentials();
+      deviceToken = "";
+      deviceId = 0;
+      setupWifiProvisioning();
+    } else {
+      Serial.println("Device validation OK.");
+    }
+  }
+
   if (deviceToken == "" || deviceId <= 0) {
     Serial.println("Device not registered (or missing ID). Attempting registration...");
     String registrationKey = getRegistrationKey();
     if (registrationKey != "") {
       Serial.println("Attempting to connect with registration key: " + registrationKey);
-      if (registerDevice("http://10.15.225.19:5000", registrationKey.c_str())) {
+      if (registerDevice(BACKEND_BASE_URL, registrationKey.c_str())) {
         Serial.println("Device registered successfully!");
         deviceId = getDeviceId();
       } else {
         Serial.println("Device registration failed.");
+        clearDeviceCredentials();
+        deviceToken = "";
+        deviceId = 0;
+        setupWifiProvisioning();
       }
     } else {
       Serial.println("No registration key found. Skipping registration.");

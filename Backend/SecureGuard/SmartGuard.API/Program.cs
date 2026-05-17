@@ -12,6 +12,8 @@ using SmartGuard.API.Middleware;
 using SmartGuard.API.Hubs;
 using SmartGuard.API.Services;
 using SmartGuard.Model.Options;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +165,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+var uploadsStaticFileContentTypes = new FileExtensionContentTypeProvider();
+uploadsStaticFileContentTypes.Mappings[".webp"] = "image/webp";
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsRootPath),
+    RequestPath = "/uploads",
+    ContentTypeProvider = uploadsStaticFileContentTypes,
+});
 
 app.UseWebSockets();
 
