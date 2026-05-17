@@ -1,17 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-enum RecordingType {
-  motion,
-  manual,
-  alarm,
-}
+enum RecordingType { motion, manual, alarm }
 
-enum RecordingStatus {
-  available,
-  processing,
-  failed,
-  deleted,
-}
+enum RecordingStatus { available, processing, failed, deleted }
 
 @immutable
 class RecordingRow {
@@ -24,18 +15,66 @@ class RecordingRow {
     required this.sizeBytes,
     required this.type,
     required this.status,
+    this.fileName = '',
+    required this.filePath,
     this.deletedAt,
   });
 
-  final String id;
-  final String deviceId;
+  final int id;
+  final int deviceId;
   final String deviceName;
   final DateTime startedAt;
   final int durationSeconds;
   final int sizeBytes;
   final RecordingType type;
   final RecordingStatus status;
+  final String fileName;
+  final String filePath;
   final DateTime? deletedAt;
+
+  factory RecordingRow.fromJson(Map<String, dynamic> json) {
+    final typeId = (json['recordingTypeId'] as num?)?.toInt();
+    final statusId = (json['recordingStatusId'] as num?)?.toInt();
+    final startedRaw =
+        json['timestamp'] ?? json['startedAt'] ?? json['start'] ?? json['time'];
+    return RecordingRow(
+      id: (json['id'] as num?)?.toInt() ?? int.parse(json['id'].toString()),
+      deviceId:
+          (json['deviceId'] as num?)?.toInt() ??
+          int.parse(json['deviceId'].toString()),
+      deviceName: json['deviceName']?.toString() ?? '',
+      startedAt:
+          DateTime.tryParse(startedRaw?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+      type: _parseType(typeId),
+      status: _parseStatus(statusId),
+      fileName: _extractFileName(json['filePath']?.toString() ?? ''),
+      filePath: json['filePath']?.toString() ?? '',
+      deletedAt: DateTime.tryParse(json['deletedAt']?.toString() ?? ''),
+    );
+  }
+
+  static RecordingType _parseType(int? id) {
+    if (id == null) return RecordingType.motion;
+    final idx = id - 1;
+    if (idx < 0 || idx >= RecordingType.values.length) {
+      return RecordingType.motion;
+    }
+    return RecordingType.values[idx];
+  }
+
+  static RecordingStatus _parseStatus(int? id) {
+    if (id == null) return RecordingStatus.available;
+    final idx = id - 1;
+    if (idx < 0 || idx >= RecordingStatus.values.length) {
+      return RecordingStatus.available;
+    }
+    return RecordingStatus.values[idx];
+  }
+
+  static String _extractFileName(String s) => s.split('/').last;
 }
 
 @immutable
@@ -47,32 +86,26 @@ class RecordingsQuery {
     this.search,
     this.from,
     this.to,
-    this.sortBy = RecordingsSortBy.startedAt,
-    this.sortDir = SortDir.desc,
     this.page = 1,
     this.pageSize = 25,
   });
 
-  final String? deviceId;
+  final int? deviceId;
   final RecordingType? type;
   final RecordingStatus? status;
   final String? search;
   final DateTime? from;
   final DateTime? to;
-  final RecordingsSortBy sortBy;
-  final SortDir sortDir;
   final int page;
   final int pageSize;
 
   RecordingsQuery copyWith({
-    String? deviceId,
+    int? deviceId,
     RecordingType? type,
     RecordingStatus? status,
     String? search,
     DateTime? from,
     DateTime? to,
-    RecordingsSortBy? sortBy,
-    SortDir? sortDir,
     int? page,
     int? pageSize,
   }) {
@@ -83,23 +116,11 @@ class RecordingsQuery {
       search: search ?? this.search,
       from: from ?? this.from,
       to: to ?? this.to,
-      sortBy: sortBy ?? this.sortBy,
-      sortDir: sortDir ?? this.sortDir,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
     );
   }
 }
-
-enum RecordingsSortBy {
-  startedAt,
-  deviceName,
-  status,
-  sizeBytes,
-  durationSeconds,
-}
-
-enum SortDir { asc, desc }
 
 @immutable
 class PageResult<T> {
@@ -115,4 +136,3 @@ class PageResult<T> {
   final int page;
   final int pageSize;
 }
-

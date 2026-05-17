@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/ui/app_error_state.dart';
@@ -81,10 +82,8 @@ class KnownPersonsScreen extends ConsumerWidget {
                   pictureUrl: person.pictureUrl,
                   enabled: item.enabled,
                   isUpdating: isUpdating,
-                  onToggle: (v) => controller.toggleEnabled(
-                    personId: person.id,
-                    enabled: v,
-                  ),
+                  onToggle: (v) =>
+                      controller.toggleEnabled(personId: person.id, enabled: v),
                 );
               },
             ),
@@ -149,9 +148,7 @@ class _KnownPersonCard extends StatelessWidget {
         borderRadius: AppDimens.cardRadius,
         child: Column(
           children: [
-            Expanded(
-              child: _Photo(url: pictureUrl),
-            ),
+            Expanded(child: _Photo(url: pictureUrl)),
             Padding(
               padding: const EdgeInsets.all(AppDimens.spaceM),
               child: Text(
@@ -162,7 +159,10 @@ class _KnownPersonCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDimens.spaceM,
@@ -204,7 +204,7 @@ class _Photo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final u = url?.trim();
+    final u = _resolveImageUrl(url);
     if (u == null || u.isEmpty) {
       return Container(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -234,5 +234,16 @@ class _Photo extends StatelessWidget {
         );
       },
     );
+  }
+
+  String? _resolveImageUrl(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return null;
+
+    final uri = Uri.tryParse(value);
+    if (uri != null && uri.hasScheme) return value;
+
+    final base = Uri.parse(AppConfig.apiBaseUrl);
+    return base.resolve(value).toString();
   }
 }

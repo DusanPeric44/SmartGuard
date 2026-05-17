@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:smartguard_flutter/core/network/api_error.dart';
@@ -73,6 +74,132 @@ class ApiClient {
       body: body,
       decode: decode,
     );
+  }
+
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, String>? headers,
+  }) {
+    return requestBytes(
+      method: 'GET',
+      path: path,
+      headers: headers,
+    );
+  }
+
+  Future<Uint8List> requestBytes({
+    required String method,
+    required String path,
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final uri = _resolve(path);
+    Object? encodedBody;
+    String? contentType;
+    if (body != null) {
+      contentType = headers?['Content-Type'] ?? 'application/json';
+      if (body is String || body is List<int>) {
+        encodedBody = body;
+      } else {
+        encodedBody = jsonEncode(body);
+      }
+    }
+
+    try {
+      Future<Response<Object?>> doCall() async {
+        final mergedHeaders = <String, String>{
+          'Accept': 'application/octet-stream',
+          ...?headers,
+        };
+
+        final token = await _tokenProvider?.call();
+        if (token != null && token.isNotEmpty) {
+          mergedHeaders['Authorization'] = 'Bearer $token';
+        }
+        if (contentType != null) {
+          mergedHeaders['Content-Type'] =
+              mergedHeaders['Content-Type'] ?? contentType;
+        }
+
+        return _dio
+            .requestUri<Object?>(
+              uri,
+              data: encodedBody,
+              options: Options(
+                method: method,
+                headers: mergedHeaders,
+                responseType: ResponseType.bytes,
+                validateStatus: (_) => true,
+                sendTimeout: _timeout,
+                receiveTimeout: _timeout,
+              ),
+            )
+            .timeout(_timeout);
+      }
+
+      var response = await doCall();
+      var statusCode = response.statusCode ?? 0;
+      var bodyBytes = (response.data as List<int>?) ?? const <int>[];
+
+      if (statusCode == 401) {
+        final normalized = uri.path;
+        final canRefresh =
+            _refreshTokenProvider != null && _onTokenRefreshed != null;
+        if (normalized != _refreshPath && canRefresh) {
+          final refreshed = await _ensureRefreshed();
+          if (refreshed) {
+            response = await doCall();
+            statusCode = response.statusCode ?? 0;
+            bodyBytes = (response.data as List<int>?) ?? const <int>[];
+          }
+        }
+        if (statusCode == 401) {
+          await _throwUnauthorized(uri, statusCode, bodyBytes);
+        }
+      }
+
+      if (statusCode < 200 || statusCode >= 300) {
+        throw ApiException(
+          ApiError(
+            kind: _kindForStatus(statusCode),
+            statusCode: statusCode,
+            uri: uri,
+            message: _extractMessage(bodyBytes),
+            details: _tryDecodeJson(bodyBytes),
+          ),
+        );
+      }
+
+      return Uint8List.fromList(bodyBytes);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException catch (_) {
+      throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
+    } on DioException catch (e) {
+      final err = e.error;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw ApiException(ApiError(kind: ApiErrorKind.timeout, uri: uri));
+      }
+      if (e.type == DioExceptionType.connectionError || err is SocketException) {
+        throw ApiException(
+          ApiError(
+            kind: ApiErrorKind.network,
+            uri: uri,
+            message: err is SocketException ? err.message : null,
+            details: e,
+          ),
+        );
+      }
+      throw ApiException(
+        ApiError(kind: ApiErrorKind.unknown, uri: uri, details: e),
+      );
+    } catch (e) {
+      throw ApiException(
+        ApiError(kind: ApiErrorKind.unknown, uri: uri, details: e),
+      );
+    }
   }
 
   Future<T> request<T>({
