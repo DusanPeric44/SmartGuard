@@ -34,23 +34,7 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Expanded(child: Text(pageTitle)),
-            if (isWide)
-              SizedBox(
-                width: 280,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search devices, users, recordings...',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
-                ),
-              ),
-          ],
-        ),
+        title: Row(children: [Expanded(child: Text(pageTitle))]),
         actions: [
           IconButton(
             tooltip: 'Diagnostics',
