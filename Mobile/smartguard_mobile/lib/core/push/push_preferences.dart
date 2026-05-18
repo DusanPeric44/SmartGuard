@@ -11,7 +11,7 @@ class PushPreferences {
 
   Future<bool> loadEnabled() async {
     final raw = await _storage.read(key: _kEnabledKey);
-    if (raw == null) return false;
+    if (raw == null) return true;
     return raw.trim().toLowerCase() == 'true';
   }
 

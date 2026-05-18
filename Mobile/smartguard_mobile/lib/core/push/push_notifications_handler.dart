@@ -56,8 +56,7 @@ class PushNotificationsHandler {
       next,
     ) {
       if (next.isAuthenticated) {
-        unawaited(_flushPendingRouteIfAny());
-        unawaited(_syncTokenWithBackendIfEnabled());
+        unawaited(_onAuthenticated());
       }
     });
 
@@ -77,20 +76,12 @@ class PushNotificationsHandler {
       }),
     );
 
-    final enabled = await _preferences.loadEnabled();
-    if (enabled) {
-      await _requestAndroidNotificationPermission();
-    }
-
     try {
       final initial = await FirebaseMessaging.instance.getInitialMessage();
       if (initial != null) {
         await _handleOpen(initial);
       }
     } catch (_) {}
-
-    await _flushPendingRouteIfAny();
-    await _syncTokenWithBackendIfEnabled();
   }
 
   Future<void> onPushEnabledChanged(bool enabled) async {
@@ -114,6 +105,15 @@ class PushNotificationsHandler {
     }
     _messageSub.clear();
     _sessionSub?.close();
+  }
+
+  Future<void> _onAuthenticated() async {
+    final enabled = await _preferences.loadEnabled();
+    if (enabled) {
+      await _requestAndroidNotificationPermission();
+      await _syncTokenWithBackendIfEnabled();
+    }
+    await _flushPendingRouteIfAny();
   }
 
   Future<void> _ensureFirebaseInitialized() async {
