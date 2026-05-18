@@ -127,6 +127,16 @@ builder.Services.Configure<FileStorageOptions>(o =>
     o.ReportsSubfolder = "reports";
 });
 
+var redisConfiguration = builder.Configuration["Redis:Configuration"];
+if (!string.IsNullOrWhiteSpace(redisConfiguration))
+{
+    builder.Services.AddStackExchangeRedisCache(o => o.Configuration = redisConfiguration);
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
