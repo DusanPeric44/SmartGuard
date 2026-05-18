@@ -5,12 +5,12 @@ import 'package:smartguard_flutter/core/auth/auth_controller.dart';
 import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/auth/access_denied_screen.dart';
 import 'package:smartguard_flutter/features/auth/login_screen.dart';
+import 'package:smartguard_flutter/features/alarms/alarms_screen.dart';
 import 'package:smartguard_flutter/features/audit_logs/audit_logs_screen.dart';
 import 'package:smartguard_flutter/features/dashboard/dashboard_screen.dart';
 import 'package:smartguard_flutter/features/devices/devices_screen.dart';
 import 'package:smartguard_flutter/features/known_persons/known_persons_screen.dart';
 import 'package:smartguard_flutter/features/manage_users/manage_users_screen.dart';
-import 'package:smartguard_flutter/features/placeholder/placeholder_screen.dart';
 import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
 import 'package:smartguard_flutter/features/reports/reports_screen.dart';
 
@@ -97,8 +97,7 @@ GoRouter buildRouter({
           GoRoute(
             path: '/alarms',
             name: 'alarms',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Alarm Center'),
+            builder: (context, state) => const AlarmsScreen(),
           ),
           GoRoute(
             path: '/known-persons',

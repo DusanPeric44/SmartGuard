@@ -10,23 +10,14 @@ class DashboardViewModel extends ChangeNotifier {
 
   final DashboardRepository _repo;
 
-  DashboardKpis? _kpis;
-  DashboardKpis? get kpis => _kpis;
+  DashboardOverview? _overview;
+  DashboardOverview? get overview => _overview;
 
-  List<DashboardAlert> _alerts = const [];
-  List<DashboardAlert> get alerts => _alerts;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-  bool _loadingKpis = false;
-  bool get loadingKpis => _loadingKpis;
-
-  bool _loadingAlerts = false;
-  bool get loadingAlerts => _loadingAlerts;
-
-  String? _kpisError;
-  String? get kpisError => _kpisError;
-
-  String? _alertsError;
-  String? get alertsError => _alertsError;
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   DateTime? _lastRefresh;
   DateTime? get lastRefresh => _lastRefresh;
@@ -38,6 +29,7 @@ class DashboardViewModel extends ChangeNotifier {
   Duration get interval => _interval;
 
   Timer? _timer;
+  int _reqId = 0;
 
   Future<void> init() async {
     await refresh();
@@ -50,39 +42,24 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    await Future.wait([
-      _loadKpis(),
-      _loadAlerts(),
-    ]);
-    _lastRefresh = DateTime.now();
-    notifyListeners();
-  }
-
-  Future<void> _loadKpis() async {
-    _loadingKpis = true;
-    _kpisError = null;
+    _reqId++;
+    final current = _reqId;
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      _kpis = await _repo.loadKpis().timeout(const Duration(seconds: 6));
+      final res = await _repo.loadOverview().timeout(const Duration(seconds: 8));
+      if (current != _reqId) return;
+      _overview = res;
+      _lastRefresh = DateTime.now();
     } catch (e) {
-      _kpisError = UiErrorMapper.toMessage(e);
+      if (current != _reqId) return;
+      _errorMessage = UiErrorMapper.toMessage(e);
     } finally {
-      _loadingKpis = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> _loadAlerts() async {
-    _loadingAlerts = true;
-    _alertsError = null;
-    notifyListeners();
-    try {
-      _alerts = await _repo.loadRecentAlerts().timeout(const Duration(seconds: 6));
-    } catch (e) {
-      _alertsError = UiErrorMapper.toMessage(e);
-    } finally {
-      _loadingAlerts = false;
-      notifyListeners();
+      if (current == _reqId) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -106,4 +83,3 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 }
-

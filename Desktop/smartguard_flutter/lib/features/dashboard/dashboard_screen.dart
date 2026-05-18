@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:smartguard_flutter/core/config/app_config.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:smartguard_flutter/app/app_scope.dart';
+import 'package:smartguard_flutter/features/dashboard/data/api_dashboard_repository.dart';
 import 'package:smartguard_flutter/features/dashboard/data/dashboard_repository.dart';
-import 'package:smartguard_flutter/features/dashboard/data/stub_dashboard_repository.dart';
 import 'package:smartguard_flutter/features/dashboard/model/dashboard_models.dart';
 import 'package:smartguard_flutter/features/dashboard/viewmodel/dashboard_view_model.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
@@ -14,22 +15,24 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final DashboardRepository _repo;
-  late final DashboardViewModel _vm;
+  DashboardRepository? _repo;
+  DashboardViewModel? _vm;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_repo != null) return;
+
     _repo = _buildRepository();
-    _vm = DashboardViewModel(repository: _repo);
-    _vm.addListener(_onVmChanged);
-    _vm.init();
+    _vm = DashboardViewModel(repository: _repo!);
+    _vm!.addListener(_onVmChanged);
+    _vm!.init();
   }
 
   @override
   void dispose() {
-    _vm.removeListener(_onVmChanged);
-    _vm.dispose();
+    _vm?.removeListener(_onVmChanged);
+    _vm?.dispose();
     super.dispose();
   }
 
@@ -39,39 +42,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   DashboardRepository _buildRepository() {
-    if (AppConfig.enableStubData) {
-      return StubDashboardRepository();
-    }
-    return StubDashboardRepository();
+    return ApiDashboardRepository(api: AppScope.of(context).api);
   }
 
   @override
   Widget build(BuildContext context) {
+    final vm = _vm;
+    if (vm == null) return const Center(child: AsyncStatePanel.loading());
+
+    final overview = vm.overview;
     return ListView(
       children: [
         _DashboardHeader(
-          lastRefresh: _vm.lastRefresh,
-          isRefreshing: _vm.loadingAlerts || _vm.loadingKpis,
-          autoRefresh: _vm.autoRefresh,
-          interval: _vm.interval,
-          onRefresh: () => _vm.refresh(),
-          onAutoRefreshChanged: (v) => _vm.setAutoRefresh(v),
-          onIntervalChanged: (d) => _vm.setInterval(d),
+          lastRefresh: vm.lastRefresh,
+          isRefreshing: vm.isLoading,
+          autoRefresh: vm.autoRefresh,
+          interval: vm.interval,
+          onRefresh: () => vm.refresh(),
+          onAutoRefreshChanged: (v) => vm.setAutoRefresh(v),
+          onIntervalChanged: (d) => vm.setInterval(d),
         ),
         const SizedBox(height: 16),
-        _KpisSection(
-          kpis: _vm.kpis,
-          loading: _vm.loadingKpis,
-          error: _vm.kpisError,
-          onRetry: () => _vm.refresh(),
-        ),
-        const SizedBox(height: 16),
-        _AlertsSection(
-          alerts: _vm.alerts,
-          loading: _vm.loadingAlerts,
-          error: _vm.alertsError,
-          onRetry: () => _vm.refresh(),
-        ),
+        if (vm.isLoading && overview == null)
+          const AsyncStatePanel.loading(message: 'Loading dashboard...')
+        else if (vm.errorMessage != null && overview == null)
+          AsyncStatePanel.error(
+            errorMessage: vm.errorMessage!,
+            onRetry: vm.refresh,
+          )
+        else if (overview == null)
+          const SizedBox.shrink()
+        else ...[
+          if (vm.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(vm.errorMessage!),
+                ),
+              ),
+            ),
+          _KpisSection(overview: overview),
+          const SizedBox(height: 16),
+          _BottomSection(overview: overview),
+        ],
       ],
     );
   }
@@ -104,10 +119,7 @@ class _DashboardHeader extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Text(
-              'System Info',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('System Info', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(width: 12),
             Text('Last updated: $last'),
             const Spacer(),
@@ -116,20 +128,31 @@ class _DashboardHeader extends StatelessWidget {
               child: DropdownButtonFormField<Duration>(
                 initialValue: interval,
                 items: const [
-                  DropdownMenuItem(value: Duration(seconds: 15), child: Text('15s')),
-                  DropdownMenuItem(value: Duration(seconds: 30), child: Text('30s')),
-                  DropdownMenuItem(value: Duration(minutes: 1), child: Text('1m')),
-                  DropdownMenuItem(value: Duration(minutes: 2), child: Text('2m')),
+                  DropdownMenuItem(
+                    value: Duration(seconds: 15),
+                    child: Text('15s'),
+                  ),
+                  DropdownMenuItem(
+                    value: Duration(seconds: 30),
+                    child: Text('30s'),
+                  ),
+                  DropdownMenuItem(
+                    value: Duration(minutes: 1),
+                    child: Text('1m'),
+                  ),
+                  DropdownMenuItem(
+                    value: Duration(minutes: 2),
+                    child: Text('2m'),
+                  ),
                 ],
-                onChanged: autoRefresh ? (v) => v == null ? null : onIntervalChanged(v) : null,
+                onChanged: autoRefresh
+                    ? (v) => v == null ? null : onIntervalChanged(v)
+                    : null,
                 decoration: const InputDecoration(labelText: 'Auto refresh'),
               ),
             ),
             const SizedBox(width: 12),
-            Switch(
-              value: autoRefresh,
-              onChanged: onAutoRefreshChanged,
-            ),
+            Switch(value: autoRefresh, onChanged: onAutoRefreshChanged),
             const SizedBox(width: 12),
             FilledButton.icon(
               onPressed: isRefreshing ? null : onRefresh,
@@ -150,110 +173,78 @@ class _DashboardHeader extends StatelessWidget {
 }
 
 class _KpisSection extends StatelessWidget {
-  const _KpisSection({
-    required this.kpis,
-    required this.loading,
-    required this.error,
-    required this.onRetry,
-  });
+  const _KpisSection({required this.overview});
 
-  final DashboardKpis? kpis;
-  final bool loading;
-  final String? error;
-  final VoidCallback onRetry;
+  final DashboardOverview overview;
 
   @override
   Widget build(BuildContext context) {
-    if (loading && kpis == null) {
-      return const AsyncStatePanel.loading(message: 'Učitavam KPI...');
-    }
-    if (error != null && kpis == null) {
-      return AsyncStatePanel.error(errorMessage: error!, onRetry: onRetry);
-    }
-    if (kpis == null) return const SizedBox.shrink();
-
-    final k = kpis!;
+    final devicesOnline = overview.connectedDevicesCount;
     return Wrap(
       spacing: 16,
       runSpacing: 16,
       children: [
-        _KpiCard(title: 'Devices Online', value: '${k.devicesOnline}', icon: Icons.wifi),
-        _KpiCard(title: 'Devices Offline', value: '${k.devicesOffline}', icon: Icons.wifi_off),
-        _KpiCard(title: 'Active Alarms', value: '${k.activeAlarms}', icon: Icons.warning_amber),
         _KpiCard(
-          title: 'Recordings (24h)',
-          value: '${k.recordingsLast24h}',
-          icon: Icons.video_library_outlined,
+          title: 'Devices',
+          value: '${overview.devicesCount}',
+          subtitle: '$devicesOnline Online',
+          icon: Icons.videocam_outlined,
+          accentColor: Colors.greenAccent.shade400,
         ),
-        _StorageKpiCard(usedGb: k.storageUsedGb, totalGb: k.storageTotalGb),
+        _KpiCard(
+          title: 'Recordings',
+          value: '${overview.recordingsCount}',
+          subtitle: 'Total recordings',
+          icon: Icons.video_library_outlined,
+          accentColor: Theme.of(context).colorScheme.primary,
+        ),
+        _KpiCard(
+          title: 'Alarms',
+          value: '${overview.pendingAlarmsCount}',
+          subtitle: 'Pending review',
+          icon: Icons.warning_amber_rounded,
+          accentColor: Colors.redAccent.shade200,
+        ),
+        _KpiCard(
+          title: 'Users',
+          value: '${overview.activeUsersCount}',
+          subtitle: 'Active accounts',
+          icon: Icons.people_alt_outlined,
+          accentColor: Colors.tealAccent.shade400,
+        ),
       ],
     );
   }
 }
 
-class _AlertsSection extends StatelessWidget {
-  const _AlertsSection({
-    required this.alerts,
-    required this.loading,
-    required this.error,
-    required this.onRetry,
-  });
+class _BottomSection extends StatelessWidget {
+  const _BottomSection({required this.overview});
 
-  final List<DashboardAlert> alerts;
-  final bool loading;
-  final String? error;
-  final VoidCallback onRetry;
+  final DashboardOverview overview;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Recent alerts', style: Theme.of(context).textTheme.titleLarge),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Reload'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (loading && alerts.isEmpty)
-              const AsyncStatePanel.loading(message: 'Učitavam alarme...')
-            else if (error != null && alerts.isEmpty)
-              AsyncStatePanel.error(errorMessage: error!, onRetry: onRetry)
-            else if (alerts.isEmpty)
-              const Text('Nema alarma.')
-            else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Time')),
-                    DataColumn(label: Text('Severity')),
-                    DataColumn(label: Text('Title')),
-                  ],
-                  rows: [
-                    for (final a in alerts)
-                      DataRow(
-                        cells: [
-                          DataCell(Text(_hhMm(a.timestamp))),
-                          DataCell(Text(a.severity)),
-                          DataCell(Text(a.title)),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final wide = c.maxWidth >= 980;
+        final storage = _StorageCard(overview: overview);
+        final activity = _RecentActivityCard(overview: overview);
+
+        if (wide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: storage),
+              const SizedBox(width: 16),
+              Expanded(child: activity),
+            ],
+          );
+        }
+
+        return Column(
+          children: [storage, const SizedBox(height: 16), activity],
+        );
+      },
     );
   }
 }
@@ -263,11 +254,15 @@ class _KpiCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.icon,
+    required this.subtitle,
+    required this.accentColor,
   });
 
   final String title;
   final String value;
   final IconData icon;
+  final String subtitle;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -282,11 +277,11 @@ class _KpiCard extends StatelessWidget {
                 height: 42,
                 width: 42,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: accentColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon),
+                child: Icon(icon, color: accentColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -295,7 +290,19 @@ class _KpiCard extends StatelessWidget {
                   children: [
                     Text(title),
                     const SizedBox(height: 6),
-                    Text(value, style: Theme.of(context).textTheme.headlineSmall),
+                    Text(
+                      value,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -307,47 +314,283 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-class _StorageKpiCard extends StatelessWidget {
-  const _StorageKpiCard({
-    required this.usedGb,
-    required this.totalGb,
-  });
+class _StorageCard extends StatelessWidget {
+  const _StorageCard({required this.overview});
 
-  final int usedGb;
-  final int totalGb;
+  final DashboardOverview overview;
 
   @override
   Widget build(BuildContext context) {
-    final pct = totalGb == 0 ? 0.0 : (usedGb / totalGb).clamp(0.0, 1.0);
-    final warn = pct >= 0.85;
-    return SizedBox(
-      width: 540,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    final theme = Theme.of(context);
+    final videos = overview.usedVideosBytes.toDouble();
+    final images = overview.usedImagesBytes.toDouble();
+    final reports = overview.usedReportsBytes.toDouble();
+    final total = videos + images + reports;
+
+    final sections = <PieChartSectionData>[
+      PieChartSectionData(
+        value: videos == 0 ? 1 : videos,
+        title: '',
+        color: Colors.redAccent.shade200,
+        radius: 48,
+      ),
+      PieChartSectionData(
+        value: images == 0 ? 1 : images,
+        title: '',
+        color: Colors.tealAccent.shade400,
+        radius: 48,
+      ),
+      PieChartSectionData(
+        value: reports == 0 ? 1 : reports,
+        title: '',
+        color: Colors.amberAccent.shade400,
+        radius: 48,
+      ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Storage Information', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 260,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  const Text('Storage'),
-                  const Spacer(),
-                  Text('$usedGb / $totalGb GB${warn ? ' (low)' : ''}'),
+                  PieChart(
+                    PieChartData(
+                      sections: sections,
+                      centerSpaceRadius: 70,
+                      sectionsSpace: 1.5,
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _bytesLabel(total.toInt()),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      Text(
+                        'Used',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
-              LinearProgressIndicator(
-                value: pct,
-                minHeight: 10,
-                borderRadius: BorderRadius.circular(999),
-                color: warn ? Colors.amberAccent.shade400 : null,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 10,
+              children: [
+                _LegendDot(
+                  color: Colors.redAccent.shade200,
+                  label: 'Videos',
+                  value: _bytesLabel(overview.usedVideosBytes),
+                ),
+                _LegendDot(
+                  color: Colors.tealAccent.shade400,
+                  label: 'Images',
+                  value: _bytesLabel(overview.usedImagesBytes),
+                ),
+                _LegendDot(
+                  color: Colors.amberAccent.shade400,
+                  label: 'Reports',
+                  value: _bytesLabel(overview.usedReportsBytes),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  final Color color;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(label),
+        const SizedBox(width: 6),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentActivityCard extends StatelessWidget {
+  const _RecentActivityCard({required this.overview});
+
+  final DashboardOverview overview;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final logs = overview.lastAuditLogs;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Recent Activity', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 10),
+            if (logs.isEmpty)
+              const Text('No recent activity.')
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: logs.length.clamp(0, 12),
+                separatorBuilder: (_, index) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final l = logs[index];
+                  final title = [
+                    l.action.trim(),
+                    l.resource.trim(),
+                  ].where((e) => e.isNotEmpty).join(' • ');
+                  final subtitle = [
+                    l.user.trim(),
+                    l.details.trim(),
+                  ].where((e) => e.isNotEmpty).join(' — ');
+                  return _ActivityRow(
+                    title: title.isEmpty ? 'Activity' : title,
+                    subtitle: subtitle,
+                    when: _timeAgo(l.timestamp),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({
+    required this.title,
+    required this.subtitle,
+    required this.when,
+  });
+
+  final String title;
+  final String subtitle;
+  final String when;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            when,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _bytesLabel(int bytes) {
+  if (bytes < 0) return '0 B';
+  if (bytes < 1024) return '$bytes B';
+  final kb = bytes / 1024.0;
+  if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+  final mb = kb / 1024.0;
+  if (mb < 1024) return '${mb.toStringAsFixed(1)} MB';
+  final gb = mb / 1024.0;
+  if (gb < 1024) return '${gb.toStringAsFixed(2)} GB';
+  final tb = gb / 1024.0;
+  return '${tb.toStringAsFixed(2)} TB';
+}
+
+String _timeAgo(DateTime? dt) {
+  if (dt == null) return '-';
+  final now = DateTime.now();
+  final diff = now.difference(dt);
+  if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
 }
 
 String _hhMm(DateTime dt) {
