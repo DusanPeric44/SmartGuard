@@ -42,6 +42,33 @@ namespace SmartGuard.Services
             return urlPath;
         }
 
+        public async Task<string> SaveFileAsync(byte[] bytes, string extension, string? subfolder = null)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                throw new ArgumentException("File content is required", nameof(bytes));
+            }
+
+            if (string.IsNullOrWhiteSpace(_options.UploadsRootPath))
+            {
+                throw new InvalidOperationException("FileStorageOptions.UploadsRootPath is not configured.");
+            }
+
+            extension = NormalizeExtension(extension);
+            subfolder = string.IsNullOrWhiteSpace(subfolder) ? _options.ReportsSubfolder : subfolder.Trim();
+
+            var fileName = $"{Guid.NewGuid():N}{extension}";
+            var relativePath = Path.Combine(subfolder, fileName);
+            var physicalPath = Path.Combine(_options.UploadsRootPath, relativePath);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(physicalPath)!);
+            await File.WriteAllBytesAsync(physicalPath, bytes);
+
+            var urlPrefix = NormalizeUrlPrefix(_options.UrlPrefix);
+            var urlPath = $"{urlPrefix}/{relativePath.Replace('\\', '/')}";
+            return urlPath;
+        }
+
         public Task<(Stream Stream, string ContentType)> OpenReadAsync(string urlPath)
         {
             var physicalPath = ResolvePhysicalPath(urlPath);
@@ -108,6 +135,7 @@ namespace SmartGuard.Services
                 ".jpeg" => "image/jpeg",
                 ".png" => "image/png",
                 ".webp" => "image/webp",
+                ".pdf" => "application/pdf",
                 _ => "application/octet-stream"
             };
         }

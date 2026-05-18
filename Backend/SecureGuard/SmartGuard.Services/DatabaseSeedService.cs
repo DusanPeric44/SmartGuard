@@ -85,6 +85,26 @@ namespace SmartGuard.Services
                 }
             }
 
+            // 8. Seed Report Statuses
+            string[] reportStatuses = { "Generating", "Generated", "Failed" };
+            foreach (var status in reportStatuses)
+            {
+                if (!await _context.ReportStatuses.AnyAsync(x => x.Name == status))
+                {
+                    _context.ReportStatuses.Add(new ReportStatus { Name = status });
+                }
+            }
+
+            // 9. Seed Report Types
+            string[] reportTypes = { "MonthlyAlarm", "WeeklySummary", "SecurityActivity" };
+            foreach (var type in reportTypes)
+            {
+                if (!await _context.ReportTypes.AnyAsync(x => x.Name == type))
+                {
+                    _context.ReportTypes.Add(new ReportType { Name = type });
+                }
+            }
+
             await _context.SaveChangesAsync();
         }
 
