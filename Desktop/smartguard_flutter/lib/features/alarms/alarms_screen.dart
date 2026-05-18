@@ -1,11 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/features/alarms/data/api_alerts_repository.dart';
 import 'package:smartguard_flutter/features/alarms/data/alerts_repository.dart';
 import 'package:smartguard_flutter/features/alarms/model/alert_models.dart';
-import 'package:smartguard_flutter/features/alarms/model/alert_type.dart';
 import 'package:smartguard_flutter/features/alarms/viewmodel/alarms_view_model.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
@@ -446,7 +443,7 @@ class _AlertCard extends StatelessWidget {
                   _StatusChip(name: statusName),
                   const SizedBox(height: 8),
                   Text(
-                    createdAt == null ? '-' : _fmtDateTime(createdAt),
+                    _fmtDateTime(createdAt),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
