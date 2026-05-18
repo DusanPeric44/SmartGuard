@@ -26,7 +26,6 @@ namespace SmartGuard.Services.Database
         public DbSet<UserDeviceAccess> UserDeviceAccesses { get; set; }
         public DbSet<UserPushToken> UserPushTokens { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
-        public DbSet<AIAnalysisResult> AIAnalysisResults { get; set; }
         public DbSet<ScheduledRecording> ScheduledRecordings { get; set; }
         public DbSet<City> Cities { get; set; }
         public DbSet<Country> Countries { get; set; }
@@ -40,6 +39,10 @@ namespace SmartGuard.Services.Database
                 .HasIndex(x => x.FaceId)
                 .IsUnique()
                 .HasFilter("[FaceId] IS NOT NULL");
+
+            builder.Entity<UserNotificationPreference>()
+                .Property(x => x.Enabled)
+                .HasDefaultValue(true);
         }
     }
 }

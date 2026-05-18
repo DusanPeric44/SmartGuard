@@ -6,5 +6,6 @@ namespace SmartGuard.Model.Interfaces
 {
     public interface IUserNotificationPreferencesService : IBaseCRUDService<UserNotificationPreference, UserNotificationPreferenceSearchObject, UserNotificationPreferenceInsertRequest, UserNotificationPreferenceUpdateRequest>
     {
+        Task<UserNotificationPreference> UpdateEnabledAsync(int personId, bool enabled);
     }
 }

@@ -8,7 +8,6 @@ namespace SmartGuard.Model.DTOs
         public KnownPerson Person { get; set; }
         public int? AlertTypeId { get; set; }
         public AlertType AlertType { get; set; }
-        public bool ReceivePush { get; set; }
-        public bool ReceiveEmail { get; set; }
+        public bool Enabled { get; set; }
     }
 }
