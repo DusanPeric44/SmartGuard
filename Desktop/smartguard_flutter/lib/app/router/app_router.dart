@@ -11,6 +11,7 @@ import 'package:smartguard_flutter/features/known_persons/known_persons_screen.d
 import 'package:smartguard_flutter/features/manage_users/manage_users_screen.dart';
 import 'package:smartguard_flutter/features/placeholder/placeholder_screen.dart';
 import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
+import 'package:smartguard_flutter/features/reports/reports_screen.dart';
 
 GoRouter buildRouter({
   required String initialLocation,
@@ -106,8 +107,7 @@ GoRouter buildRouter({
           GoRoute(
             path: '/reports',
             name: 'reports',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'PDF Reports'),
+            builder: (context, state) => const ReportsScreen(),
           ),
           GoRoute(
             path: '/audit',
