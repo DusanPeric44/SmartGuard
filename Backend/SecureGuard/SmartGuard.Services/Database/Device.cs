@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,6 +13,8 @@ namespace SmartGuard.Services.Database
         public string Location { get; set; } = string.Empty;
         public string MacAddress { get; set; } = string.Empty;
         public string ApiKey { get; set; } = string.Empty;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         [ForeignKey("DeviceStatus")]
         public int StatusId { get; set; }

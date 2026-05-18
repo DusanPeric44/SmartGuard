@@ -5,11 +5,13 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
+using SmartGuard.Services.Audit;
 using SmartGuard.Services.Database;
 
 namespace SmartGuard.Services
@@ -21,30 +23,41 @@ namespace SmartGuard.Services
         private readonly IConfiguration _configuration;
         private readonly SmartGuardContext _context;
         private readonly IMailingService _mailingService;
+        private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
             SmartGuardContext context,
-            IMailingService mailingService)
+            IMailingService mailingService,
+            ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
             _context = context;
             _mailingService = mailingService;
+            _logger = logger;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var email = request.Email?.Trim() ?? string.Empty;
+            var user = await _userManager.FindByEmailAsync(email);
             if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted)
             {
+                _logger.LogAuditFailed(user.Id, "UserLoginFailed", $"User:{user.Id}", $"Email={email}; Reason=Deleted");
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+            if (user == null)
             {
+                _logger.LogAuditFailed((string?)null, "UserLoginFailed", "Auth:Login", $"Email={email}; Reason=UserNotFound");
+                throw new UnauthorizedAccessException("Invalid email or password");
+            }
+            if (!await _userManager.CheckPasswordAsync(user, request.Password))
+            {
+                _logger.LogAuditFailed(user.Id, "UserLoginFailed", $"User:{user.Id}", $"Email={email}; Reason=InvalidPassword");
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
@@ -77,6 +90,7 @@ namespace SmartGuard.Services
             // Assign default role
             await _userManager.AddToRoleAsync(user, "Viewer");
 
+            _logger.LogAuditSuccess(user.Id, "UserRegistered", $"User:{user.Id}", $"Email={user.Email}; Role=Viewer");
             return await GenerateAuthResponseAsync(user);
         }
 
@@ -192,6 +206,7 @@ namespace SmartGuard.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!),
                 new Claim(ClaimTypes.NameIdentifier, user.Email!),
+                new Claim("UserId", user.Id),
                 new Claim("FirstName", user.FirstName),
                 new Claim("LastName", user.LastName)
             };

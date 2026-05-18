@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,8 @@ namespace SmartGuard.Services.Database
     {
         [Key]
         public int Id { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("AlertType")]
         public int TypeId { get; set; }
@@ -27,11 +30,11 @@ namespace SmartGuard.Services.Database
 
         [ForeignKey("LinkedEvent")]
         public int? LinkedEventId { get; set; }
-        public FaceDetectionEvent LinkedEvent { get; set; }
+        public FaceDetectionEvent? LinkedEvent { get; set; }
 
         [ForeignKey("ConfirmedByUser")]
-        public string ConfirmedByUserId { get; set; }
-        public ApplicationUser ConfirmedByUser { get; set; }
+        public string? ConfirmedByUserId { get; set; }
+        public ApplicationUser? ConfirmedByUser { get; set; }
 
         public bool IsDeleted { get; set; }
     }

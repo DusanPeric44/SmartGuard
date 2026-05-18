@@ -1,12 +1,14 @@
 using System.IO;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QuestPDF.Infrastructure;
 using SmartGuard.Model;
 using SmartGuard.Model.DTOs.ReportDocuments;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
+using SmartGuard.Services.Audit;
 using SmartGuard.Services.Database;
 using SmartGuard.Services.Reports.Pdf;
 
@@ -15,12 +17,14 @@ namespace SmartGuard.Services
     public class ReportsService : BaseCRUDService<Model.DTOs.Report, Database.Report, ReportSearchObject, ReportInsertRequest, ReportUpdateRequest>, IReportsService
     {
         private readonly IFileStorageService _fileStorage;
+        private readonly ILogger<ReportsService> _logger;
         private static bool _licenseConfigured;
         private static readonly object _licenseLock = new();
 
-        public ReportsService(SmartGuardContext context, IFileStorageService fileStorage) : base(context)
+        public ReportsService(SmartGuardContext context, IFileStorageService fileStorage, ILogger<ReportsService> logger) : base(context)
         {
             _fileStorage = fileStorage;
+            _logger = logger;
 
             if (!_licenseConfigured)
             {
@@ -65,6 +69,61 @@ namespace SmartGuard.Services
             return query
                 .Include(x => x.ReportType)
                 .Include(x => x.ReportStatus);
+        }
+
+        public override async Task<Model.DTOs.Report> InsertAsync(ReportInsertRequest insert)
+        {
+            try
+            {
+                var created = await base.InsertAsync(insert);
+                _logger.LogAuditSuccess("ReportCreated", $"Report:{created.Id}", $"TypeId={insert.TypeId}; StatusId={insert.StatusId}; PeriodStartUtc={insert.PeriodStartUtc:O}; PeriodEndUtc={insert.PeriodEndUtc:O}; GeneratedByUserId={insert.GeneratedByUserId}");
+                return created;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("ReportCreated", "Report", $"TypeId={insert.TypeId}; StatusId={insert.StatusId}; PeriodStartUtc={insert.PeriodStartUtc:O}; PeriodEndUtc={insert.PeriodEndUtc:O}; GeneratedByUserId={insert.GeneratedByUserId}", ex);
+                throw;
+            }
+        }
+
+        public override async Task<Model.DTOs.Report> UpdateAsync(int id, ReportUpdateRequest update)
+        {
+            try
+            {
+                var updated = await base.UpdateAsync(id, update);
+                if (updated != null)
+                {
+                    var start = update.PeriodStartUtc.HasValue ? update.PeriodStartUtc.Value.ToString("O") : string.Empty;
+                    var end = update.PeriodEndUtc.HasValue ? update.PeriodEndUtc.Value.ToString("O") : string.Empty;
+                    _logger.LogAuditSuccess("ReportUpdated", $"Report:{id}", $"TypeId={update.TypeId}; StatusId={update.StatusId}; PeriodStartUtc={start}; PeriodEndUtc={end}; GeneratedByUserId={update.GeneratedByUserId}; Error={update.Error}");
+                }
+                return updated;
+            }
+            catch (Exception ex)
+            {
+                var start = update.PeriodStartUtc.HasValue ? update.PeriodStartUtc.Value.ToString("O") : string.Empty;
+                var end = update.PeriodEndUtc.HasValue ? update.PeriodEndUtc.Value.ToString("O") : string.Empty;
+                _logger.LogAuditFailed("ReportUpdated", $"Report:{id}", $"TypeId={update.TypeId}; StatusId={update.StatusId}; PeriodStartUtc={start}; PeriodEndUtc={end}; GeneratedByUserId={update.GeneratedByUserId}; Error={update.Error}", ex);
+                throw;
+            }
+        }
+
+        public override async Task<bool> DeleteAsync(int id)
+        {
+            try
+            {
+                var deleted = await base.DeleteAsync(id);
+                if (deleted)
+                {
+                    _logger.LogAuditSuccess("ReportDeleted", $"Report:{id}", $"ReportId={id}");
+                }
+                return deleted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("ReportDeleted", $"Report:{id}", $"ReportId={id}", ex);
+                throw;
+            }
         }
 
         public Task<Model.DTOs.Report> GenerateSecurityActivityAsync(DateTime startUtc, DateTime endUtc, string? userId)
@@ -161,6 +220,8 @@ namespace SmartGuard.Services
                 await _context.SaveChangesAsync();
             }
 
+            _logger.LogAuditSuccess("ReportGenerationStarted", $"Report:{report.Id}", $"Type={reportTypeName}; TypeId={reportType.Id}; PeriodStartUtc={periodStartUtc:O}; PeriodEndUtc={periodEndUtc:O}; GeneratedByUserId={generatedByUserId}");
+
             try
             {
                 var pdfBytes = reportTypeName switch
@@ -178,12 +239,16 @@ namespace SmartGuard.Services
                 report.StatusId = generatedStatusId;
                 report.Error = null;
                 await _context.SaveChangesAsync();
+
+                _logger.LogAuditSuccess("ReportGenerationSucceeded", $"Report:{report.Id}", $"Type={reportTypeName}; TypeId={reportType.Id}; PeriodStartUtc={periodStartUtc:O}; PeriodEndUtc={periodEndUtc:O}; FileUrl={fileUrl}");
             }
             catch (Exception ex)
             {
                 report.StatusId = failedStatusId;
                 report.Error = ex.Message;
                 await _context.SaveChangesAsync();
+
+                _logger.LogAuditFailed("ReportGenerationFailed", $"Report:{report.Id}", $"Type={reportTypeName}; TypeId={reportType.Id}; PeriodStartUtc={periodStartUtc:O}; PeriodEndUtc={periodEndUtc:O}; Error={ex.Message}", ex);
             }
 
             var result = await _context.Reports
