@@ -5,6 +5,7 @@ import 'package:smartguard_flutter/core/auth/auth_controller.dart';
 import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/auth/access_denied_screen.dart';
 import 'package:smartguard_flutter/features/auth/login_screen.dart';
+import 'package:smartguard_flutter/features/audit_logs/audit_logs_screen.dart';
 import 'package:smartguard_flutter/features/dashboard/dashboard_screen.dart';
 import 'package:smartguard_flutter/features/devices/devices_screen.dart';
 import 'package:smartguard_flutter/features/known_persons/known_persons_screen.dart';
@@ -112,8 +113,7 @@ GoRouter buildRouter({
           GoRoute(
             path: '/audit',
             name: 'audit',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Audit Logs'),
+            builder: (context, state) => const AuditLogsScreen(),
           ),
         ],
       ),
