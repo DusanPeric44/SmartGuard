@@ -49,6 +49,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<AuditLogChannel>();
+builder.Logging.Services.AddSingleton<ILoggerProvider, AuditLoggerProvider>();
+builder.Services.AddHostedService<AuditLoggerBackgroundWriter>();
 
 // 3. Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -114,12 +117,14 @@ builder.Services.AddSmartGuardServices();
 var uploadsRootPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsRootPath);
 Directory.CreateDirectory(Path.Combine(uploadsRootPath, "images"));
+Directory.CreateDirectory(Path.Combine(uploadsRootPath, "reports"));
 
 builder.Services.Configure<FileStorageOptions>(o =>
 {
     o.UploadsRootPath = uploadsRootPath;
     o.UrlPrefix = "/uploads";
     o.ImagesSubfolder = "images";
+    o.ReportsSubfolder = "reports";
 });
 
 builder.Services.AddControllers();
@@ -127,6 +132,7 @@ builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
 builder.Services.AddHostedService<MediaDbMigrationHostedService>();
+builder.Services.AddHostedService<ReportsSchedulerHostedService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -178,6 +184,7 @@ app.UseHttpsRedirection();
 
 var uploadsStaticFileContentTypes = new FileExtensionContentTypeProvider();
 uploadsStaticFileContentTypes.Mappings[".webp"] = "image/webp";
+uploadsStaticFileContentTypes.Mappings[".pdf"] = "application/pdf";
 
 app.UseStaticFiles(new StaticFileOptions
 {

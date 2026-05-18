@@ -11,8 +11,8 @@ namespace SmartGuard.Model.DTOs
         public int DeviceId { get; set; }
         public Device Device { get; set; }
         public int? LinkedEventId { get; set; }
-        public FaceDetectionEvent LinkedEvent { get; set; }
-        public string ConfirmedByUserId { get; set; }
+        public FaceDetectionEvent? LinkedEvent { get; set; }
+        public string? ConfirmedByUserId { get; set; }
         public bool IsDeleted { get; set; }
     }
 }

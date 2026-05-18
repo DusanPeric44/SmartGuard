@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartGuard.Services.Database;
 
@@ -11,9 +12,11 @@ using SmartGuard.Services.Database;
 namespace SmartGuard.Services.Database.Migrations
 {
     [DbContext(typeof(SmartGuardContext))]
-    partial class SmartGuardContextModelSnapshot : ModelSnapshot
+    [Migration("20260518125357_AddReportingReports")]
+    partial class AddReportingReports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -164,6 +167,7 @@ namespace SmartGuard.Services.Database.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ConfirmedByUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -338,18 +342,11 @@ namespace SmartGuard.Services.Database.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Resource")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -947,7 +944,9 @@ namespace SmartGuard.Services.Database.Migrations
                 {
                     b.HasOne("SmartGuard.Services.Database.ApplicationUser", "ConfirmedByUser")
                         .WithMany()
-                        .HasForeignKey("ConfirmedByUserId");
+                        .HasForeignKey("ConfirmedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("Alerts")
@@ -986,7 +985,9 @@ namespace SmartGuard.Services.Database.Migrations
                 {
                     b.HasOne("SmartGuard.Services.Database.ApplicationUser", "User")
                         .WithMany()
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

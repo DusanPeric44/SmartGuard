@@ -55,7 +55,17 @@ namespace SmartGuard.Services
                 }
             }
 
-            // 5. Seed Recording Statuses
+            // 5. Seed Alert Types
+            string[] alertTypes = { "IntruderDetected" };
+            foreach (var type in alertTypes)
+            {
+                if (!await _context.AlertTypes.AnyAsync(x => x.Name == type))
+                {
+                    _context.AlertTypes.Add(new AlertType { Name = type });
+                }
+            }
+
+            // 6. Seed Recording Statuses
             string[] recordingStatuses = { "Pending", "Uploading", "Completed", "Failed", "Archived" };
             foreach (var status in recordingStatuses)
             {
@@ -65,7 +75,7 @@ namespace SmartGuard.Services
                 }
             }
 
-            // 6. Seed Recording Types
+            // 7. Seed Recording Types
             string[] recordingTypes = { "Motion" };
             foreach (var type in recordingTypes)
             {
@@ -75,13 +85,33 @@ namespace SmartGuard.Services
                 }
             }
 
-            // 7. Seed Device Statuses
+            // 8. Seed Device Statuses
             string[] deviceStatuses = { "Online", "Offline", "Recording", "Maintenance" };
             foreach (var status in deviceStatuses)
             {
                 if (!await _context.DeviceStatuses.AnyAsync(x => x.Name == status))
                 {
                     _context.DeviceStatuses.Add(new DeviceStatus { Name = status });
+                }
+            }
+
+            // 9. Seed Report Statuses
+            string[] reportStatuses = { "Generating", "Generated", "Failed" };
+            foreach (var status in reportStatuses)
+            {
+                if (!await _context.ReportStatuses.AnyAsync(x => x.Name == status))
+                {
+                    _context.ReportStatuses.Add(new ReportStatus { Name = status });
+                }
+            }
+
+            // 10. Seed Report Types
+            string[] reportTypes = { "MonthlyAlarm", "WeeklySummary", "SecurityActivity" };
+            foreach (var type in reportTypes)
+            {
+                if (!await _context.ReportTypes.AnyAsync(x => x.Name == type))
+                {
+                    _context.ReportTypes.Add(new ReportType { Name = type });
                 }
             }
 

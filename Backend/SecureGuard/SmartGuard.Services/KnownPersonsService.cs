@@ -5,16 +5,20 @@ using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Audit;
+using Microsoft.Extensions.Logging;
 
 namespace SmartGuard.Services
 {
     public class KnownPersonsService : BaseCRUDService<Model.DTOs.KnownPerson, Database.KnownPerson, KnownPersonSearchObject, KnownPersonInsertRequest, KnownPersonUpdateRequest>, IKnownPersonsService
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<KnownPersonsService> _logger;
 
-        public KnownPersonsService(SmartGuardContext context, UserManager<ApplicationUser> userManager) : base(context)
+        public KnownPersonsService(SmartGuardContext context, UserManager<ApplicationUser> userManager, ILogger<KnownPersonsService> logger) : base(context)
         {
             _userManager = userManager;
+            _logger = logger;
         }
 
         protected override IQueryable<Database.KnownPerson> AddFilter(IQueryable<Database.KnownPerson> query, KnownPersonSearchObject search = null)
@@ -61,7 +65,26 @@ namespace SmartGuard.Services
             }
 
             await tx.CommitAsync();
+            _logger.LogAuditSuccess("KnownPersonCreated", $"KnownPerson:{person.Id}", $"{person.FirstName} {person.LastName}".Trim());
             return person;
+        }
+
+        public override async Task<Model.DTOs.KnownPerson> UpdateAsync(int id, KnownPersonUpdateRequest update)
+        {
+            try
+            {
+                var updated = await base.UpdateAsync(id, update);
+                if (updated != null)
+                {
+                    _logger.LogAuditSuccess("KnownPersonUpdated", $"KnownPerson:{id}", $"{updated.FirstName} {updated.LastName}".Trim());
+                }
+                return updated;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("KnownPersonUpdated", $"KnownPerson:{id}", $"FirstName={update.FirstName}; LastName={update.LastName}", ex);
+                throw;
+            }
         }
 
         public async Task<bool> UpdatePictureAsync(int id, string picturePath)
@@ -71,6 +94,7 @@ namespace SmartGuard.Services
 
             entity.Picture = picturePath;
             await _context.SaveChangesAsync();
+            _logger.LogAuditSuccess("KnownPersonPictureUpdated", $"KnownPerson:{id}", $"Picture={picturePath}");
             return true;
         }
 
@@ -117,6 +141,7 @@ namespace SmartGuard.Services
             _context.KnownPersons.Remove(person);
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+            _logger.LogAuditSuccess("KnownPersonDeleted", $"KnownPerson:{id}", $"{person.FirstName} {person.LastName}".Trim());
             return true;
         }
     }

@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
+using SmartGuard.Services.Audit;
 using SmartGuard.Services.Database;
 
 namespace SmartGuard.Services
@@ -14,16 +16,19 @@ namespace SmartGuard.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly INotificationPublisher _notificationPublisher;
+        private readonly ILogger<UsersService> _logger;
 
         public UsersService(
             SmartGuardContext context,
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            INotificationPublisher notificationPublisher) : base(context)
+            INotificationPublisher notificationPublisher,
+            ILogger<UsersService> logger) : base(context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _notificationPublisher = notificationPublisher;
+            _logger = logger;
         }
 
         protected override IQueryable<ApplicationUser> AddFilter(IQueryable<ApplicationUser> query, UsersSearchObject search = null)
@@ -99,6 +104,7 @@ namespace SmartGuard.Services
                 throw;
             }
 
+            _logger.LogAuditSuccess("UserInvited", $"User:{user.Id}", $"Email={email}; Role={role}");
             return new InviteUserResult
             {
                 UserId = user.Id,
@@ -169,7 +175,7 @@ namespace SmartGuard.Services
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-            return new UserDto
+            var result = new UserDto
             {
                 Id = user.Id,
                 Email = user.Email!,
@@ -178,6 +184,8 @@ namespace SmartGuard.Services
                 RegistrationKey = user.RegistrationKey,
                 Role = roles.FirstOrDefault() ?? string.Empty
             };
+            _logger.LogAuditSuccess("UserUpdated", $"User:{id}", $"FirstName={firstName}; LastName={lastName}; Role={result.Role}");
+            return result;
         }
 
         public async Task DeleteAsync(string id)
@@ -229,13 +237,6 @@ namespace SmartGuard.Services
             }
 
             return new string(chars);
-        }
-    }
-
-    public class ReportsService : BaseGetService<object, object, BaseSearchObject>, IReportsService
-    {
-        public ReportsService(SmartGuardContext context) : base(context)
-        {
         }
     }
 }

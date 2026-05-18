@@ -6,16 +6,20 @@ using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
 using SmartGuard.Services.Database;
 using Mapster;
+using SmartGuard.Services.Audit;
+using Microsoft.Extensions.Logging;
 
 namespace SmartGuard.Services
 {
     public class DevicesService : BaseCRUDService<Model.DTOs.Device, Database.Device, DeviceSearchObject, DeviceInsertRequest, DeviceUpdateRequest>, IDevicesService
     {
         private readonly IUserContext _userContext;
+        private readonly ILogger<DevicesService> _logger;
 
-        public DevicesService(SmartGuardContext context, IUserContext userContext) : base(context)
+        public DevicesService(SmartGuardContext context, IUserContext userContext, ILogger<DevicesService> logger) : base(context)
         {
             _userContext = userContext;
+            _logger = logger;
         }
 
         protected override IQueryable<Database.Device> AddFilter(IQueryable<Database.Device> query, DeviceSearchObject search = null)
@@ -44,6 +48,57 @@ namespace SmartGuard.Services
             }
 
             return query;
+        }
+
+        public override async Task<Model.DTOs.Device> InsertAsync(DeviceInsertRequest insert)
+        {
+            try
+            {
+                var created = await base.InsertAsync(insert);
+                _logger.LogAuditSuccess("DeviceCreated", $"Device:{created.Id}", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}; SDCapacity={insert.SDCapacity}; FreeSpace={insert.FreeSpace}");
+                return created;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("DeviceCreated", "Device", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}; SDCapacity={insert.SDCapacity}; FreeSpace={insert.FreeSpace}", ex);
+                throw;
+            }
+        }
+
+        public override async Task<Model.DTOs.Device> UpdateAsync(int id, DeviceUpdateRequest update)
+        {
+            try
+            {
+                var updated = await base.UpdateAsync(id, update);
+                if (updated != null)
+                {
+                    _logger.LogAuditSuccess("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}; SDCapacity={update.SDCapacity}; FreeSpace={update.FreeSpace}");
+                }
+                return updated;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}; SDCapacity={update.SDCapacity}; FreeSpace={update.FreeSpace}", ex);
+                throw;
+            }
+        }
+
+        public override async Task<bool> DeleteAsync(int id)
+        {
+            try
+            {
+                var deleted = await base.DeleteAsync(id);
+                if (deleted)
+                {
+                    _logger.LogAuditSuccess("DeviceDeleted", $"Device:{id}", $"DeviceId={id}");
+                }
+                return deleted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed("DeviceDeleted", $"Device:{id}", $"DeviceId={id}", ex);
+                throw;
+            }
         }
 
         public async Task<bool> UpdateStatusAsync(int id, int statusId)
@@ -121,6 +176,7 @@ namespace SmartGuard.Services
             }
 
             // Map to DTO
+            _logger.LogAuditSuccess("DeviceRegistered", $"Device:{device.Id}", $"MacAddress={request.MacAddress}");
             return new Model.DTOs.Device
             {
                 Id = device.Id,

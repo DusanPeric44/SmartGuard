@@ -14,5 +14,7 @@ namespace SmartGuard.Services
         }
 
         public string Email => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        public string UserId => _httpContextAccessor.HttpContext?.User?.FindFirstValue("UserId");
     }
 }

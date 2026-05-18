@@ -26,6 +26,9 @@ namespace SmartGuard.Services.Database
         public DbSet<UserDeviceAccess> UserDeviceAccesses { get; set; }
         public DbSet<UserPushToken> UserPushTokens { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<Report> Reports { get; set; }
+        public DbSet<ReportType> ReportTypes { get; set; }
+        public DbSet<ReportStatus> ReportStatuses { get; set; }
         public DbSet<ScheduledRecording> ScheduledRecordings { get; set; }
         public DbSet<City> Cities { get; set; }
         public DbSet<Country> Countries { get; set; }
@@ -43,6 +46,22 @@ namespace SmartGuard.Services.Database
             builder.Entity<UserNotificationPreference>()
                 .Property(x => x.Enabled)
                 .HasDefaultValue(true);
+
+            builder.Entity<Alert>()
+                .Property(x => x.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Entity<Device>()
+                .Property(x => x.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Entity<KnownPerson>()
+                .Property(x => x.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Entity<Report>()
+                .HasIndex(x => new { x.TypeId, x.PeriodStartUtc, x.PeriodEndUtc })
+                .IsUnique();
         }
     }
 }
