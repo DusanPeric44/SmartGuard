@@ -38,10 +38,10 @@ Osnovna filozofija projekta počiva na tri stuba:
 
 | Komponenta       | Opis                                 | Link                                   |
 | ---------------- | ------------------------------------ | -------------------------------------- |
-| 🖥️ **Backend**   | .NET mikroservisi, REST API, SignalR | [Backend/README.md](Backend/README.md) |
-| 📡 **ESP32-CAM** | Firmware i Wi-Fi provisioning        | [ESP32/README.md](ESP32/README.md)     |
-| 📱 **Mobilna**   | Flutter Android aplikacija           | [Mobile/README.md](Mobile/README.md)   |
-| 🖱️ **Desktop**   | Flutter admin panel                  | [Desktop/README.md](Desktop/README.md) |
+| 🖥️ **Backend**   | .NET mikroservisi, REST API, SignalR | [Backend/README.md](../Backend/README.md) |
+| 📡 **ESP32-CAM** | Firmware i Wi-Fi provisioning        | [ESP32/README.md](../ESP32/README.md)     |
+| 📱 **Mobilna**   | Flutter Android aplikacija           | [Mobile/README.md](../Mobile/README.md)   |
+| 🖱️ **Desktop**   | Flutter admin panel                  | [Desktop/README.md](../Desktop/README.md) |
 
 ---
 
