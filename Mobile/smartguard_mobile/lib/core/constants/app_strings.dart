@@ -74,4 +74,14 @@ class AppStrings {
       'Manage recognized individuals and their notification preferences. Toggle notifications to receive alerts when these persons are detected by your cameras.';
   static const String knownPersonsNotificationsLabel = 'Notifications';
   static const String knownPersonsEmpty = 'No known persons found.';
+
+  static const String dashboardTitle = 'Dashboard';
+  static const String dashboardSystemStatusTitle = 'System Status';
+  static const String dashboardSystemStatusArmed = 'Armed';
+  static const String dashboardActiveTitle = 'Active';
+  static const String dashboardNewAlarmsTitle = 'New Alarms';
+  static const String dashboardActionRequired = 'Action Required';
+  static const String dashboardQuickAccessTitle = 'Quick Access';
+  static const String dashboardQuickAccessEmpty = 'No devices available.';
+  static const String dashboardLoadFailed = 'Failed to load dashboard.';
 }

@@ -64,7 +64,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'live-stream',
-                    builder: (context, state) => const LiveStreamScreen(),
+                    builder: (context, state) {
+                      final deviceId = state.uri.queryParameters['deviceId'];
+                      return LiveStreamScreen(initialDeviceId: deviceId);
+                    },
                     routes: [
                       GoRoute(
                         path: 'fullscreen',

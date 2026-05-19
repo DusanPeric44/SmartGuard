@@ -17,4 +17,6 @@ class ApiPaths {
 
   static const String devices = '/devices/my';
   static String deviceById(String id) => '/devices/$id';
+
+  static const String dashboardMobile = '/dashboard/mobile';
 }

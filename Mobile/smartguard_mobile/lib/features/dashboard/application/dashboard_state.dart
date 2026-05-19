@@ -1,56 +1,58 @@
+import '../domain/dashboard_device_list_item.dart';
+
 enum DashboardStatus { idle, loading, ready, error }
 
 class DashboardState {
   const DashboardState._({
     required this.status,
-    required this.unreadNotifications,
-    required this.activeCameras,
-    required this.newAlarms,
+    required this.devicesCount,
+    required this.pendingAlarmsCount,
+    required this.devices,
     required this.message,
   });
 
   const DashboardState.idle()
     : this._(
         status: DashboardStatus.idle,
-        unreadNotifications: 0,
-        activeCameras: 0,
-        newAlarms: 0,
+        devicesCount: 0,
+        pendingAlarmsCount: 0,
+        devices: const <DashboardDeviceListItem>[],
         message: null,
       );
 
   const DashboardState.loading()
     : this._(
         status: DashboardStatus.loading,
-        unreadNotifications: 0,
-        activeCameras: 0,
-        newAlarms: 0,
+        devicesCount: 0,
+        pendingAlarmsCount: 0,
+        devices: const <DashboardDeviceListItem>[],
         message: null,
       );
 
   const DashboardState.ready({
-    required int unreadNotifications,
-    required int activeCameras,
-    required int newAlarms,
+    required int devicesCount,
+    required int pendingAlarmsCount,
+    required List<DashboardDeviceListItem> devices,
   }) : this._(
          status: DashboardStatus.ready,
-         unreadNotifications: unreadNotifications,
-         activeCameras: activeCameras,
-         newAlarms: newAlarms,
+         devicesCount: devicesCount,
+         pendingAlarmsCount: pendingAlarmsCount,
+         devices: devices,
          message: null,
        );
 
   const DashboardState.error(String message)
     : this._(
         status: DashboardStatus.error,
-        unreadNotifications: 0,
-        activeCameras: 0,
-        newAlarms: 0,
+        devicesCount: 0,
+        pendingAlarmsCount: 0,
+        devices: const <DashboardDeviceListItem>[],
         message: message,
       );
 
   final DashboardStatus status;
-  final int unreadNotifications;
-  final int activeCameras;
-  final int newAlarms;
+  final int devicesCount;
+  final int pendingAlarmsCount;
+  final List<DashboardDeviceListItem> devices;
   final String? message;
 }
