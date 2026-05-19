@@ -1,20 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/session_controller.dart';
 import '../../core/auth/session_state.dart';
 import '../../core/constants/app_routes.dart';
-import '../../features/alarm_center/presentation/alarm_center_screen.dart';
+import '../../features/alerts/presentation/alerts_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/known_persons/presentation/known_persons_screen.dart';
 import '../../features/live_stream/presentation/live_stream_screen.dart';
 import '../../features/live_stream/presentation/live_stream_fullscreen_screen.dart';
-import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recording_archive/presentation/recording_archive_screen.dart';
-import '../../features/settings/presentation/settings_screen.dart';
 import 'app_shell.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -48,6 +47,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.register,
         builder: (context, state) => const RegisterScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) =>
+            const Scaffold(body: ProfileScreen(showHeader: false)),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppShell(
@@ -61,29 +65,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.dashboard,
                 builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.live,
+                builder: (context, state) {
+                  final deviceId = state.uri.queryParameters['deviceId'];
+                  return LiveStreamScreen(initialDeviceId: deviceId);
+                },
                 routes: [
                   GoRoute(
-                    path: 'live-stream',
-                    builder: (context, state) => const LiveStreamScreen(),
-                    routes: [
-                      GoRoute(
-                        path: 'fullscreen',
-                        builder: (context, state) =>
-                            const LiveStreamFullscreenScreen(),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'recordings',
-                    builder: (context, state) => const RecordingArchiveScreen(),
-                  ),
-                  GoRoute(
-                    path: 'known-persons',
-                    builder: (context, state) => const KnownPersonsScreen(),
-                  ),
-                  GoRoute(
-                    path: 'settings',
-                    builder: (context, state) => const SettingsScreen(),
+                    path: 'fullscreen',
+                    builder: (context, state) =>
+                        const LiveStreamFullscreenScreen(),
                   ),
                 ],
               ),
@@ -92,24 +89,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.alarmCenter,
-                builder: (context, state) => const AlarmCenterScreen(),
+                path: AppRoutes.archive,
+                builder: (context, state) => const RecordingArchiveScreen(),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.notifications,
-                builder: (context, state) => const NotificationsScreen(),
+                path: AppRoutes.alarms,
+                builder: (context, state) => const AlertsScreen(),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.profile,
-                builder: (context, state) => const ProfileScreen(),
+                path: AppRoutes.persons,
+                builder: (context, state) => const KnownPersonsScreen(),
               ),
             ],
           ),

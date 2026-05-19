@@ -6,12 +6,15 @@ import '../../../core/constants/app_dimens.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../devices/application/devices_controller.dart';
+import '../../devices/application/devices_state.dart';
 import '../../devices/presentation/device_picker.dart';
 import '../application/live_stream_controller.dart';
 import '../application/live_stream_state.dart';
 
 class LiveStreamScreen extends ConsumerStatefulWidget {
-  const LiveStreamScreen({super.key});
+  const LiveStreamScreen({super.key, this.initialDeviceId});
+
+  final String? initialDeviceId;
 
   @override
   ConsumerState<LiveStreamScreen> createState() => _LiveStreamScreenState();
@@ -23,6 +26,33 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = widget.initialDeviceId;
+      if (id == null || id.isEmpty) return;
+      _preselectDevice(id);
+    });
+  }
+
+  Future<void> _preselectDevice(String deviceId) async {
+    final devicesController = ref.read(devicesControllerProvider.notifier);
+    var devicesState = ref.read(devicesControllerProvider);
+    if (devicesState.selectedDeviceId == deviceId) return;
+
+    if (devicesState.status != DevicesStatus.ready) {
+      if (devicesState.status == DevicesStatus.loading) return;
+      await devicesController.load();
+      if (!mounted) return;
+      devicesState = ref.read(devicesControllerProvider);
+    }
+
+    if (devicesState.status != DevicesStatus.ready) return;
+
+    for (final device in devicesState.devices) {
+      if (device.id == deviceId) {
+        devicesController.select(device);
+        break;
+      }
+    }
   }
 
   @override
@@ -63,7 +93,7 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
                 ),
               ),
               IconButton(
-                onPressed: () => context.go(AppRoutes.liveStreamFullscreen),
+                onPressed: () => context.go(AppRoutes.liveFullscreen),
                 icon: const Icon(Icons.fullscreen),
               ),
             ],

@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/utils/futures.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/network/dio_provider.dart';
+import '../domain/api_dashboard_repository.dart';
 import '../domain/dashboard_repository.dart';
 import 'dashboard_state.dart';
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
-  return const StubDashboardRepository();
+  return ApiDashboardRepository(ref.read(dioProvider));
 });
 
 final dashboardControllerProvider =
@@ -23,19 +25,15 @@ class DashboardController extends Notifier<DashboardState> {
     state = const DashboardState.loading();
     try {
       final repository = ref.read(dashboardRepositoryProvider);
-      final results = await waitAll<int>([
-        repository.loadUnreadNotificationsCount(),
-        repository.loadActiveCamerasCount(),
-        repository.loadNewAlarmsCount(),
-      ]);
+      final response = await repository.loadMobileDashboard();
 
       state = DashboardState.ready(
-        unreadNotifications: results[0],
-        activeCameras: results[1],
-        newAlarms: results[2],
+        devicesCount: response.devicesCount,
+        pendingAlarmsCount: response.pendingAlarmsCount,
+        devices: response.devices,
       );
     } catch (_) {
-      state = const DashboardState.error('Neuspješno učitavanje dashboard-a');
+      state = const DashboardState.error(AppStrings.dashboardLoadFailed);
     }
   }
 }

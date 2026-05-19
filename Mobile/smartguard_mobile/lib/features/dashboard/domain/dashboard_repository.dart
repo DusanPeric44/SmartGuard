@@ -1,24 +1,19 @@
+import 'dashboard_mobile_response.dart';
+import 'dashboard_device_list_item.dart';
+
 abstract interface class DashboardRepository {
-  Future<int> loadUnreadNotificationsCount();
-  Future<int> loadActiveCamerasCount();
-  Future<int> loadNewAlarmsCount();
+  Future<DashboardMobileResponse> loadMobileDashboard();
 }
 
 class StubDashboardRepository implements DashboardRepository {
   const StubDashboardRepository();
 
   @override
-  Future<int> loadUnreadNotificationsCount() async {
-    return 0;
-  }
-
-  @override
-  Future<int> loadActiveCamerasCount() async {
-    return 0;
-  }
-
-  @override
-  Future<int> loadNewAlarmsCount() async {
-    return 0;
+  Future<DashboardMobileResponse> loadMobileDashboard() async {
+    return const DashboardMobileResponse(
+      devicesCount: 0,
+      pendingAlarmsCount: 0,
+      devices: <DashboardDeviceListItem>[],
+    );
   }
 }
