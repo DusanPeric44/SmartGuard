@@ -24,13 +24,15 @@ final sessionControllerProvider =
 class SessionController extends Notifier<SessionState>
     implements SessionManager {
   Future<SessionTokens?>? _refreshInFlight;
+  Future<void>? _restoreInFlight;
   bool _didRestore = false;
 
   @override
   SessionState build() {
     if (!_didRestore) {
       _didRestore = true;
-      unawaited(_restoreFromStorage());
+      _restoreInFlight ??= _restoreFromStorage();
+      unawaited(_restoreInFlight!);
     }
     return const SessionState.unknown();
   }
@@ -45,6 +47,17 @@ class SessionController extends Notifier<SessionState>
       return;
     }
     state = SessionState.authenticated(stored);
+  }
+
+  Future<void> _ensureRestored() async {
+    if (state.status != SessionStatus.unknown) return;
+    final existing = _restoreInFlight;
+    if (existing != null) {
+      await existing;
+      return;
+    }
+    _restoreInFlight = _restoreFromStorage();
+    await _restoreInFlight;
   }
 
   @override
@@ -64,20 +77,23 @@ class SessionController extends Notifier<SessionState>
     final existing = _refreshInFlight;
     if (existing != null) return existing;
 
-    final token = state.tokens?.accessToken;
-    final refreshToken = state.tokens?.refreshToken;
-    if (token == null ||
-        token.trim().isEmpty ||
-        refreshToken == null ||
-        refreshToken.trim().isEmpty) {
-      return Future.value(null);
-    }
-
     final completer = Completer<SessionTokens?>();
     _refreshInFlight = completer.future;
 
     () async {
       try {
+        await _ensureRestored();
+
+        final token = state.tokens?.accessToken;
+        final refreshToken = state.tokens?.refreshToken;
+        if (token == null ||
+            token.trim().isEmpty ||
+            refreshToken == null ||
+            refreshToken.trim().isEmpty) {
+          completer.complete(null);
+          return;
+        }
+
         final refreshed = await ref
             .read(tokenRefresherProvider)
             .refresh(token: token, refreshToken: refreshToken);
