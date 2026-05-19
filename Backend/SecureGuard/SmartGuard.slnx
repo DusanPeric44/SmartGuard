@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
   <Project Path="SmartGuard.API/SmartGuard.API.csproj" />
   <Project Path="SmartGuard.Model/SmartGuard.Model.csproj" />
   <Project Path="SmartGuard.Services/SmartGuard.Services.csproj" />

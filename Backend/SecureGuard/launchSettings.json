@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "smartguard.api": "StartDebugging",
+        "smartguard.archive.microservice": "StartDebugging",
+        "smartguard.notifications.microservice": "StartDebugging"
+      }
+    }
+  }
+}
