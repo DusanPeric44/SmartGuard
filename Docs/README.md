@@ -1,4 +1,4 @@
-# SmartGuard – Open‑Source IoT sigurnosni sistem (takmičenje)
+# SmartGuard – Open‑Source IoT sigurnosni sistem
 
 **Vaša kuća. Vaša kontrola. Vaši podaci.**
 
