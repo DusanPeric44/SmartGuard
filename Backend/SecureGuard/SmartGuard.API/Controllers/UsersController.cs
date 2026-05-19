@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -31,6 +32,20 @@ namespace SmartGuard.API.Controllers
         public async Task<ActionResult<UserDto>> Update(string id, [FromBody] UpdateUserRequest request)
         {
             var result = await _usersService.UpdateAsync(id, request);
+            return Ok(result);
+        }
+
+        [HttpPut("me")]
+        [Authorize]
+        public async Task<ActionResult<UserDto>> UpdateMe([FromBody] UpdateProfileRequest request)
+        {
+            var userId = User.FindFirstValue("UserId");
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await _usersService.UpdateProfileAsync(userId, request);
             return Ok(result);
         }
 

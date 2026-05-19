@@ -11,6 +11,7 @@ namespace SmartGuard.Model.Interfaces
     {
         Task<InviteUserResult> InviteAsync(InviteUserRequest request);
         Task<UserDto> UpdateAsync(string id, UpdateUserRequest request);
+        Task<UserDto> UpdateProfileAsync(string id, UpdateProfileRequest request);
         Task DeleteAsync(string id);
     }
 
