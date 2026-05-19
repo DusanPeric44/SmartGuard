@@ -5,9 +5,9 @@ class ApiPaths {
   static const String register = '/auth/register';
   static const String refresh = '/auth/refresh-token';
 
-  static const String me = '/users/me';
+  static const String me = '/auth/me';
   static const String updateMe = '/users/me';
-  static const String changePassword = '/users/change-password';
+  static const String changePassword = '/auth/change-password';
   static const String pushToken = '/users/push-token';
 
   static const String knownPersonsPreferencesSearch =
@@ -19,4 +19,8 @@ class ApiPaths {
   static String deviceById(String id) => '/devices/$id';
 
   static const String dashboardMobile = '/dashboard/mobile';
+
+  static const String alerts = '/Alerts';
+  static String alertConfirm(int id) => '/Alerts/$id/confirm';
+  static String alertDismiss(int id) => '/Alerts/$id/dismiss';
 }

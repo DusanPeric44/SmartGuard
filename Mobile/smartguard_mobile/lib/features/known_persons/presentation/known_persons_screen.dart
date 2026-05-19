@@ -26,11 +26,6 @@ class KnownPersonsScreen extends ConsumerWidget {
       child: ListView(
         padding: AppDimens.pagePadding,
         children: [
-          Text(
-            AppStrings.knownPersonsTitle,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: AppDimens.spaceM),
           _InfoCard(text: AppStrings.knownPersonsInfo),
           const SizedBox(height: AppDimens.spaceM),
           if (state.status == KnownPersonsStatus.loading)
