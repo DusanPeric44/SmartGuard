@@ -1,17 +1,19 @@
+enum UserRole { homeOwner, viewer, admin }
+
 class UserProfile {
   const UserProfile({
     required this.id,
     required this.fullName,
     required this.email,
     required this.username,
-    this.avatarUrl,
+    required this.role,
   });
 
   final String id;
   final String fullName;
   final String email;
   final String username;
-  final String? avatarUrl;
+  final UserRole role;
 
   static UserProfile fromJson(dynamic json) {
     if (json is! Map) {
@@ -23,19 +25,34 @@ class UserProfile {
     final fullName = (map['fullName'] ?? map['name'] ?? '').toString();
     final email = (map['email'] ?? '').toString();
     final username = (map['username'] ?? map['userName'] ?? '').toString();
-    final avatarUrl = map['avatarUrl']?.toString();
+    final roleRaw =
+        (map['role'] ?? map['Role'] ?? map['userRole'] ?? map['UserRole'])
+            ?.toString();
 
     if (id.trim().isEmpty || email.trim().isEmpty) {
       throw const FormatException('UserProfile: missing fields');
     }
 
+    final role = _parseRole(roleRaw);
     return UserProfile(
       id: id,
       fullName: fullName,
       email: email,
       username: username,
-      avatarUrl: avatarUrl,
+      role: role,
     );
+  }
+
+  static UserRole _parseRole(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return UserRole.admin;
+    switch (value.toLowerCase()) {
+      case 'homeowner':
+        return UserRole.homeOwner;
+      case 'viewer':
+        return UserRole.viewer;
+    }
+    return UserRole.admin;
   }
 }
 

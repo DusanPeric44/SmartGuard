@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../constants/api_paths.dart';
+import '../network/api_error.dart';
 import 'session_tokens.dart';
 import 'session_tokens_parser.dart';
 
@@ -29,8 +30,16 @@ class ApiTokenRefresher implements TokenRefresher {
         data: {'token': token, 'refreshToken': refreshToken},
       );
       return _parser.fromJson(response.data);
-    } catch (_) {
-      return null;
+    } on DioException catch (e) {
+      final apiError = e.error;
+      if (apiError is ApiError &&
+          apiError.type == ApiErrorType.http &&
+          (apiError.statusCode == 400 ||
+              apiError.statusCode == 401 ||
+              apiError.statusCode == 403)) {
+        return null;
+      }
+      rethrow;
     }
   }
 }

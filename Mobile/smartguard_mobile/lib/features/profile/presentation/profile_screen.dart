@@ -48,106 +48,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return SafeArea(
       child: AppLoadingOverlay(
         isLoading: state.isLoading || state.isSaving,
-        child: ListView(
-          padding: AppDimens.pagePadding,
-          children: [
-            if (widget.showHeader) ...[
-              Text(
-                AppStrings.profileTitle,
-                style: Theme.of(context).textTheme.headlineSmall,
+        child: Scaffold(
+          appBar: AppBar(title: const Text(AppStrings.profileTitle)),
+          body: ListView(
+            padding: AppDimens.pagePadding,
+            children: [
+              if (widget.showHeader) ...[
+                Text(
+                  AppStrings.profileTitle,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppDimens.spaceM),
+              ],
+              if (state.errorMessage != null) ...[
+                _ErrorBanner(message: state.errorMessage!),
+                const SizedBox(height: AppDimens.spaceM),
+              ],
+              _SectionCard(
+                title: AppStrings.profileSectionAccount,
+                child: state.isEditing
+                    ? Column(
+                        children: [
+                          TextField(
+                            controller: _fullNameController,
+                            onChanged: controller.setFullName,
+                            decoration: const InputDecoration(
+                              labelText: AppStrings.fullNameLabel,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimens.spaceM),
+                          TextField(
+                            controller: _emailController,
+                            onChanged: controller.setEmail,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: AppStrings.emailLabel,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimens.spaceM),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: controller.cancelEditing,
+                                  child: const Text(AppStrings.actionCancel),
+                                ),
+                              ),
+                              const SizedBox(width: AppDimens.spaceM),
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: state.canSave
+                                      ? controller.saveProfile
+                                      : null,
+                                  child: const Text(AppStrings.actionSave),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${AppStrings.profileNamePrefix}: ${state.profile?.fullName ?? '-'}',
+                          ),
+                          const SizedBox(height: AppDimens.spaceS),
+                          Text(
+                            '${AppStrings.profileEmailPrefix}: ${state.profile?.email ?? '-'}',
+                          ),
+                          const SizedBox(height: AppDimens.spaceS),
+                          Text(
+                            '${AppStrings.profileUsernamePrefix}: ${state.profile?.username ?? '-'}',
+                          ),
+                          const SizedBox(height: AppDimens.spaceM),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: state.profile == null
+                                  ? null
+                                  : controller.startEditing,
+                              child: const Text(AppStrings.profileEdit),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
               const SizedBox(height: AppDimens.spaceM),
-            ],
-            if (state.errorMessage != null) ...[
-              _ErrorBanner(message: state.errorMessage!),
+              _SectionCard(
+                title: AppStrings.profileSectionSecurity,
+                child: ListTile(
+                  title: const Text(AppStrings.profileChangePassword),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showChangePasswordDialog(context, controller),
+                ),
+              ),
               const SizedBox(height: AppDimens.spaceM),
+              _SectionCard(
+                title: AppStrings.profileSectionSession,
+                child: ListTile(
+                  title: const Text(AppStrings.logout),
+                  trailing: const Icon(Icons.logout),
+                  onTap: () => _confirmLogout(context, controller),
+                ),
+              ),
             ],
-            _SectionCard(
-              title: AppStrings.profileSectionAccount,
-              child: state.isEditing
-                  ? Column(
-                      children: [
-                        TextField(
-                          controller: _fullNameController,
-                          onChanged: controller.setFullName,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.fullNameLabel,
-                          ),
-                        ),
-                        const SizedBox(height: AppDimens.spaceM),
-                        TextField(
-                          controller: _emailController,
-                          onChanged: controller.setEmail,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.emailLabel,
-                          ),
-                        ),
-                        const SizedBox(height: AppDimens.spaceM),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: controller.cancelEditing,
-                                child: const Text(AppStrings.actionCancel),
-                              ),
-                            ),
-                            const SizedBox(width: AppDimens.spaceM),
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: state.canSave ? controller.saveProfile : null,
-                                child: const Text(AppStrings.actionSave),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${AppStrings.profileNamePrefix}: ${state.profile?.fullName ?? '-'}',
-                        ),
-                        const SizedBox(height: AppDimens.spaceS),
-                        Text(
-                          '${AppStrings.profileEmailPrefix}: ${state.profile?.email ?? '-'}',
-                        ),
-                        const SizedBox(height: AppDimens.spaceS),
-                        Text(
-                          '${AppStrings.profileUsernamePrefix}: ${state.profile?.username ?? '-'}',
-                        ),
-                        const SizedBox(height: AppDimens.spaceM),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed:
-                                state.profile == null ? null : controller.startEditing,
-                            child: const Text(AppStrings.profileEdit),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-            const SizedBox(height: AppDimens.spaceM),
-            _SectionCard(
-              title: AppStrings.profileSectionSecurity,
-              child: ListTile(
-                title: const Text(AppStrings.profileChangePassword),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showChangePasswordDialog(context, controller),
-              ),
-            ),
-            const SizedBox(height: AppDimens.spaceM),
-            _SectionCard(
-              title: AppStrings.profileSectionSession,
-              child: ListTile(
-                title: const Text(AppStrings.logout),
-                trailing: const Icon(Icons.logout),
-                onTap: () => _confirmLogout(context, controller),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -197,7 +203,9 @@ Future<void> _showChangePasswordDialog(
     final next = newController.text;
     final confirm = confirmController.text;
 
-    if (current.trim().isEmpty || next.trim().isEmpty || confirm.trim().isEmpty) {
+    if (current.trim().isEmpty ||
+        next.trim().isEmpty ||
+        confirm.trim().isEmpty) {
       setState(() => errorText = AppStrings.validationRequired);
       return;
     }
@@ -219,9 +227,9 @@ Future<void> _showChangePasswordDialog(
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.errorUnknown)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text(AppStrings.errorUnknown)));
       }
     }
   }
@@ -263,7 +271,9 @@ Future<void> _showChangePasswordDialog(
                   const SizedBox(height: AppDimens.spaceM),
                   Text(
                     errorText!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],
@@ -328,7 +338,9 @@ class _ErrorBanner extends StatelessWidget {
         padding: const EdgeInsets.all(AppDimens.spaceM),
         child: Text(
           message,
-          style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onErrorContainer,
+          ),
         ),
       ),
     );

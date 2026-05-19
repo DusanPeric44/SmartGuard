@@ -76,12 +76,14 @@ class ProfileController extends Notifier<ProfileState> {
     if (!state.canSave) return;
     state = state.copyWith(status: ProfileStatus.saving, errorMessage: null);
     try {
-      final updated = await ref.read(profileRepositoryProvider).updateProfile(
-        UpdateProfileRequest(
-          fullName: state.fullName.trim(),
-          email: state.email.trim(),
-        ),
-      );
+      final updated = await ref
+          .read(profileRepositoryProvider)
+          .updateProfile(
+            UpdateProfileRequest(
+              fullName: state.fullName.trim(),
+              email: state.email.trim(),
+            ),
+          );
       state = state.copyWith(
         status: ProfileStatus.ready,
         profile: updated,
@@ -102,12 +104,14 @@ class ProfileController extends Notifier<ProfileState> {
   }) async {
     state = state.copyWith(status: ProfileStatus.saving, errorMessage: null);
     try {
-      await ref.read(profileRepositoryProvider).changePassword(
-        ChangePasswordRequest(
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        ),
-      );
+      await ref
+          .read(profileRepositoryProvider)
+          .changePassword(
+            ChangePasswordRequest(
+              currentPassword: currentPassword,
+              newPassword: newPassword,
+            ),
+          );
       state = state.copyWith(status: ProfileStatus.ready);
     } catch (e) {
       state = state.copyWith(

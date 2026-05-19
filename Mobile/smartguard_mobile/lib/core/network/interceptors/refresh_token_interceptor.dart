@@ -4,11 +4,9 @@ import '../../auth/session_manager.dart';
 import '../../auth/session_tokens.dart';
 
 class RefreshTokenInterceptor extends QueuedInterceptor {
-  RefreshTokenInterceptor({
-    required SessionManager session,
-    required Dio dio,
-  }) : _session = session,
-       _dio = dio;
+  RefreshTokenInterceptor({required SessionManager session, required Dio dio})
+    : _session = session,
+      _dio = dio;
 
   final SessionManager _session;
   final Dio _dio;
@@ -55,7 +53,13 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
       return;
     }
 
-    final refreshed = await _tryRefresh();
+    SessionTokens? refreshed;
+    try {
+      refreshed = await _tryRefresh();
+    } catch (_) {
+      handler.next(err);
+      return;
+    }
     if (refreshed == null) {
       await _session.logout();
       handler.next(err);
@@ -77,7 +81,8 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
 
   bool _isRefreshRequest(RequestOptions options) {
     final p = options.path.toLowerCase();
-    return p.contains('/auth/refresh-token') || p.endsWith('auth/refresh-token');
+    return p.contains('/auth/refresh-token') ||
+        p.endsWith('auth/refresh-token');
   }
 
   Future<SessionTokens?> _tryRefresh() {

@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/session_controller.dart';
 import '../../core/auth/session_state.dart';
 import '../../core/constants/app_routes.dart';
-import '../../features/alerts/presentation/alerts_screen.dart';
+import '../../features/alarm_center/presentation/alarm_center_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -15,21 +15,26 @@ import '../../features/live_stream/presentation/live_stream_fullscreen_screen.da
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recording_archive/presentation/recording_archive_screen.dart';
 import 'app_shell.dart';
+import 'splash_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final session = ref.watch(sessionControllerProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: AppRoutes.splash,
     redirect: (context, state) {
+      final isSplash = state.matchedLocation == AppRoutes.splash;
       final isLoggingIn = state.matchedLocation == AppRoutes.login;
       final isRegistering = state.matchedLocation == AppRoutes.register;
 
       if (session.status == SessionStatus.unknown) {
-        return null;
+        return isSplash ? null : AppRoutes.splash;
       }
 
       final isAuthed = session.isAuthenticated;
+      if (isSplash) {
+        return isAuthed ? AppRoutes.dashboard : AppRoutes.login;
+      }
       if (!isAuthed && !isLoggingIn && !isRegistering) {
         return AppRoutes.login;
       }
@@ -39,6 +44,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
@@ -98,7 +107,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.alarms,
-                builder: (context, state) => const AlertsScreen(),
+                builder: (context, state) => const AlarmCenterScreen(),
               ),
             ],
           ),
