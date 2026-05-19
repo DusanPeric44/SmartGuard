@@ -44,7 +44,7 @@ class DashboardScreen extends ConsumerWidget {
             _TopRow(devicesCount: state.devicesCount),
             _AlarmsRow(
               pendingAlarmsCount: state.pendingAlarmsCount,
-              onTap: () => context.go(AppRoutes.alarmCenter),
+              onTap: () => context.go(AppRoutes.alarms),
             ),
             const SizedBox(height: AppDimens.spaceL),
             Text(
@@ -74,7 +74,7 @@ class DashboardScreen extends ConsumerWidget {
                       title: item.name,
                       onTap: () => context.go(
                         Uri(
-                          path: AppRoutes.dashboardLiveStream,
+                          path: AppRoutes.live,
                           queryParameters: <String, String>{
                             _deviceIdQueryKey: item.id.toString(),
                           },

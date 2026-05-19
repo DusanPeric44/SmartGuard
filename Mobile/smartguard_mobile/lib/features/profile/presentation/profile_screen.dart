@@ -8,7 +8,9 @@ import '../application/profile_controller.dart';
 import '../application/profile_state.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.showHeader = true});
+
+  final bool showHeader;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -49,11 +51,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: ListView(
           padding: AppDimens.pagePadding,
           children: [
-            Text(
-              AppStrings.profileTitle,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppDimens.spaceM),
+            if (widget.showHeader) ...[
+              Text(
+                AppStrings.profileTitle,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: AppDimens.spaceM),
+            ],
             if (state.errorMessage != null) ...[
               _ErrorBanner(message: state.errorMessage!),
               const SizedBox(height: AppDimens.spaceM),

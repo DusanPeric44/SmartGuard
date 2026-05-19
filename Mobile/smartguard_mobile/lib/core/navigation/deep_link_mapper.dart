@@ -1,20 +1,21 @@
 const _dashboardChildren = <String, String>{
-  'live-stream': '/dashboard/live-stream',
-  'livestream': '/dashboard/live-stream',
-  'recordings': '/dashboard/recordings',
-  'recording-archive': '/dashboard/recordings',
-  'known-persons': '/dashboard/known-persons',
-  'knownpersons': '/dashboard/known-persons',
-  'settings': '/dashboard/settings',
+  'live-stream': '/live',
+  'livestream': '/live',
+  'recordings': '/archive',
+  'recording-archive': '/archive',
+  'known-persons': '/persons',
+  'knownpersons': '/persons',
 };
 
 const _topLevelRoutes = <String, String>{
   'dashboard': '/dashboard',
   'home': '/dashboard',
-  'alarm-center': '/alarm-center',
-  'alarmcenter': '/alarm-center',
-  'notifications': '/notifications',
-  'profile': '/profile',
+  'live': '/live',
+  'archive': '/archive',
+  'alarms': '/alarms',
+  'alarm-center': '/alarms',
+  'alarmcenter': '/alarms',
+  'persons': '/persons',
   'login': '/login',
 };
 

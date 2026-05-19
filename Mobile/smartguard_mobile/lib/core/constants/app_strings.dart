@@ -75,6 +75,15 @@ class AppStrings {
   static const String knownPersonsNotificationsLabel = 'Notifications';
   static const String knownPersonsEmpty = 'No known persons found.';
 
+  static const String navHome = 'Home';
+  static const String navLive = 'Live';
+  static const String navArchive = 'Archive';
+  static const String navAlarms = 'Alarms';
+  static const String navPersons = 'Persons';
+
+  static const String recordingArchiveTitle = 'Archive';
+  static const String alertsTitle = 'Alarms';
+
   static const String dashboardTitle = 'Dashboard';
   static const String dashboardSystemStatusTitle = 'System Status';
   static const String dashboardSystemStatusArmed = 'Armed';

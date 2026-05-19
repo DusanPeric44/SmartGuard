@@ -93,7 +93,7 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
                 ),
               ),
               IconButton(
-                onPressed: () => context.go(AppRoutes.liveStreamFullscreen),
+                onPressed: () => context.go(AppRoutes.liveFullscreen),
                 icon: const Icon(Icons.fullscreen),
               ),
             ],
