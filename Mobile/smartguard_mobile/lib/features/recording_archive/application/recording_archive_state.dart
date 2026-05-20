@@ -1,41 +1,60 @@
+import 'package:flutter/foundation.dart';
+
+import '../domain/recording.dart';
+
 enum RecordingArchiveStatus { idle, loading, ready, error }
 
+@immutable
 class RecordingArchiveState {
-  const RecordingArchiveState._({
+  const RecordingArchiveState({
     required this.status,
-    required this.recordingIds,
-    required this.message,
+    required this.items,
+    required this.count,
+    required this.page,
+    required this.pageSize,
+    required this.isLoadingMore,
+    required this.downloadingIds,
+    required this.errorMessage,
   });
 
-  const RecordingArchiveState.idle()
-    : this._(
-        status: RecordingArchiveStatus.idle,
-        recordingIds: const [],
-        message: null,
-      );
-
-  const RecordingArchiveState.loading()
-    : this._(
-        status: RecordingArchiveStatus.loading,
-        recordingIds: const [],
-        message: null,
-      );
-
-  const RecordingArchiveState.ready(List<String> recordingIds)
-    : this._(
-        status: RecordingArchiveStatus.ready,
-        recordingIds: recordingIds,
-        message: null,
-      );
-
-  const RecordingArchiveState.error(String message)
-    : this._(
-        status: RecordingArchiveStatus.error,
-        recordingIds: const [],
-        message: message,
-      );
+  const RecordingArchiveState.initial()
+    : status = RecordingArchiveStatus.idle,
+      items = const [],
+      count = 0,
+      page = 1,
+      pageSize = 20,
+      isLoadingMore = false,
+      downloadingIds = const {},
+      errorMessage = null;
 
   final RecordingArchiveStatus status;
-  final List<String> recordingIds;
-  final String? message;
+  final List<Recording> items;
+  final int count;
+  final int page;
+  final int pageSize;
+  final bool isLoadingMore;
+  final Set<int> downloadingIds;
+  final String? errorMessage;
+
+  RecordingArchiveState copyWith({
+    RecordingArchiveStatus? status,
+    List<Recording>? items,
+    int? count,
+    int? page,
+    int? pageSize,
+    bool? isLoadingMore,
+    Set<int>? downloadingIds,
+    String? errorMessage,
+  }) {
+    return RecordingArchiveState(
+      status: status ?? this.status,
+      items: items ?? this.items,
+      count: count ?? this.count,
+      page: page ?? this.page,
+      pageSize: pageSize ?? this.pageSize,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      downloadingIds: downloadingIds ?? this.downloadingIds,
+      errorMessage: errorMessage,
+    );
+  }
 }
