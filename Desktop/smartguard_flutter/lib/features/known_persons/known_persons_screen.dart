@@ -387,6 +387,9 @@ class _Photo extends StatelessWidget {
                 ),
               );
             },
+            errorBuilder: (context, error, stackTrace) {
+              return Image.asset('assets/images/empty-avatar.png');
+            },
           );
 
     return ClipRRect(
@@ -404,7 +407,10 @@ class _Photo extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: badgeColor.withValues(alpha: 0.55)),
               ),
-              child: Text(badgeText),
+              child: Text(
+                badgeText,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ],
