@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/auth/session_state.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/errors/ui_error_mapper.dart';
 import '../../../core/network/dio_provider.dart';
@@ -22,6 +23,22 @@ class ProfileController extends Notifier<ProfileState> {
 
   @override
   ProfileState build() {
+    ref.listen(sessionControllerProvider, (previous, next) {
+      final prevTokens = previous?.tokens;
+      final nextTokens = next.tokens;
+
+      final prevAccess = prevTokens?.accessToken;
+      final nextAccess = nextTokens?.accessToken;
+
+      final authChanged = prevAccess != nextAccess;
+      final loggedOut =
+          previous?.status == SessionStatus.authenticated &&
+          next.status != SessionStatus.authenticated;
+
+      if (authChanged || loggedOut) {
+        state = const ProfileState.initial();
+      }
+    });
     return const ProfileState.initial();
   }
 
@@ -123,6 +140,7 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<void> logout() {
+    state = const ProfileState.initial();
     return ref.read(sessionControllerProvider.notifier).logout();
   }
 
