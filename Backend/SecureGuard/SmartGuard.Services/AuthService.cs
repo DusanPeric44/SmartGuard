@@ -168,6 +168,28 @@ namespace SmartGuard.Services
             }
         }
 
+        public async Task ChangePasswordAsync(string userId, ChangePasswordRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || (user is ISoftDeletable softDeletable && softDeletable.IsDeleted))
+            {
+                throw new UserException("User not found");
+            }
+
+            var currentPassword = request.CurrentPassword ?? string.Empty;
+            var newPassword = request.NewPassword ?? string.Empty;
+
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (!result.Succeeded)
+            {
+                _logger.LogAuditFailed(user.Id, "UserChangePasswordFailed", $"User:{user.Id}", "Identity change password failed");
+                throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+
+            await _userManager.UpdateSecurityStampAsync(user);
+            _logger.LogAuditSuccess(user.Id, "UserPasswordChanged", $"User:{user.Id}", "Password changed");
+        }
+
         public async Task<UserDto> GetCurrentUserAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email) 

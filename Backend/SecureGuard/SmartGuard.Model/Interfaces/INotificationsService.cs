@@ -6,5 +6,7 @@ namespace SmartGuard.Model.Interfaces
 {
     public interface INotificationsService : IBaseCRUDService<Notification, NotificationSearchObject, NotificationInsertRequest, NotificationUpdateRequest>
     {
+        Task<bool> MarkAsReadAsync(int id);
+        Task<int> MarkAllAsReadAsync();
     }
 }

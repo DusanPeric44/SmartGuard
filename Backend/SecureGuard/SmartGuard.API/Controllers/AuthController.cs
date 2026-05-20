@@ -110,6 +110,20 @@ namespace SmartGuard.API.Controllers
         }
 
         [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = User.FindFirstValue("UserId");
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            await _authService.ChangePasswordAsync(userId, request);
+            return Ok(new { message = "Password has been changed successfully." });
+        }
+
+        [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {

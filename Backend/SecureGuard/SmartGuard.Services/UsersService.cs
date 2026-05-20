@@ -188,6 +188,51 @@ namespace SmartGuard.Services
             return result;
         }
 
+        public async Task<UserDto> UpdateProfileAsync(string id, UpdateProfileRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null || user.IsDeleted)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            var firstName = request.FirstName?.Trim() ?? string.Empty;
+            var lastName = request.LastName?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(firstName))
+            {
+                throw new UserException("FirstName is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(lastName))
+            {
+                throw new UserException("LastName is required");
+            }
+
+            user.FirstName = firstName;
+            user.LastName = lastName;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                throw new UserException(string.Join(", ", updateResult.Errors.Select(e => e.Description)));
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var result = new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                RegistrationKey = user.RegistrationKey,
+                Role = roles.FirstOrDefault() ?? string.Empty
+            };
+
+            _logger.LogAuditSuccess("UserProfileUpdated", $"User:{id}", $"FirstName={firstName}; LastName={lastName}");
+            return result;
+        }
+
         public async Task DeleteAsync(string id)
         {
             var user = await _userManager.FindByIdAsync(id);

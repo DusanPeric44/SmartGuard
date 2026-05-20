@@ -11,6 +11,7 @@ namespace SmartGuard.Model.Interfaces
         Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
         Task ForgotPasswordAsync(ForgotPasswordRequest request);
         Task ResetPasswordAsync(ResetPasswordRequest request);
+        Task ChangePasswordAsync(string userId, ChangePasswordRequest request);
         Task<UserDto> GetCurrentUserAsync(string email);
         Task<string> GetRegistrationKeyAsync(string email);
     }
