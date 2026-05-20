@@ -76,8 +76,6 @@ Backend/**/*.trae
 # Secrets
 Backend/**/appsettings.Development.json
 Backend/**/secrets.json
-Backend/**/firebase-service-account.json
-Backend/**/firebase*.json
 Backend/**/uploads/*
 Backend/**/ffmpeg/*
 
@@ -139,6 +137,7 @@ Mobile/android/local.properties
 Mobile/android/*.jks
 Mobile/android/*.keystore
 Mobile/android/key.properties
+Mobile/swagger.json
 
 # Gradle
 Mobile/android/gradle-wrapper.jar
