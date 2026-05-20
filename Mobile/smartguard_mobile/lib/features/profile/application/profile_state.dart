@@ -9,7 +9,8 @@ class ProfileState {
   const ProfileState({
     required this.status,
     required this.profile,
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     required this.errorMessage,
   });
@@ -17,33 +18,47 @@ class ProfileState {
   const ProfileState.initial()
     : status = ProfileStatus.idle,
       profile = null,
-      fullName = '',
+      firstName = '',
+      lastName = '',
       email = '',
       errorMessage = null;
 
   final ProfileStatus status;
   final UserProfile? profile;
-  final String fullName;
+  final String firstName;
+  final String lastName;
   final String email;
   final String? errorMessage;
+
+  String get fullName {
+    final first = firstName.trim();
+    final last = lastName.trim();
+    if (first.isEmpty && last.isEmpty) return '';
+    if (first.isEmpty) return last;
+    if (last.isEmpty) return first;
+    return '$first $last';
+  }
 
   bool get isLoading => status == ProfileStatus.loading;
   bool get isSaving => status == ProfileStatus.saving;
   bool get isEditing => status == ProfileStatus.editing;
 
-  bool get canSave => fullName.trim().isNotEmpty && email.trim().isNotEmpty;
+  bool get canSave =>
+      firstName.trim().isNotEmpty && lastName.trim().isNotEmpty;
 
   ProfileState copyWith({
     ProfileStatus? status,
     UserProfile? profile,
-    String? fullName,
+    String? firstName,
+    String? lastName,
     String? email,
     String? errorMessage,
   }) {
     return ProfileState(
       status: status ?? this.status,
       profile: profile ?? this.profile,
-      fullName: fullName ?? this.fullName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       errorMessage: errorMessage,
     );

@@ -49,7 +49,8 @@ class ProfileController extends Notifier<ProfileState> {
       state = state.copyWith(
         status: ProfileStatus.ready,
         profile: profile,
-        fullName: profile.fullName,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
         email: profile.email,
       );
     } catch (e) {
@@ -65,7 +66,8 @@ class ProfileController extends Notifier<ProfileState> {
     if (profile == null) return;
     state = state.copyWith(
       status: ProfileStatus.editing,
-      fullName: profile.fullName,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
       email: profile.email,
       errorMessage: null,
     );
@@ -75,18 +77,19 @@ class ProfileController extends Notifier<ProfileState> {
     final profile = state.profile;
     state = state.copyWith(
       status: ProfileStatus.ready,
-      fullName: profile?.fullName ?? '',
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
       email: profile?.email ?? '',
       errorMessage: null,
     );
   }
 
-  void setFullName(String value) {
-    state = state.copyWith(fullName: value, errorMessage: null);
+  void setFirstName(String value) {
+    state = state.copyWith(firstName: value, errorMessage: null);
   }
 
-  void setEmail(String value) {
-    state = state.copyWith(email: value, errorMessage: null);
+  void setLastName(String value) {
+    state = state.copyWith(lastName: value, errorMessage: null);
   }
 
   Future<void> saveProfile() async {
@@ -97,14 +100,15 @@ class ProfileController extends Notifier<ProfileState> {
           .read(profileRepositoryProvider)
           .updateProfile(
             UpdateProfileRequest(
-              fullName: state.fullName.trim(),
-              email: state.email.trim(),
+              firstName: state.firstName.trim(),
+              lastName: state.lastName.trim(),
             ),
           );
       state = state.copyWith(
         status: ProfileStatus.ready,
         profile: updated,
-        fullName: updated.fullName,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
         email: updated.email,
       );
     } catch (e) {

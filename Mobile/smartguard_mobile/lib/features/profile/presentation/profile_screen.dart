@@ -17,12 +17,14 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -30,8 +32,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(profileControllerProvider, (previous, next) {
-      if (previous?.profile != next.profile && next.profile != null) {
-        _fullNameController.text = next.fullName;
+      if (previous?.profile != next.profile) {
+        if (next.profile == null) {
+          _firstNameController.text = '';
+          _lastNameController.text = '';
+          _emailController.text = '';
+          return;
+        }
+        _firstNameController.text = next.firstName;
+        _lastNameController.text = next.lastName;
         _emailController.text = next.email;
       }
     });
@@ -70,16 +79,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ? Column(
                         children: [
                           TextField(
-                            controller: _fullNameController,
-                            onChanged: controller.setFullName,
+                            controller: _firstNameController,
+                            onChanged: controller.setFirstName,
                             decoration: const InputDecoration(
-                              labelText: AppStrings.fullNameLabel,
+                              labelText: AppStrings.firstNameLabel,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimens.spaceM),
+                          TextField(
+                            controller: _lastNameController,
+                            onChanged: controller.setLastName,
+                            decoration: const InputDecoration(
+                              labelText: AppStrings.lastNameLabel,
                             ),
                           ),
                           const SizedBox(height: AppDimens.spaceM),
                           TextField(
                             controller: _emailController,
-                            onChanged: controller.setEmail,
+                            enabled: false,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
                               labelText: AppStrings.emailLabel,
