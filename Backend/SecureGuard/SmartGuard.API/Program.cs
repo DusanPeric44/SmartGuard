@@ -92,6 +92,7 @@ builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<RecordingUploadStartedConsumer>();
     x.AddConsumer<RecordingUploadCompletedConsumer>();
+    x.AddConsumer<ChangeDeviceStatusConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -105,6 +106,11 @@ builder.Services.AddMassTransit(x =>
         {
             e.ConfigureConsumer<RecordingUploadStartedConsumer>(context);
             e.ConfigureConsumer<RecordingUploadCompletedConsumer>(context);
+        });
+
+        cfg.ReceiveEndpoint("api-device-status-events", e =>
+        {
+            e.ConfigureConsumer<ChangeDeviceStatusConsumer>(context);
         });
     });
 });

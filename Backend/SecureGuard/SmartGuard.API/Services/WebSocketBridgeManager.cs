@@ -1,8 +1,10 @@
 using System.Net.WebSockets;
 using System.Text;
+using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using SmartGuard.API.Hubs;
+using SmartGuard.Model.Events;
 using SmartGuard.Model.Interfaces;
 
 namespace SmartGuard.API.Services
@@ -12,11 +14,13 @@ namespace SmartGuard.API.Services
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, WebSocket> _sockets = new();
         private readonly IHubContext<CameraHub> _hubContext;
         private readonly ILogger<WebSocketBridgeManager> _logger;
+        private readonly IBus _bus;
 
-        public WebSocketBridgeManager(IHubContext<CameraHub> hubContext, ILogger<WebSocketBridgeManager> logger)
+        public WebSocketBridgeManager(IHubContext<CameraHub> hubContext, ILogger<WebSocketBridgeManager> logger, IBus bus)
         {
             _hubContext = hubContext;
             _logger = logger;
+            _bus = bus;
         }
 
         public async Task AddSocketAsync(string deviceId, WebSocket socket)
@@ -38,6 +42,19 @@ namespace SmartGuard.API.Services
             if (_sockets.TryAdd(deviceId, socket))
             {
                 _logger.LogInformation("Device {DeviceId} connected via WebSocket.", deviceId);
+                try
+                {
+                    await _bus.Publish<IChangeDeviceStatusEvent>(new
+                    {
+                        DeviceId = deviceId,
+                        StatusName = "Online",
+                        TimestampUtc = DateTime.UtcNow
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to publish Online status event for device {DeviceId}", deviceId);
+                }
             }
         }
 
@@ -46,6 +63,19 @@ namespace SmartGuard.API.Services
             if (_sockets.TryRemove(deviceId, out _))
             {
                 _logger.LogInformation("Device {DeviceId} disconnected from WebSocket.", deviceId);
+                try
+                {
+                    await _bus.Publish<IChangeDeviceStatusEvent>(new
+                    {
+                        DeviceId = deviceId,
+                        StatusName = "Offline",
+                        TimestampUtc = DateTime.UtcNow
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to publish Offline status event for device {DeviceId}", deviceId);
+                }
             }
             await Task.CompletedTask;
         }
