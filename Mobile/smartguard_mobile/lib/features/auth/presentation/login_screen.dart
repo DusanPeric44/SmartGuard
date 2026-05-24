@@ -126,6 +126,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text(AppStrings.actionLogin),
                   ),
                   const SizedBox(height: AppDimens.spaceM),
+                  OutlinedButton(
+                    onPressed:
+                        !state.isSubmitting ? controller.signInWithGoogle : null,
+                    child: const Text(AppStrings.actionContinueWithGoogle),
+                  ),
+                  const SizedBox(height: AppDimens.spaceM),
                   TextButton(
                     onPressed: () => context.go(AppRoutes.register),
                     child: const Text(AppStrings.actionGoToRegister),
