@@ -6,11 +6,17 @@ import '../../../core/network/api_error.dart';
 import '../../../core/network/dio_provider.dart';
 import '../domain/api_auth_repository.dart';
 import '../domain/auth_repository.dart';
+import '../domain/flutter_appauth_oidc_auth_repository.dart';
+import '../domain/oidc_auth_repository.dart';
 import 'auth_state.dart';
 import 'auth_validation.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return ApiAuthRepository(ref.read(authDioProvider));
+});
+
+final oidcAuthRepositoryProvider = Provider<OidcAuthRepository>((ref) {
+  return FlutterAppAuthOidcAuthRepository();
 });
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
@@ -104,6 +110,36 @@ class AuthController extends Notifier<AuthState> {
         status: AuthStatus.error,
         fieldErrors: mapped.fieldErrors,
         globalErrorMessage: mapped.globalMessage,
+      );
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    if (state.isSubmitting) return;
+
+    state = state.copyWith(
+      status: AuthStatus.submitting,
+      fieldErrors: const {},
+      globalErrorMessage: null,
+    );
+
+    try {
+      final repo = ref.read(oidcAuthRepositoryProvider);
+      final tokens = await repo.signInWithGoogle();
+      if (tokens == null) {
+        state = state.copyWith(status: AuthStatus.idle);
+        return;
+      }
+
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .setTokens(tokens.toSessionTokens());
+
+      state = state.copyWith(status: AuthStatus.success);
+    } catch (_) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        globalErrorMessage: AppStrings.errorOAuthLoginFailed,
       );
     }
   }

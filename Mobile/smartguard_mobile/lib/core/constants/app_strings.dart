@@ -24,6 +24,7 @@ class AppStrings {
   static const String actionConnect = 'Start Stream';
   static const String actionDisconnect = 'Disconnect';
   static const String actionReconnect = 'Reconnect';
+  static const String actionContinueWithGoogle = 'Continue with Google';
 
   static const String validationRequired = 'This field is required';
   static const String validationInvalidEmail = 'Enter a valid email';
@@ -35,6 +36,7 @@ class AppStrings {
   static const String errorTimeout = 'Request timed out';
   static const String errorUnauthorized =
       'Session expired. Please log in again.';
+  static const String errorOAuthLoginFailed = 'Google login failed';
   static const String errorUnknown = 'Something went wrong';
 
   static const String liveStreamTitle = 'Live Stream';
