@@ -14,8 +14,8 @@ namespace SmartGuard.Services.Database
         public ApplicationUser User { get; set; }
 
         [ForeignKey("Device")]
-        public int DeviceId { get; set; }
-        public Device Device { get; set; }
+        public int? DeviceId { get; set; }
+        public Device? Device { get; set; }
 
         public bool CanStream { get; set; }
         public bool CanDownload { get; set; }

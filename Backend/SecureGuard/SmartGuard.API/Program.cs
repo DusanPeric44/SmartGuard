@@ -1,20 +1,26 @@
+using Duende.IdentityServer;
+using MassTransit;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using MassTransit;
+using Microsoft.OpenApi;
+using SmartGuard.API.Consumers;
+using SmartGuard.API.Extensions;
+using SmartGuard.API.Hubs;
+using SmartGuard.API.Middleware;
+using SmartGuard.API.Services;
+using SmartGuard.Model.Interfaces;
+using SmartGuard.Model.Options;
+using SmartGuard.Model.Requests;
 using SmartGuard.Services;
 using SmartGuard.Services.Database;
-using SmartGuard.Model.Interfaces;
-using Microsoft.OpenApi;
-using SmartGuard.API.Middleware;
-using SmartGuard.API.Hubs;
-using SmartGuard.API.Services;
-using SmartGuard.Model.Options;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.FileProviders;
-using SmartGuard.API.Consumers;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +41,7 @@ builder.Services.AddDbContext<SmartGuardContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2. Identity Configuration
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -47,6 +53,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<SmartGuardContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddIdentityServerConfiguration();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<AuditLogChannel>();
@@ -78,14 +86,72 @@ builder.Services.AddAuthentication(options =>
 })
  .AddGoogle(options =>
  {
+     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
      options.ClientId = builder.Configuration["Google:ClientId"] ?? "dummy";
      options.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? "dummy";
+     options.CallbackPath = "/auth/google";
+     options.Scope.Add("profile");
+     options.Events.OnTicketReceived = async ctx =>
+     {
+         ctx.HandleResponse();
+
+         var principal = ctx.Principal;
+         var email = principal?.FindFirst("email")?.Value?.Trim()
+                     ?? principal?.FindFirst(JwtRegisteredClaimNames.Email)?.Value?.Trim()
+                     ?? principal?.FindFirst(ClaimTypes.Email)?.Value?.Trim()
+                     ?? string.Empty;
+
+         if (string.IsNullOrWhiteSpace(email))
+         {
+             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+             await ctx.Response.WriteAsJsonAsync(new { message = "Invalid Google login" });
+             return;
+         }
+
+         var firstName = principal?.FindFirst("given_name")?.Value?.Trim() ?? string.Empty;
+         var lastName = principal?.FindFirst("family_name")?.Value?.Trim() ?? string.Empty;
+
+         try
+         {
+             var authService = ctx.HttpContext.RequestServices.GetRequiredService<IAuthService>();
+             var response = await authService.ExternalProviderCallbackAsync(new ExternalProviderCallbackRequest
+             {
+                 Provider = "Google",
+                 Email = email,
+                 FirstName = firstName,
+                 LastName = lastName
+             });
+
+             await ctx.HttpContext.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+
+             ctx.Response.ContentType = "application/json";
+             await ctx.Response.WriteAsJsonAsync(response);
+         }
+         catch (UnauthorizedAccessException ex)
+         {
+             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+             await ctx.Response.WriteAsJsonAsync(new { message = ex.Message });
+         }
+         catch (Exception ex)
+         {
+             ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+             await ctx.Response.WriteAsJsonAsync(new { message = ex.Message });
+         }
+     };
+     options.Events.OnRemoteFailure = async ctx =>
+     {
+         ctx.HandleResponse();
+         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+         await ctx.Response.WriteAsJsonAsync(new { message = ctx.Failure?.Message ?? "Google login failed" });
+     };
  })
  .AddMicrosoftAccount(options =>
  {
      options.ClientId = builder.Configuration["AzureAd:ClientId"] ?? "dummy";
      options.ClientSecret = builder.Configuration["AzureAd:ClientSecret"] ?? "dummy";
  });
+
+builder.Services.AddRazorPages();
 
 // 4. Dependency Injection (Scoped)
 builder.Services.AddMassTransit(x =>
@@ -214,8 +280,10 @@ app.UseWebSockets();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
+app.UseIdentityServer();
 app.UseAuthorization();
 
+app.MapRazorPages();
 app.MapControllers().RequireAuthorization();
 
 app.MapHub<CameraHub>("/hub/camera");

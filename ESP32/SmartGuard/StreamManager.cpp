@@ -1,6 +1,7 @@
 #include "StreamManager.h"
 #include <ArduinoJson.h>
 #include <mbedtls/base64.h>
+#include "FlashManager.h"
 
 WebSocketsClient webSocket;
 bool isStreamingEnabled = false;
@@ -46,6 +47,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       }
       isHubConnected = false;
       isStreamingEnabled = false;
+      flashOn();
       break;
     case WStype_ERROR:
       Serial.printf("[Stream] WebSocket Error: %s\n", (char*)payload);
@@ -53,6 +55,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_CONNECTED:
       Serial.println("[Stream] Connected to WebSocket Bridge.");
       isHubConnected = true;
+      flashOff();
       break;
     case WStype_TEXT:
       {

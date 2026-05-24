@@ -37,6 +37,20 @@ namespace SmartGuard.Model.Requests
         public string Provider { get; set; } = string.Empty; // "Google" or "Microsoft"
     }
 
+    public class ExternalProviderCallbackRequest
+    {
+        [Required]
+        public string Provider { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        public string FirstName { get; set; } = string.Empty;
+
+        public string LastName { get; set; } = string.Empty;
+    }
+
     public class RefreshTokenRequest
     {
         [Required]

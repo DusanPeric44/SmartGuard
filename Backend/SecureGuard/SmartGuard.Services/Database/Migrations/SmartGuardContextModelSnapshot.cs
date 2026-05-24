@@ -175,7 +175,7 @@ namespace SmartGuard.Services.Database.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DeviceId")
+                    b.Property<int?>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<string>("DismissalReason")
@@ -468,7 +468,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("DeviceId")
+                    b.Property<int?>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<byte[]>("Embedding")
@@ -582,7 +582,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("DeviceId")
+                    b.Property<int?>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<int>("Duration")
@@ -780,7 +780,7 @@ namespace SmartGuard.Services.Database.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DeviceId")
+                    b.Property<int?>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<TimeSpan>("EndTime")
@@ -813,7 +813,7 @@ namespace SmartGuard.Services.Database.Migrations
                     b.Property<bool>("CanStream")
                         .HasColumnType("bit");
 
-                    b.Property<int>("DeviceId")
+                    b.Property<int?>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<string>("UserId")
@@ -952,12 +952,12 @@ namespace SmartGuard.Services.Database.Migrations
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("Alerts")
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SmartGuard.Services.Database.FaceDetectionEvent", "LinkedEvent")
                         .WithMany("Alerts")
-                        .HasForeignKey("LinkedEventId");
+                        .HasForeignKey("LinkedEventId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("SmartGuard.Services.Database.AlertStatus", "AlertStatus")
                         .WithMany()
@@ -1018,12 +1018,12 @@ namespace SmartGuard.Services.Database.Migrations
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("FaceDetectionEvents")
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SmartGuard.Services.Database.KnownPerson", "Person")
                         .WithMany("FaceDetectionEvents")
-                        .HasForeignKey("PersonId");
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Device");
 
@@ -1046,8 +1046,7 @@ namespace SmartGuard.Services.Database.Migrations
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("Recordings")
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SmartGuard.Services.Database.RecordingStatus", "RecordingStatus")
                         .WithMany()
@@ -1103,8 +1102,7 @@ namespace SmartGuard.Services.Database.Migrations
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("ScheduledRecordings")
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Device");
                 });
@@ -1114,8 +1112,7 @@ namespace SmartGuard.Services.Database.Migrations
                     b.HasOne("SmartGuard.Services.Database.Device", "Device")
                         .WithMany("UserDeviceAccesses")
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("SmartGuard.Services.Database.ApplicationUser", "User")
                         .WithMany()
@@ -1136,7 +1133,8 @@ namespace SmartGuard.Services.Database.Migrations
 
                     b.HasOne("SmartGuard.Services.Database.KnownPerson", "Person")
                         .WithMany("UserNotificationPreferences")
-                        .HasForeignKey("PersonId");
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("SmartGuard.Services.Database.ApplicationUser", "User")
                         .WithMany()

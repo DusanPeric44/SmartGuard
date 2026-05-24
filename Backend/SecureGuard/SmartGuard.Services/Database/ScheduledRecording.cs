@@ -10,8 +10,8 @@ namespace SmartGuard.Services.Database
         public int Id { get; set; }
 
         [ForeignKey("Device")]
-        public int DeviceId { get; set; }
-        public Device Device { get; set; }
+        public int? DeviceId { get; set; }
+        public Device? Device { get; set; }
 
         public string DaysOfWeek { get; set; } // e.g., "Monday,Tuesday,Wednesday"
         public TimeSpan StartTime { get; set; }

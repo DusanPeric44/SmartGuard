@@ -134,11 +134,65 @@ namespace SmartGuard.Services
             return await GenerateAuthResponseAsync(user!);
         }
 
+        public async Task<AuthResponse> ExternalProviderCallbackAsync(ExternalProviderCallbackRequest request)
+        {
+            var provider = request.Provider?.Trim() ?? string.Empty;
+            var email = request.Email?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(provider))
+            {
+                throw new UserException("Provider is required");
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new UnauthorizedAccessException("Invalid external login");
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted)
+            {
+                _logger.LogAuditFailed(user.Id, "UserExternalLoginFailed", $"User:{user.Id}", $"Email={email}; Provider={provider}; Reason=Deleted");
+                throw new UnauthorizedAccessException("Invalid login");
+            }
+
+            if (user == null)
+            {
+                var firstName = request.FirstName?.Trim() ?? string.Empty;
+                var lastName = request.LastName?.Trim() ?? string.Empty;
+
+                user = new ApplicationUser
+                {
+                    Email = email,
+                    UserName = email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    RegistrationKey = Guid.NewGuid().ToString()
+                };
+
+                var result = await _userManager.CreateAsync(user);
+                if (!result.Succeeded)
+                {
+                    _logger.LogAuditFailed((string?)null, "UserExternalLoginFailed", $"Auth:{provider}", $"Email={email}; Reason=IdentityCreateFailed");
+                    throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+
+                await _userManager.AddToRoleAsync(user, "Viewer");
+                _logger.LogAuditSuccess(user.Id, "UserExternalRegistered", $"User:{user.Id}", $"Email={email}; Provider={provider}; Role=Viewer");
+            }
+            else if (string.IsNullOrWhiteSpace(user.RegistrationKey))
+            {
+                user.RegistrationKey = Guid.NewGuid().ToString();
+                await _userManager.UpdateAsync(user);
+            }
+
+            _logger.LogAuditSuccess(user.Id, "UserExternalLoginSuccess", $"User:{user.Id}", $"Email={email}; Provider={provider}");
+            return await GenerateAuthResponseAsync(user);
+        }
+
         public async Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request)
         {
-            // TODO: Implement external token validation (Google/Microsoft)
-            // For now, this is a placeholder. In a real app, you'd use GoogleJsonWebSignature.ValidateAsync or similar.
-            throw new NotImplementedException("External login validation not yet implemented");
+            throw new NotImplementedException("External token login is not supported. Use the external provider callback flow.");
         }
 
         public async Task ForgotPasswordAsync(ForgotPasswordRequest request)

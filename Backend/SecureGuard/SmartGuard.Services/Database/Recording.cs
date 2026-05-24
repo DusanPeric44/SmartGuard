@@ -22,8 +22,8 @@ namespace SmartGuard.Services.Database
         public RecordingStatus RecordingStatus { get; set; }
 
         [ForeignKey("Device")]
-        public int DeviceId { get; set; }
-        public Device Device { get; set; }
+        public int? DeviceId { get; set; }
+        public Device? Device { get; set; }
 
         public bool IsDeleted { get; set; }
     }

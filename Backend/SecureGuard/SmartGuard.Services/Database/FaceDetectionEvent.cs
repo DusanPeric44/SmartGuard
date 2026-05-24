@@ -11,8 +11,8 @@ namespace SmartGuard.Services.Database
         public int Id { get; set; }
 
         [ForeignKey("Device")]
-        public int DeviceId { get; set; }
-        public Device Device { get; set; }
+        public int? DeviceId { get; set; }
+        public Device? Device { get; set; }
 
         [ForeignKey("Person")]
         public int? PersonId { get; set; }

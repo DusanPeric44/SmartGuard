@@ -38,30 +38,7 @@ namespace SmartGuard.Services.Database
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<KnownPerson>()
-                .HasIndex(x => x.FaceId)
-                .IsUnique()
-                .HasFilter("[FaceId] IS NOT NULL");
-
-            builder.Entity<UserNotificationPreference>()
-                .Property(x => x.Enabled)
-                .HasDefaultValue(true);
-
-            builder.Entity<Alert>()
-                .Property(x => x.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            builder.Entity<Device>()
-                .Property(x => x.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            builder.Entity<KnownPerson>()
-                .Property(x => x.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            builder.Entity<Report>()
-                .HasIndex(x => new { x.TypeId, x.PeriodStartUtc, x.PeriodEndUtc })
-                .IsUnique();
+            builder.ApplyConfigurationsFromAssembly(typeof(SmartGuardContext).Assembly);
         }
     }
 }

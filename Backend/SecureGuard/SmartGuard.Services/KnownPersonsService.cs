@@ -115,27 +115,31 @@ namespace SmartGuard.Services
             }
 
             var faceId = person.FaceId;
-            if (faceId.HasValue)
+
+            var relatedEvents = await _context.FaceDetectionEvents
+                .Where(e => e.PersonId == id || (faceId.HasValue && e.FaceId == faceId.Value))
+                .Select(e => new { e.Id })
+                .ToListAsync();
+
+            if (relatedEvents.Count > 0)
             {
-                var relatedEvents = await _context.FaceDetectionEvents
-                    .Where(e => e.FaceId == faceId.Value || e.PersonId == id)
+                var relatedEventIds = relatedEvents.Select(x => x.Id).ToList();
+
+                var relatedAlerts = await _context.Alerts
+                    .Where(a => a.LinkedEventId.HasValue && relatedEventIds.Contains(a.LinkedEventId.Value))
                     .ToListAsync();
 
-                if (relatedEvents.Count > 0)
+                foreach (var alert in relatedAlerts)
                 {
-                    _context.FaceDetectionEvents.RemoveRange(relatedEvents);
+                    alert.IsDeleted = true;
+                    alert.LinkedEventId = null;
                 }
-            }
-            else
-            {
-                var relatedEvents = await _context.FaceDetectionEvents
-                    .Where(e => e.PersonId == id)
+
+                var relatedEventsEntities = await _context.FaceDetectionEvents
+                    .Where(e => relatedEventIds.Contains(e.Id))
                     .ToListAsync();
 
-                if (relatedEvents.Count > 0)
-                {
-                    _context.FaceDetectionEvents.RemoveRange(relatedEvents);
-                }
+                _context.FaceDetectionEvents.RemoveRange(relatedEventsEntities);
             }
 
             _context.KnownPersons.Remove(person);

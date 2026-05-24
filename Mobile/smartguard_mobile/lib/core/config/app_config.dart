@@ -8,6 +8,12 @@ class AppConfig {
 
   static bool get apiBaseUrlIsOverridden => apiBaseUrl != defaultApiBaseUrl;
 
+  static const String defaultArchiveBaseUrl = apiBaseUrl;
+  static const String archiveBaseUrl = String.fromEnvironment(
+    'ARCHIVE_BASE_URL',
+    defaultValue: defaultArchiveBaseUrl,
+  );
+
   static const bool allowBadCertificates = bool.fromEnvironment(
     'ALLOW_BAD_CERTS',
     defaultValue: false,

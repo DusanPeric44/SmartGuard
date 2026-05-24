@@ -25,8 +25,8 @@ namespace SmartGuard.Services.Database
         public string? DismissalReason { get; set; }
 
         [ForeignKey("Device")]
-        public int DeviceId { get; set; }
-        public Device Device { get; set; }
+        public int? DeviceId { get; set; }
+        public Device? Device { get; set; }
 
         [ForeignKey("LinkedEvent")]
         public int? LinkedEventId { get; set; }

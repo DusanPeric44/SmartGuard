@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/auth/session_state.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/errors/ui_error_mapper.dart';
 import '../../../core/network/dio_provider.dart';
@@ -22,6 +23,22 @@ class ProfileController extends Notifier<ProfileState> {
 
   @override
   ProfileState build() {
+    ref.listen(sessionControllerProvider, (previous, next) {
+      final prevTokens = previous?.tokens;
+      final nextTokens = next.tokens;
+
+      final prevAccess = prevTokens?.accessToken;
+      final nextAccess = nextTokens?.accessToken;
+
+      final authChanged = prevAccess != nextAccess;
+      final loggedOut =
+          previous?.status == SessionStatus.authenticated &&
+          next.status != SessionStatus.authenticated;
+
+      if (authChanged || loggedOut) {
+        state = const ProfileState.initial();
+      }
+    });
     return const ProfileState.initial();
   }
 
@@ -32,7 +49,8 @@ class ProfileController extends Notifier<ProfileState> {
       state = state.copyWith(
         status: ProfileStatus.ready,
         profile: profile,
-        fullName: profile.fullName,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
         email: profile.email,
       );
     } catch (e) {
@@ -48,7 +66,8 @@ class ProfileController extends Notifier<ProfileState> {
     if (profile == null) return;
     state = state.copyWith(
       status: ProfileStatus.editing,
-      fullName: profile.fullName,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
       email: profile.email,
       errorMessage: null,
     );
@@ -58,18 +77,19 @@ class ProfileController extends Notifier<ProfileState> {
     final profile = state.profile;
     state = state.copyWith(
       status: ProfileStatus.ready,
-      fullName: profile?.fullName ?? '',
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
       email: profile?.email ?? '',
       errorMessage: null,
     );
   }
 
-  void setFullName(String value) {
-    state = state.copyWith(fullName: value, errorMessage: null);
+  void setFirstName(String value) {
+    state = state.copyWith(firstName: value, errorMessage: null);
   }
 
-  void setEmail(String value) {
-    state = state.copyWith(email: value, errorMessage: null);
+  void setLastName(String value) {
+    state = state.copyWith(lastName: value, errorMessage: null);
   }
 
   Future<void> saveProfile() async {
@@ -80,14 +100,15 @@ class ProfileController extends Notifier<ProfileState> {
           .read(profileRepositoryProvider)
           .updateProfile(
             UpdateProfileRequest(
-              fullName: state.fullName.trim(),
-              email: state.email.trim(),
+              firstName: state.firstName.trim(),
+              lastName: state.lastName.trim(),
             ),
           );
       state = state.copyWith(
         status: ProfileStatus.ready,
         profile: updated,
-        fullName: updated.fullName,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
         email: updated.email,
       );
     } catch (e) {
@@ -123,6 +144,7 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<void> logout() {
+    state = const ProfileState.initial();
     return ref.read(sessionControllerProvider.notifier).logout();
   }
 

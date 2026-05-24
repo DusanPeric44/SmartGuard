@@ -7,13 +7,14 @@
 #include "StreamManager.h"
 #include "StorageManager.h"
 #include "SecurityManager.h"
+#include "FlashManager.h"
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "192.168.8.138"
+#define SIGNALR_HOST "192.168.8.143"
 #define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://192.168.8.138:5001/upload"
-#define BACKEND_BASE_URL "http://192.168.8.138:5000"
+#define BACKEND_SYNC_URL "http://192.168.8.143:5001/upload"
+#define BACKEND_BASE_URL "http://192.168.8.143:5000"
 
 String webSocketPath;
 Preferences devicePrefs;
@@ -48,6 +49,8 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
+
+  setupFlashManager();
 
   // 1. WiFi Connection or Provisioning
   if (!connectToStoredWifi()) {
@@ -90,7 +93,7 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
   
   if(psramFound()){
-    config.frame_size = FRAMESIZE_VGA; // Use VGA for better performance with face detection
+    config.frame_size = FRAMESIZE_QVGA; // Use VGA for better performance with face detection
     config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {

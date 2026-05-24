@@ -1,5 +1,6 @@
 #include "WifiProvisioner.h"
 #include <Preferences.h>
+#include "FlashManager.h"
 
 WebServer server(80);
 Preferences wifiPrefs;
@@ -43,6 +44,7 @@ bool connectToStoredWifi() {
     Serial.println("\nWiFi connected from storage!");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    flashOn();
     return true;
   } else {
     Serial.println("\nFailed to connect using stored credentials.");
@@ -60,6 +62,7 @@ void handleProvision() {
     
     server.send(200, "text/plain", "Credentials received and saved. Connecting...");
     provisioned = true;
+    flashOn();
     Serial.println("Received SSID: " + ssid_to_connect);
     Serial.println("Received Registration Key: " + registration_key);
   } else {
@@ -85,8 +88,10 @@ void setupWifiProvisioning() {
     Serial.println("Provisioning server started. Waiting for Flutter app...");
 
     provisioned = false;
+    flashBlink(1000);
     while (!provisioned) {
       server.handleClient();
+      flashUpdate();
       delay(10);
     }
 

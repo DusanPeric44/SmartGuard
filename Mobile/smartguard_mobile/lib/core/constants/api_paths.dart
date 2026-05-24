@@ -23,4 +23,7 @@ class ApiPaths {
   static const String alerts = '/Alerts';
   static String alertConfirm(int id) => '/Alerts/$id/confirm';
   static String alertDismiss(int id) => '/Alerts/$id/dismiss';
+
+  static const String recordings = '/Recordings';
+  static String recordingById(int id) => '/Recordings/$id';
 }
