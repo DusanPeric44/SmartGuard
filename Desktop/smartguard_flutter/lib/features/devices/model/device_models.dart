@@ -24,8 +24,8 @@ class DeviceRow {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
 
-      status: json['status'] != null
-          ? DeviceStatus.fromJson(json['status'] as Map<String, dynamic>?)
+      status: json['deviceStatus'] != null
+          ? DeviceStatus.fromJson(json['deviceStatus'] as Map<String, dynamic>?)
           : null,
       storageTotalGb: json['storageTotalGb'] as int? ?? 0,
       storageUsedGb: json['storageUsedGb'] as int? ?? 0,
