@@ -10,17 +10,18 @@ class AppTheme {
     const surfaceVariant = Color(0xFF1E293B);
     const outline = Color(0xFF334155);
 
-    final scheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: Brightness.dark,
-      surface: surface,
-    ).copyWith(
-      primary: seed,
-      secondary: const Color(0xFF7C3AED),
-      surface: surface,
-      surfaceContainerHighest: surfaceVariant,
-      outline: outline,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.dark,
+          surface: surface,
+        ).copyWith(
+          primary: seed,
+          secondary: const Color(0xFF7C3AED),
+          surface: surface,
+          surfaceContainerHighest: surfaceVariant,
+          outline: outline,
+        );
 
     return ThemeData(
       useMaterial3: true,
@@ -49,9 +50,7 @@ class AppTheme {
         unselectedLabelTextStyle: const TextStyle(color: Color(0xFF94A3B8)),
         indicatorColor: seed,
       ),
-      drawerTheme: const DrawerThemeData(
-        backgroundColor: surface,
-      ),
+      drawerTheme: const DrawerThemeData(backgroundColor: surface),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceVariant,

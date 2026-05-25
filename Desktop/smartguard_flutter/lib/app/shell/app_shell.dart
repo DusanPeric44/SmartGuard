@@ -112,14 +112,18 @@ class _AppShellState extends State<AppShell> {
                 padding: const EdgeInsets.only(top: 12),
                 child: Column(
                   children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () =>
-                          setState(() => _railExtended = !_railExtended),
-                      icon: Icon(
-                        _railExtended ? Icons.chevron_left : Icons.menu,
-                      ),
-                      label: Text(_railExtended ? 'Collapse' : 'Menu'),
-                    ),
+                    _railExtended
+                        ? FilledButton.tonalIcon(
+                            onPressed: () =>
+                                setState(() => _railExtended = !_railExtended),
+                            icon: Icon(Icons.chevron_left),
+                            label: const Text('Collapse'),
+                          )
+                        : IconButton(
+                            onPressed: () =>
+                                setState(() => _railExtended = !_railExtended),
+                            icon: Icon(Icons.menu),
+                          ),
                     const SizedBox(height: 12),
                   ],
                 ),

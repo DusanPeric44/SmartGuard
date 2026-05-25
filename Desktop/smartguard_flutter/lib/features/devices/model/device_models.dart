@@ -124,7 +124,7 @@ class DeviceDetails {
               .toList() ??
           [],
       lastSeenAt:
-          DateTime.tryParse(json['lastSeenAt']?.toString() ?? '') ??
+          DateTime.tryParse(json['lastSeenAt']?.toString() ?? '')?.toLocal() ??
           DateTime.now(),
     );
   }

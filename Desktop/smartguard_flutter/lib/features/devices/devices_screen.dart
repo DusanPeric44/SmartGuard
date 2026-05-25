@@ -551,7 +551,9 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                         status: device.status ?? DeviceStatus(0, 'Offline'),
                       ),
                       const SizedBox(height: 12),
-                      Text('Last seen: ${_hhMm(details.lastSeenAt)}'),
+                      Text(
+                        'Last seen: ${device.status?.name == "Online" ? 'Now' : _ddmmhhmm(details.lastSeenAt)}',
+                      ),
                       const SizedBox(height: 12),
                       _StorageBar(
                         used: device.storageUsedGb,
@@ -879,8 +881,10 @@ Color _statusColor(BuildContext context, DeviceStatus status) {
   }
 }
 
-String _hhMm(DateTime dt) {
+String _ddmmhhmm(DateTime dt) {
+  final d = dt.day.toString().padLeft(2, '0');
+  final m = dt.month.toString().padLeft(2, '0');
   final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
+  final mm = dt.minute.toString().padLeft(2, '0');
+  return '$d/$m $h:$mm';
 }
