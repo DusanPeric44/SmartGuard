@@ -199,12 +199,12 @@ namespace SmartGuard.Services
             var details = new DeviceDetails
             {
                 Device = entity.Adapt<Model.DTOs.Device>(),
-                AssignedUsers = entity.UserDeviceAccesses.Select(a => new DeviceUserDto
+                AssignedUsers = [.. entity.UserDeviceAccesses.Select(a => new DeviceUserDto
                 {
                     Id = a.User.Id,
-                    Username = a.User.UserName
-                }).ToList(),
-                LastSeenAt = entity.LastSeenAt ?? entity.CreatedAt
+                    Username = a.User.Email ?? string.Empty
+                })],
+                LastSeenAt = entity.LastSeenAt != null ? DateTime.SpecifyKind(entity.LastSeenAt.Value, DateTimeKind.Utc) : DateTime.SpecifyKind(entity.CreatedAt, DateTimeKind.Utc)
             };
 
             return details;

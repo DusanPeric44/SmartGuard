@@ -124,7 +124,7 @@ namespace SmartGuard.Services
                     LastName = n.ToString(),
                     Description = string.Empty,
                     Picture = imageUrl,
-                    FaceId = faceId--,
+                    FaceId = faceId,
                     DetectionCount = 1
                 };
 

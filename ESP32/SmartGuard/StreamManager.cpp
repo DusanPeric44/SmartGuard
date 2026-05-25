@@ -1,6 +1,5 @@
 #include "StreamManager.h"
 #include <ArduinoJson.h>
-#include <mbedtls/base64.h>
 #include "FlashManager.h"
 
 WebSocketsClient webSocket;
@@ -10,32 +9,10 @@ bool isHubConnected = false;
 void sendFrame(camera_fb_t* fb) {
   if (!fb) return;
 
-  // Check if we have enough heap memory before allocating
-  size_t freeHeap = ESP.getFreeHeap();
-  if (freeHeap < 60000) { // Keep at least 60KB free for system stability
-    Serial.println("[Stream] Memory low, skipping frame");
-    return;
-  }
-
-  // Convert JPEG to Base64
-  size_t outputLen;
-  mbedtls_base64_encode(NULL, 0, &outputLen, fb->buf, fb->len);
-  unsigned char* base64Buffer = (unsigned char*)malloc(outputLen + 1);
-  
-  if (!base64Buffer) {
-    Serial.println("[Stream] Failed to allocate Base64 buffer!");
-    return;
-  }
-
-  mbedtls_base64_encode(base64Buffer, outputLen + 1, &outputLen, fb->buf, fb->len);
-  base64Buffer[outputLen] = '\0';
-
-  // Send raw base64 frame via pure WebSocket
+  // Send raw JPEG as a binary WebSocket frame (backend will base64-encode for clients)
   if (webSocket.isConnected()) {
-    webSocket.sendTXT((char*)base64Buffer);
+    webSocket.sendBIN(fb->buf, fb->len);
   }
-  
-  free(base64Buffer);
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -79,11 +56,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
         } else if (target == "StopStream") {
           Serial.println("[Stream] Stopping stream...");
           isStreamingEnabled = false;
-        } else if (target == "MarkSafe") {
-          int faceId = doc["arguments"][0];
-          Serial.println("[Stream] Marking face ID safe: " + String(faceId));
-          extern void markFaceAsSafe(int);
-          markFaceAsSafe(faceId);
         } else if (target == "StartRecording") {
           Serial.println("[Stream] Remote command: Start Recording");
           // Add recording logic call if needed

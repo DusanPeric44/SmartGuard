@@ -1,4 +1,3 @@
-#include <vector>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
@@ -11,7 +10,6 @@
 
 int _pirPin;
 bool _motionDetected = false;
-std::vector<int> safeFaceIds;
 Preferences preferences;
 
 static mtmn_config_t mtmn_config = {0};
@@ -73,46 +71,6 @@ static bool trackFaceIdForSequence(int faceId) {
   return g_faceSeq.len == 3;
 }
 
-int allocateFallbackFaceId() {
-  preferences.begin("smartguard", false);
-  int next = preferences.getInt("fallback_face_id", 1000);
-  preferences.putInt("fallback_face_id", next + 1);
-  preferences.end();
-  return next;
-}
-
-static void loadSafeFaceIds() {
-  preferences.begin("smartguard", true);
-  String json = preferences.getString("safe_face_ids", "");
-  preferences.end();
-
-  safeFaceIds.clear();
-  if (json.length() == 0) return;
-
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) return;
-  if (!doc.is<JsonArray>()) return;
-
-  for (JsonVariant v : doc.as<JsonArray>()) {
-    int id = v.as<int>();
-    if (id >= 0) safeFaceIds.push_back(id);
-  }
-}
-
-static void saveSafeFaceIds() {
-  JsonDocument doc;
-  JsonArray arr = doc.to<JsonArray>();
-  for (int id : safeFaceIds) arr.add(id);
-
-  String json;
-  serializeJson(doc, json);
-
-  preferences.begin("smartguard", false);
-  preferences.putString("safe_face_ids", json);
-  preferences.end();
-}
-
 static int runFaceRecognition(dl_matrix3du_t *image_matrix, box_array_t *net_boxes) {
   dl_matrix3du_t *aligned_face = dl_matrix3du_alloc(1, FACE_WIDTH, FACE_HEIGHT, 3);
   if (!aligned_face) {
@@ -163,7 +121,6 @@ void setupSecurityManager(int pirPin) {
   mtmn_config.o_threshold.candidate_number = 1;
 
   face_id_init(&id_list, kFaceIdSaveNumber, kEnrollConfirmTimes);
-  loadSafeFaceIds();
 }
 
 bool registerDevice(const char* serverUrl, const char* registrationKey) {
@@ -229,11 +186,11 @@ int getDeviceId() {
   return id;
 }
 
-void sendIntruderAlert(camera_fb_t* fb, int faceId) {
+void sendFaceDetectionEvent(camera_fb_t* fb, int faceId) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  String url = "http://10.15.225.19:5000/faceDetectionEvents/detect";
+  String url = "http://192.168.8.152:5000/faceDetectionEvents/detect";
   http.begin(url);
   http.addHeader("Content-Type", "image/jpeg");
   http.addHeader("X-Face-Id", String(faceId));
@@ -242,15 +199,6 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   
   int response = http.POST(fb->buf, fb->len);
   Serial.println("Face detection event sent. Response: " + String(response));
-  http.end();
-}
-
-void sendSafeMotionAlert() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  http.begin("http://10.15.225.19:5000/security/safe-motion");
-  http.POST("{\"message\": \"Safe person detected\"}");
   http.end();
 }
 
@@ -278,13 +226,8 @@ bool checkSecurity(camera_fb_t* fb) {
           if (shouldNotify) {
             g_notifyFaceEvent = true;
             int faceIdToSend = matched_id;
-            if (isFaceSafe(faceIdToSend)) {
-              Serial.println("Safe person detected: " + String(faceIdToSend));
-            } else {
-              Serial.println("Intruder detected! FaceId=" + String(faceIdToSend));
-            }
-
-            sendIntruderAlert(fb, faceIdToSend);
+            Serial.println("Face detected! FaceId=" + String(faceIdToSend));
+            sendFaceDetectionEvent(fb, faceIdToSend);
             resetFaceIdSequence();
           }
         } else {
@@ -307,20 +250,4 @@ bool checkSecurity(camera_fb_t* fb) {
   }
 
   return _motionDetected;
-}
-
-void markFaceAsSafe(int faceId) {
-  if (!isFaceSafe(faceId)) {
-    safeFaceIds.push_back(faceId);
-    saveSafeFaceIds();
-    Serial.println("Face ID " + String(faceId) + " marked as safe.");
-  }
-}
-
-bool isFaceSafe(int faceId) {
-  if (faceId < 0) return false;
-  for (int id : safeFaceIds) {
-    if (id == faceId) return true;
-  }
-  return false;
 }
