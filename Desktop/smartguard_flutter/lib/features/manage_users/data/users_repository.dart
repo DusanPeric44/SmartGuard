@@ -16,10 +16,10 @@ abstract class UsersRepository {
 
   Future<ManagedUser> update({
     required String id,
-    required String email,
+    required String firstName,
+    required String lastName,
     required UserRole role,
   });
 
   Future<void> delete(String id);
 }
-

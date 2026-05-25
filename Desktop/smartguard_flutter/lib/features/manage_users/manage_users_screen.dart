@@ -63,11 +63,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         ),
         const SizedBox(height: 16),
         Expanded(
-          child: _buildBody(
-            context: context,
-            caps: caps,
-            vm: vm,
-          ),
+          child: _buildBody(context: context, caps: caps, vm: vm),
         ),
       ],
     );
@@ -132,18 +128,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                                   tooltip: 'Edit',
                                   onPressed:
                                       (!caps.canManageUsers ||
-                                              vm.rowBusy[u.id] == true)
-                                          ? null
-                                          : () => _openUpsertDialog(vm, user: u),
+                                          vm.rowBusy[u.id] == true)
+                                      ? null
+                                      : () => _openUpsertDialog(vm, user: u),
                                   icon: const Icon(Icons.edit_outlined),
                                 ),
                                 IconButton(
                                   tooltip: 'Delete',
                                   onPressed:
                                       (!caps.canManageUsers ||
-                                              vm.rowBusy[u.id] == true)
-                                          ? null
-                                          : () => _confirmDelete(vm, u),
+                                          vm.rowBusy[u.id] == true)
+                                      ? null
+                                      : () => _confirmDelete(vm, u),
                                   icon: const Icon(Icons.delete_outline),
                                 ),
                                 if (vm.rowBusy[u.id] == true)
@@ -207,9 +203,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     final ok = await vm.deleteUser(user.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Deleted.' : (vm.errorMessage ?? 'Error.')),
-      ),
+      SnackBar(content: Text(ok ? 'Deleted.' : (vm.errorMessage ?? 'Error.'))),
     );
   }
 
@@ -217,119 +211,188 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     ManageUsersViewModel vm, {
     ManagedUser? user,
   }) async {
-    final email = TextEditingController(text: user?.email ?? '');
-    UserRole role = user?.role ?? UserRole.viewer;
-
     final res = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return ListenableBuilder(
-          listenable: vm,
-          builder: (context, _) {
-            return AlertDialog(
-              title: Text(user == null ? 'Add user' : 'Edit user'),
-              content: SizedBox(
-                width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: email,
-                      enabled: !vm.isLoading,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<UserRole>(
-                      initialValue: role,
-                      decoration: const InputDecoration(
-                        labelText: 'Role',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: UserRole.admin,
-                          child: Text('admin'),
-                        ),
-                        DropdownMenuItem(
-                          value: UserRole.homeowner,
-                          child: Text('homeowner'),
-                        ),
-                        DropdownMenuItem(
-                          value: UserRole.viewer,
-                          child: Text('viewer'),
-                        ),
-                      ],
-                      onChanged: vm.isLoading
-                          ? null
-                          : (v) {
-                              if (v == null) return;
-                              role = v;
-                            },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed:
-                      vm.isLoading ? null : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: vm.isLoading
-                      ? null
-                      : () async {
-                          final e = email.text.trim();
-                          if (e.isEmpty || !e.contains('@')) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Invalid email.')),
-                            );
-                            return;
-                          }
-                          final ok = user == null
-                              ? await vm.createUser(email: e, role: role)
-                              : await vm.updateUser(
-                                  id: user.id,
-                                  email: e,
-                                  role: role,
-                                );
-                          if (!context.mounted) return;
-                          if (ok) {
-                            Navigator.of(context).pop(true);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(vm.errorMessage ?? 'Error.'),
-                              ),
-                            );
-                          }
-                        },
-                  child: vm.isLoading
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(user == null ? 'Add' : 'Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (context) => _UpsertUserDialog(vm: vm, user: user),
     );
-
-    email.dispose();
 
     if (res == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(user == null ? 'Created.' : 'Updated.')),
       );
     }
+  }
+}
+
+class _UpsertUserDialog extends StatefulWidget {
+  const _UpsertUserDialog({required this.vm, this.user});
+
+  final ManageUsersViewModel vm;
+  final ManagedUser? user;
+
+  @override
+  State<_UpsertUserDialog> createState() => _UpsertUserDialogState();
+}
+
+class _UpsertUserDialogState extends State<_UpsertUserDialog> {
+  late final TextEditingController _emailController;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late UserRole _role;
+
+  @override
+  void initState() {
+    super.initState();
+    final u = widget.user;
+    _emailController = TextEditingController(text: u?.email ?? '');
+    _firstNameController = TextEditingController(text: u?.firstName ?? '');
+    _lastNameController = TextEditingController(text: u?.lastName ?? '');
+    _role = u?.role ?? UserRole.viewer;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.vm,
+      builder: (context, _) {
+        final u = widget.user;
+        final busy = u == null
+            ? widget.vm.isLoading
+            : (widget.vm.rowBusy[u.id] == true);
+        return AlertDialog(
+          title: Text(u == null ? 'Add user' : 'Edit user'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _emailController,
+                  enabled: u == null && !busy,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (u != null) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _firstNameController,
+                    enabled: !busy,
+                    decoration: const InputDecoration(
+                      labelText: 'First name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _lastNameController,
+                    enabled: !busy,
+                    decoration: const InputDecoration(
+                      labelText: 'Last name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                DropdownButtonFormField<UserRole>(
+                  initialValue: _role,
+                  decoration: const InputDecoration(
+                    labelText: 'Role',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: UserRole.admin,
+                      child: Text('Admin'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.homeowner,
+                      child: Text('Home Owner'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.viewer,
+                      child: Text('Viewer'),
+                    ),
+                  ],
+                  onChanged: busy
+                      ? null
+                      : (v) {
+                          if (v == null) return;
+                          _role = v;
+                        },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: busy ? null : () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final e = _emailController.text.trim();
+                      if (e.isEmpty || !e.contains('@')) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid email.')),
+                        );
+                        return;
+                      }
+                      final fn = _firstNameController.text.trim();
+                      final ln = _lastNameController.text.trim();
+                      if (u != null && (fn.isEmpty || ln.isEmpty)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'First name and last name are required.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      final ok = u == null
+                          ? await widget.vm.createUser(email: e, role: _role)
+                          : await widget.vm.updateUser(
+                              id: u.id,
+                              firstName: fn,
+                              lastName: ln,
+                              role: _role,
+                            );
+                      if (!context.mounted) return;
+                      if (ok) {
+                        Navigator.of(context).pop(true);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(widget.vm.errorMessage ?? 'Error.'),
+                          ),
+                        );
+                      }
+                    },
+              child: busy
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(u == null ? 'Add' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
