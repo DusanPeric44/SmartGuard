@@ -24,7 +24,7 @@ class DeviceListViewModel extends ChangeNotifier {
   Map<String, bool> get rowBusy => Map.unmodifiable(_rowBusy);
 
   String _search = '';
-  DeviceStatus? _status;
+  String? _statusName;
 
   int _page = 1;
   final int _pageSize = 20;
@@ -40,7 +40,7 @@ class DeviceListViewModel extends ChangeNotifier {
   String? get provisioningStatus => _provisioningStatus;
 
   String get search => _search;
-  DeviceStatus? get status => _status;
+  String? get statusName => _statusName;
   int get page => _page;
   int get pageSize => _pageSize;
   int get totalCount => _totalCount;
@@ -64,8 +64,8 @@ class DeviceListViewModel extends ChangeNotifier {
     });
   }
 
-  Future<void> setStatus(DeviceStatus? status) async {
-    _status = status;
+  Future<void> setStatus(String? statusName) async {
+    _statusName = statusName;
     await load();
   }
 
@@ -77,7 +77,7 @@ class DeviceListViewModel extends ChangeNotifier {
     try {
       final pagedResult = await _repository.list(
         search: _search,
-        status: _status,
+        statusId: null,
         page: _page,
         pageSize: _pageSize,
       );
@@ -101,7 +101,7 @@ class DeviceListViewModel extends ChangeNotifier {
       _page++;
       final pagedResult = await _repository.list(
         search: _search,
-        status: _status,
+        statusId: null,
         page: _page,
         pageSize: _pageSize,
       );
@@ -152,8 +152,7 @@ class DeviceListViewModel extends ChangeNotifier {
             orElse: () => const DeviceRow(
               id: '',
               name: '',
-              ipAddress: '',
-              status: DeviceStatus.offline,
+              status: DeviceStatus(0, ''),
               isActive: false,
               storageUsedGb: 0,
               storageTotalGb: 0,
@@ -176,27 +175,6 @@ class DeviceListViewModel extends ChangeNotifier {
     } finally {
       _isProvisioning = false;
       _provisioningStatus = null;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> setActive(String deviceId, bool isActive) async {
-    _rowBusy[deviceId] = true;
-    notifyListeners();
-    try {
-      final updated = await _repository.setActive(deviceId, isActive);
-      final idx = _items.indexWhere((d) => d.id == deviceId);
-      if (idx >= 0) {
-        final mutable = _items.toList(growable: true);
-        mutable[idx] = updated;
-        _items = mutable.toList(growable: false);
-      }
-      return true;
-    } catch (e) {
-      _errorMessage = UiErrorMapper.toMessage(e);
-      return false;
-    } finally {
-      _rowBusy.remove(deviceId);
       notifyListeners();
     }
   }

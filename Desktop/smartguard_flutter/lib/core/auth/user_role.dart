@@ -1,8 +1,4 @@
-enum UserRole {
-  admin,
-  homeowner,
-  viewer,
-}
+enum UserRole { admin, homeowner, viewer }
 
 UserRole parseUserRole(String? raw) {
   final v = (raw ?? '').trim().toLowerCase();
@@ -21,10 +17,10 @@ UserRole parseUserRole(String? raw) {
 String userRoleToWire(UserRole role) {
   switch (role) {
     case UserRole.admin:
-      return 'admin';
+      return 'Admin';
     case UserRole.homeowner:
-      return 'homeowner';
+      return 'Home Owner';
     case UserRole.viewer:
-      return 'viewer';
+      return 'Viewer';
   }
 }

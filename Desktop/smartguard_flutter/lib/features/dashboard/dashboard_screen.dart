@@ -56,11 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _DashboardHeader(
           lastRefresh: vm.lastRefresh,
           isRefreshing: vm.isLoading,
-          autoRefresh: vm.autoRefresh,
-          interval: vm.interval,
           onRefresh: () => vm.refresh(),
-          onAutoRefreshChanged: (v) => vm.setAutoRefresh(v),
-          onIntervalChanged: (d) => vm.setInterval(d),
         ),
         const SizedBox(height: 16),
         if (vm.isLoading && overview == null)
@@ -96,20 +92,12 @@ class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({
     required this.lastRefresh,
     required this.isRefreshing,
-    required this.autoRefresh,
-    required this.interval,
     required this.onRefresh,
-    required this.onAutoRefreshChanged,
-    required this.onIntervalChanged,
   });
 
   final DateTime? lastRefresh;
   final bool isRefreshing;
-  final bool autoRefresh;
-  final Duration interval;
   final VoidCallback onRefresh;
-  final ValueChanged<bool> onAutoRefreshChanged;
-  final ValueChanged<Duration> onIntervalChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -123,36 +111,6 @@ class _DashboardHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text('Last updated: $last'),
             const Spacer(),
-            SizedBox(
-              width: 160,
-              child: DropdownButtonFormField<Duration>(
-                initialValue: interval,
-                items: const [
-                  DropdownMenuItem(
-                    value: Duration(seconds: 15),
-                    child: Text('15s'),
-                  ),
-                  DropdownMenuItem(
-                    value: Duration(seconds: 30),
-                    child: Text('30s'),
-                  ),
-                  DropdownMenuItem(
-                    value: Duration(minutes: 1),
-                    child: Text('1m'),
-                  ),
-                  DropdownMenuItem(
-                    value: Duration(minutes: 2),
-                    child: Text('2m'),
-                  ),
-                ],
-                onChanged: autoRefresh
-                    ? (v) => v == null ? null : onIntervalChanged(v)
-                    : null,
-                decoration: const InputDecoration(labelText: 'Auto refresh'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Switch(value: autoRefresh, onChanged: onAutoRefreshChanged),
             const SizedBox(width: 12),
             FilledButton.icon(
               onPressed: isRefreshing ? null : onRefresh,

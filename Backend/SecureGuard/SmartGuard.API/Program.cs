@@ -41,7 +41,7 @@ builder.Services.AddDbContext<SmartGuardContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2. Identity Configuration
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -50,7 +50,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequiredLength = 6;
     options.User.RequireUniqueEmail = true;
 })
-.AddRoles<IdentityRole>()
+.AddRoles<ApplicationRole>()
 .AddEntityFrameworkStores<SmartGuardContext>()
 .AddDefaultTokenProviders();
 

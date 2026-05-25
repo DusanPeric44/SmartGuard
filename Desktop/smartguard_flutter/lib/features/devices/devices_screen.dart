@@ -22,7 +22,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   DevicesRepository? _repo;
   DeviceListViewModel? _vm;
   final _searchController = TextEditingController();
-  DeviceStatus? _status;
+  String? _statusName;
 
   @override
   void didChangeDependencies() {
@@ -64,10 +64,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
       children: [
         _FiltersCard(
           controller: _searchController,
-          status: _status,
+          statusName: _statusName,
           onSearchChanged: (v) => vm.setSearch(v),
           onStatusChanged: (v) async {
-            _status = v;
+            _statusName = v;
             await vm.setStatus(v);
           },
           onRefresh: vm.load,
@@ -148,10 +148,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 child: DataTable(
                   columns: const [
                     DataColumn(label: Text('Name')),
-                    DataColumn(label: Text('IP')),
                     DataColumn(label: Text('Status')),
                     DataColumn(label: Text('Storage')),
-                    DataColumn(label: Text('Active')),
                     DataColumn(label: Text('Actions')),
                   ],
                   rows: [
@@ -162,38 +160,16 @@ class _DevicesScreenState extends State<DevicesScreen> {
                             Text(d.name),
                             onTap: () => context.go('/devices/${d.id}'),
                           ),
-                          DataCell(Text(d.ipAddress)),
-                          DataCell(_StatusChip(status: d.status)),
+
+                          DataCell(
+                            _StatusChip(
+                              status: d.status ?? DeviceStatus(0, 'Offline'),
+                            ),
+                          ),
                           DataCell(
                             _StorageCell(
                               used: d.storageUsedGb,
                               total: d.storageTotalGb,
-                            ),
-                          ),
-                          DataCell(
-                            Switch(
-                              value: d.isActive,
-                              onChanged:
-                                  (!caps.canManageDevices ||
-                                      vm.rowBusy[d.id] == true)
-                                  ? null
-                                  : (v) async {
-                                      final messenger = ScaffoldMessenger.of(
-                                        context,
-                                      );
-                                      final ok = await vm.setActive(d.id, v);
-                                      if (!mounted) return;
-                                      if (!ok) {
-                                        messenger.showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              vm.errorMessage ??
-                                                  'Greška pri izmjeni statusa.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
                             ),
                           ),
                           DataCell(
@@ -570,41 +546,16 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text('ID: ${device.id}'),
-                      Text('IP: ${device.ipAddress}'),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _StatusChip(status: device.status),
-                          const SizedBox(width: 12),
-                          Text('Last seen: ${_hhMm(details.lastSeenAt)}'),
-                        ],
+                      _StatusChip(
+                        status: device.status ?? DeviceStatus(0, 'Offline'),
                       ),
+                      const SizedBox(height: 12),
+                      Text('Last seen: ${_hhMm(details.lastSeenAt)}'),
                       const SizedBox(height: 12),
                       _StorageBar(
                         used: device.storageUsedGb,
                         total: device.storageTotalGb,
-                      ),
-                      const SizedBox(height: 12),
-                      SwitchListTile(
-                        value: device.isActive,
-                        onChanged: (!caps.canManageDevices || vm.isLoading)
-                            ? null
-                            : (v) async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final ok = await vm.setActive(v);
-                                if (!mounted) return;
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      ok
-                                          ? 'Sačuvano.'
-                                          : (vm.errorMessage ?? 'Greška.'),
-                                    ),
-                                  ),
-                                );
-                              },
-                        title: const Text('Active'),
-                        contentPadding: EdgeInsets.zero,
                       ),
                     ],
                   ),
@@ -634,7 +585,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                               children: [
                                 const Icon(Icons.person_outline),
                                 const SizedBox(width: 8),
-                                Text(u.email),
+                                Text(u.username),
                               ],
                             ),
                           ),
@@ -763,7 +714,7 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
 class _FiltersCard extends StatelessWidget {
   const _FiltersCard({
     required this.controller,
-    required this.status,
+    required this.statusName,
     required this.onSearchChanged,
     required this.onStatusChanged,
     required this.onRefresh,
@@ -771,9 +722,9 @@ class _FiltersCard extends StatelessWidget {
   });
 
   final TextEditingController controller;
-  final DeviceStatus? status;
+  final String? statusName;
   final ValueChanged<String> onSearchChanged;
-  final ValueChanged<DeviceStatus?> onStatusChanged;
+  final ValueChanged<String?> onStatusChanged;
   final Future<void> Function() onRefresh;
   final VoidCallback? onAddDevice;
 
@@ -801,24 +752,21 @@ class _FiltersCard extends StatelessWidget {
             ),
             SizedBox(
               width: 200,
-              child: DropdownButtonFormField<DeviceStatus?>(
-                initialValue: status,
+              child: DropdownButtonFormField<String?>(
+                initialValue: statusName,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: const [
-                  DropdownMenuItem<DeviceStatus?>(
-                    value: null,
-                    child: Text('All'),
-                  ),
-                  DropdownMenuItem(
-                    value: DeviceStatus.online,
+                  DropdownMenuItem<String?>(value: null, child: Text('All')),
+                  DropdownMenuItem<String?>(
+                    value: 'Online',
                     child: Text('Online'),
                   ),
-                  DropdownMenuItem(
-                    value: DeviceStatus.offline,
+                  DropdownMenuItem<String?>(
+                    value: 'Offline',
                     child: Text('Offline'),
                   ),
-                  DropdownMenuItem(
-                    value: DeviceStatus.maintenance,
+                  DropdownMenuItem<String?>(
+                    value: 'Maintenance',
                     child: Text('Maintenance'),
                   ),
                 ],
@@ -850,7 +798,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = _statusLabel(status);
+    final label = status.name;
     final color = _statusColor(context, status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -918,25 +866,16 @@ class _StorageBar extends StatelessWidget {
   }
 }
 
-String _statusLabel(DeviceStatus status) {
-  switch (status) {
-    case DeviceStatus.online:
-      return 'Online';
-    case DeviceStatus.offline:
-      return 'Offline';
-    case DeviceStatus.maintenance:
-      return 'Maintenance';
-  }
-}
-
 Color _statusColor(BuildContext context, DeviceStatus status) {
-  switch (status) {
-    case DeviceStatus.online:
+  switch (status.name) {
+    case 'Online':
       return Colors.greenAccent.shade400;
-    case DeviceStatus.offline:
+    case 'Offline':
       return Colors.blueGrey.shade300;
-    case DeviceStatus.maintenance:
+    case 'Maintenance':
       return Colors.amberAccent.shade400;
+    default:
+      return Colors.grey;
   }
 }
 

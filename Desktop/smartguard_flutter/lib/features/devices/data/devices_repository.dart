@@ -3,7 +3,7 @@ import 'package:smartguard_flutter/features/devices/model/device_models.dart';
 abstract class DevicesRepository {
   Future<PagedResult<DeviceRow>> list({
     String? search,
-    DeviceStatus? status,
+    int? statusId,
     int? page,
     int? pageSize,
   });
@@ -17,5 +17,3 @@ abstract class DevicesRepository {
     required String registrationKey,
   });
 }
-
-

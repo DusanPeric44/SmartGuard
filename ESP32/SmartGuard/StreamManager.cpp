@@ -109,6 +109,16 @@ void setupStreamManager(const char* host, int port, const char* path) {
 void handleStream(camera_fb_t* fb) {
   webSocket.loop();
 
+  static unsigned long lastHeartbeatMs = 0;
+  const unsigned long HEARTBEAT_INTERVAL_MS = 10000;
+  if (webSocket.isConnected()) {
+    unsigned long now = millis();
+    if (now - lastHeartbeatMs >= HEARTBEAT_INTERVAL_MS) {
+      webSocket.sendTXT("HB");
+      lastHeartbeatMs = now;
+    }
+  }
+
   static unsigned long lastFrameTime = 0;
   const int FRAME_INTERVAL = 100; // Limit to ~10 FPS to prevent crashing/congestion
 

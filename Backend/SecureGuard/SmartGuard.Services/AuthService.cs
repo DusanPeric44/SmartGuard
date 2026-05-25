@@ -19,7 +19,7 @@ namespace SmartGuard.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly SmartGuardContext _context;
         private readonly IMailingService _mailingService;
@@ -27,7 +27,7 @@ namespace SmartGuard.Services
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
+            RoleManager<ApplicationRole> roleManager,
             IConfiguration configuration,
             SmartGuardContext context,
             IMailingService mailingService,

@@ -233,7 +233,7 @@ void sendIntruderAlert(camera_fb_t* fb, int faceId) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  String url = "http://192.168.8.143:5000/faceDetectionEvents/detect";
+  String url = "http://10.15.225.19:5000/faceDetectionEvents/detect";
   http.begin(url);
   http.addHeader("Content-Type", "image/jpeg");
   http.addHeader("X-Face-Id", String(faceId));
@@ -249,7 +249,7 @@ void sendSafeMotionAlert() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin("http://192.168.8.143:5000/security/safe-motion");
+  http.begin("http://10.15.225.19:5000/security/safe-motion");
   http.POST("{\"message\": \"Safe person detected\"}");
   http.end();
 }

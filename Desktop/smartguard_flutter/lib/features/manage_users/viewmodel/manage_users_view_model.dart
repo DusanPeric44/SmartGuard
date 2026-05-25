@@ -125,14 +125,20 @@ class ManageUsersViewModel extends ChangeNotifier {
 
   Future<bool> updateUser({
     required String id,
-    required String email,
+    required String firstName,
+    required String lastName,
     required UserRole role,
   }) async {
     _rowBusy[id] = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      await _repository.update(id: id, email: email, role: role);
+      await _repository.update(
+        id: id,
+        firstName: firstName,
+        lastName: lastName,
+        role: role,
+      );
       await load();
       return true;
     } catch (e) {
@@ -161,4 +167,3 @@ class ManageUsersViewModel extends ChangeNotifier {
     }
   }
 }
-

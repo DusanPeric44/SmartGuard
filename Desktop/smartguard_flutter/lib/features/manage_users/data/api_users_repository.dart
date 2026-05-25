@@ -48,16 +48,10 @@ class ApiUsersRepository implements UsersRepository {
   }
 
   @override
-  Future<ManagedUser> create({
-    required String email,
-    required UserRole role,
-  }) {
+  Future<ManagedUser> create({required String email, required UserRole role}) {
     return _api.post<ManagedUser>(
       '/users/',
-      body: <String, Object?>{
-        'email': email,
-        'role': userRoleToWire(role),
-      },
+      body: <String, Object?>{'email': email, 'role': userRoleToWire(role)},
       decode: (json) => ManagedUser.fromJson(json as Map<String, dynamic>),
     );
   }
@@ -65,15 +59,17 @@ class ApiUsersRepository implements UsersRepository {
   @override
   Future<ManagedUser> update({
     required String id,
-    required String email,
+    required String firstName,
+    required String lastName,
     required UserRole role,
   }) {
     return _api.request<ManagedUser>(
       method: 'PUT',
       path: '/users/$id',
       body: <String, Object?>{
-        'email': email,
-        'role': userRoleToWire(role),
+        'firstName': firstName,
+        'lastName': lastName,
+        'role': role.name,
       },
       decode: (json) => ManagedUser.fromJson(json as Map<String, dynamic>),
     );
@@ -81,10 +77,6 @@ class ApiUsersRepository implements UsersRepository {
 
   @override
   Future<void> delete(String id) async {
-    await _api.request<Object?>(
-      method: 'DELETE',
-      path: '/users/$id',
-    );
+    await _api.request<Object?>(method: 'DELETE', path: '/users/$id');
   }
 }
-

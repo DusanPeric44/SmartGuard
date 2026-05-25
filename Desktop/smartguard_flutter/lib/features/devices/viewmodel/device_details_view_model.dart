@@ -25,10 +25,7 @@ class DeviceDetailsViewModel extends ChangeNotifier {
   List<DeviceUser> get allUsers => _allUsers;
 
   Future<void> init() async {
-    await Future.wait([
-      load(),
-      loadUsers(),
-    ]);
+    await Future.wait([load(), loadUsers()]);
   }
 
   Future<void> load() async {
@@ -67,28 +64,4 @@ class DeviceDetailsViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<bool> setActive(bool value) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-    try {
-      final updated = await _repository.setActive(deviceId, value);
-      if (_details != null) {
-        _details = DeviceDetails(
-          device: updated,
-          assignedUsers: _details!.assignedUsers,
-          lastSeenAt: _details!.lastSeenAt,
-        );
-      }
-      return true;
-    } catch (e) {
-      _errorMessage = UiErrorMapper.toMessage(e);
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 }
-

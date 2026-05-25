@@ -1,6 +1,8 @@
+using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Services;
+using System.Reflection;
 
 namespace SmartGuard.Services
 {
@@ -8,6 +10,9 @@ namespace SmartGuard.Services
     {
         public static IServiceCollection AddSmartGuardServices(this IServiceCollection services)
         {
+            // Mapster
+            TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
+
             // Core Services
             services.AddScoped<IDevicesService, DevicesService>();
             services.AddScoped<IAlertsService, AlertsService>();

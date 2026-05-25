@@ -204,7 +204,7 @@ namespace SmartGuard.Services
                     Id = a.User.Id,
                     Username = a.User.UserName
                 }).ToList(),
-                LastSeenAt = DateTime.Now // TODO: Track actual last seen time if needed
+                LastSeenAt = entity.LastSeenAt ?? entity.CreatedAt
             };
 
             return details;
@@ -221,6 +221,11 @@ namespace SmartGuard.Services
             if (device == null) return false;
 
             return device.ApiKey == deviceToken;
+        }
+
+        protected override IQueryable<Database.Device> AddInclude(IQueryable<Database.Device> query, DeviceSearchObject search = null)
+        {
+            return query.Include(x => x.DeviceStatus);
         }
     }
 }

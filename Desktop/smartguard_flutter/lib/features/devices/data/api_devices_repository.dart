@@ -11,7 +11,7 @@ class ApiDevicesRepository implements DevicesRepository {
   @override
   Future<PagedResult<DeviceRow>> list({
     String? search,
-    DeviceStatus? status,
+    int? statusId,
     int? page,
     int? pageSize,
   }) async {
@@ -19,8 +19,8 @@ class ApiDevicesRepository implements DevicesRepository {
     if (search != null && search.isNotEmpty) {
       queryParameters['name'] = search;
     }
-    if (status != null) {
-      queryParameters['statusId'] = status.index.toString();
+    if (statusId != null) {
+      queryParameters['statusId'] = statusId.toString();
     }
     if (page != null) {
       queryParameters['page'] = page.toString();
@@ -67,10 +67,7 @@ class ApiDevicesRepository implements DevicesRepository {
   ) async {
     await _api.post<Object?>(
       '/userdeviceaccess',
-      body: <String, Object?>{
-        'deviceId': deviceId,
-        'userIds': userIds,
-      },
+      body: <String, Object?>{'deviceId': deviceId, 'userIds': userIds},
     );
     return getDetails(deviceId);
   }

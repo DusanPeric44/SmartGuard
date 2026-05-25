@@ -9,12 +9,12 @@ namespace SmartGuard.Services
     {
         private readonly SmartGuardContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
 
         public DatabaseSeedService(
             SmartGuardContext context,
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<ApplicationRole> roleManager)
         {
             _context = context;
             _userManager = userManager;
@@ -36,7 +36,7 @@ namespace SmartGuard.Services
                 var roleExist = await _roleManager.RoleExistsAsync(roleName);
                 if (!roleExist)
                 {
-                    await _roleManager.CreateAsync(new IdentityRole(roleName));
+                    await _roleManager.CreateAsync(new ApplicationRole(roleName));
                 }
             }
 

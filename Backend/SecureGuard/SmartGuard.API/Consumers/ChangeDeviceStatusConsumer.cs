@@ -58,10 +58,13 @@ namespace SmartGuard.API.Consumers
             }
 
             device.StatusId = statusId.Value;
+            if (message.StatusName == "Offline")
+            {
+                device.LastSeenAt = message.TimestampUtc;
+            }
             await _context.SaveChangesAsync(context.CancellationToken);
 
             _logger.LogInformation("Device status updated (DeviceId={DeviceDbId}, StatusName={StatusName})", device.Id, message.StatusName);
         }
     }
 }
-
