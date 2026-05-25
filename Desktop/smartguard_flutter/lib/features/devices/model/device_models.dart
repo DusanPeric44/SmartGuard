@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 
-enum DeviceStatus { online, offline, maintenance }
-
 @immutable
 class DeviceRow {
   const DeviceRow({
     required this.id,
     required this.name,
-    required this.ipAddress,
-    required this.status,
+
+    this.status,
     required this.storageTotalGb,
     required this.storageUsedGb,
     required this.isActive,
@@ -16,8 +14,7 @@ class DeviceRow {
 
   final String id;
   final String name;
-  final String ipAddress;
-  final DeviceStatus status;
+  final DeviceStatus? status;
   final int storageTotalGb;
   final int storageUsedGb;
   final bool isActive;
@@ -26,32 +23,14 @@ class DeviceRow {
     return DeviceRow(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      ipAddress: json['ipAddress']?.toString() ?? '',
-      status: _parseStatus(json['status']),
+
+      status: json['status'] != null
+          ? DeviceStatus.fromJson(json['status'] as Map<String, dynamic>?)
+          : null,
       storageTotalGb: json['storageTotalGb'] as int? ?? 0,
       storageUsedGb: json['storageUsedGb'] as int? ?? 0,
       isActive: json['isActive'] as bool? ?? false,
     );
-  }
-
-  static DeviceStatus _parseStatus(dynamic value) {
-    if (value is int) {
-      return DeviceStatus.values.elementAtOrNull(value) ?? DeviceStatus.offline;
-    }
-    final s = value?.toString().toLowerCase();
-    switch (s) {
-      case 'online':
-      case '0':
-        return DeviceStatus.online;
-      case 'offline':
-      case '1':
-        return DeviceStatus.offline;
-      case 'maintenance':
-      case '2':
-        return DeviceStatus.maintenance;
-      default:
-        return DeviceStatus.offline;
-    }
   }
 
   DeviceRow copyWith({
@@ -66,11 +45,29 @@ class DeviceRow {
     return DeviceRow(
       id: id ?? this.id,
       name: name ?? this.name,
-      ipAddress: ipAddress ?? this.ipAddress,
+
       status: status ?? this.status,
       storageTotalGb: storageTotalGb ?? this.storageTotalGb,
       storageUsedGb: storageUsedGb ?? this.storageUsedGb,
       isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+@immutable
+class DeviceStatus {
+  const DeviceStatus(this.id, this.name);
+
+  final int id;
+  final String name;
+
+  factory DeviceStatus.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return DeviceStatus(0, '');
+    }
+    return DeviceStatus(
+      json['id']?.toInt() ?? 0,
+      json['name']?.toString() ?? '',
     );
   }
 }
