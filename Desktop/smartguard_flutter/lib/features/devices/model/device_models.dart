@@ -91,6 +91,21 @@ class DeviceUser {
 }
 
 @immutable
+class AssignedUser {
+  const AssignedUser({required this.id, required this.username});
+
+  final String id;
+  final String username;
+
+  factory AssignedUser.fromJson(Map<String, dynamic> json) {
+    return AssignedUser(
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+    );
+  }
+}
+
+@immutable
 class DeviceDetails {
   const DeviceDetails({
     required this.device,
@@ -99,7 +114,7 @@ class DeviceDetails {
   });
 
   final DeviceRow device;
-  final List<DeviceUser> assignedUsers;
+  final List<AssignedUser> assignedUsers;
   final DateTime lastSeenAt;
 
   factory DeviceDetails.fromJson(Map<String, dynamic> json) {
@@ -108,7 +123,7 @@ class DeviceDetails {
       device: DeviceRow.fromJson(json['device'] as Map<String, dynamic>),
       assignedUsers:
           users
-              ?.map((u) => DeviceUser.fromJson(u as Map<String, dynamic>))
+              ?.map((u) => AssignedUser.fromJson(u as Map<String, dynamic>))
               .toList() ??
           [],
       lastSeenAt:

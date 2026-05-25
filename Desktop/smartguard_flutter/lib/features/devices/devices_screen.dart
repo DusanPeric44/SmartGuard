@@ -634,7 +634,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                               children: [
                                 const Icon(Icons.person_outline),
                                 const SizedBox(width: 8),
-                                Text(u.email),
+                                Text(u.username),
                               ],
                             ),
                           ),
