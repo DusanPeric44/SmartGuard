@@ -6,7 +6,8 @@ import 'package:smartguard_flutter/features/dashboard/data/dashboard_repository.
 import 'package:smartguard_flutter/features/dashboard/model/dashboard_models.dart';
 
 class DashboardViewModel extends ChangeNotifier {
-  DashboardViewModel({required DashboardRepository repository}) : _repo = repository;
+  DashboardViewModel({required DashboardRepository repository})
+    : _repo = repository;
 
   final DashboardRepository _repo;
 
@@ -21,12 +22,6 @@ class DashboardViewModel extends ChangeNotifier {
 
   DateTime? _lastRefresh;
   DateTime? get lastRefresh => _lastRefresh;
-
-  bool _autoRefresh = false;
-  bool get autoRefresh => _autoRefresh;
-
-  Duration _interval = const Duration(seconds: 30);
-  Duration get interval => _interval;
 
   Timer? _timer;
   int _reqId = 0;
@@ -48,7 +43,9 @@ class DashboardViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final res = await _repo.loadOverview().timeout(const Duration(seconds: 8));
+      final res = await _repo.loadOverview().timeout(
+        const Duration(seconds: 8),
+      );
       if (current != _reqId) return;
       _overview = res;
       _lastRefresh = DateTime.now();
@@ -60,26 +57,6 @@ class DashboardViewModel extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       }
-    }
-  }
-
-  void setAutoRefresh(bool value) {
-    _autoRefresh = value;
-    _timer?.cancel();
-    if (value) {
-      _timer = Timer.periodic(_interval, (_) {
-        refresh();
-      });
-    }
-    notifyListeners();
-  }
-
-  void setInterval(Duration interval) {
-    _interval = interval;
-    if (_autoRefresh) {
-      setAutoRefresh(true);
-    } else {
-      notifyListeners();
     }
   }
 }
