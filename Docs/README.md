@@ -66,7 +66,7 @@ ESP32 šalje JPEG frame-ove backendu, koji ih putem SignalR-a prosljeđuje klije
 
 ### 📅 Event-driven snimanje
 
-Snimci i arhive nastaju samo kada se desi relevantan događaj — _detektovan pokret_, _prepoznato lice_ ili _aktiviran alarm_ — umjesto stalnog snimanja.
+Snimci i arhive nastaju samo kada se desi relevantan događaj — _detektovan pokret_, _detektovano lice (slika + embedding)_ ili _aktiviran alarm_ — umjesto stalnog snimanja.
 
 ### 🔁 Ring buffer na SD kartici
 
@@ -74,7 +74,15 @@ Uređaj čuva ograničen broj "normalnih" snimaka na SD kartici, dok event snimk
 
 ### 👤 Detekcija lica i poznate osobe
 
-Događaji prepoznavanja lica se povezuju s registrovanim "poznatim osobama", uz mogućnost postavljanja selektivnih notifikacija po osobi.
+Događaji detekcije lica se šalju backendu kao slika + embedding vektor (128 float vrijednosti). Backend zatim radi matching prema postojećim poznatim osobama i povezuje događaj s odgovarajućom osobom, uz mogućnost selektivnih notifikacija po osobi.
+
+### 🧠 Prepoznavanje identiteta na backendu
+
+Prepoznavanje (matching) se ne radi na ESP32 uređaju. Uređaj šalje podatke, a backend:
+
+- sačuva događaj i objavi poruku na RabbitMQ
+- `VectorMatching` servis izračuna cosine similarity prema `KnownPerson` centroid embeddingima
+- API obradi rezultat, upiše score, poveže osobu i ažurira centroid embedding kroz vrijeme
 
 ### 🔔 Selektivne notifikacije
 
@@ -103,8 +111,9 @@ SmartGuard je dizajniran kao skup komponenti s jasnom podjelom između real-time
 
 | Komponenta                        | Uloga                                                                                                  |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 📡 **ESP32-CAM (Edge)**           | Lokalno snimanje i ring buffer; upload frame-ova i event snimaka; Wi-Fi provisioning                   |
-| 🖥️ **REST API (.NET)**            | Auth/AuthZ; CRUD (uređaji, snimci, alarmi, poznate osobe); SignalR hubovi; objavljuje poruke workerima |
+| 📡 **ESP32-CAM (Edge)**           | Lokalno snimanje i ring buffer; upload frame-ova; detekcija lica + ekstrakcija embeddinga; Wi-Fi provisioning |
+| 🖥️ **REST API (.NET)**            | Auth/AuthZ; CRUD; SignalR hubovi; ingest face eventa; objavljuje poruke workerima; obrada rezultata matchinga |
+| 🧠 **VectorMatching Worker (.NET)** | Matching identiteta (cosine similarity nad embeddingima) preko gRPC + objava rezultata na RabbitMQ     |
 | 📬 **Notification Worker (.NET)** | Konzumira poruke → šalje email + push (FCM)                                                            |
 | 📦 **Archiving Worker (.NET)**    | Preuzima MJPEG snimke s uređaja; čuva na serveru; ažurira statuse snimaka                              |
 | 🗄️ **SQL Server**                 | Centralna relaciona baza (domenski entiteti + referentne tabele)                                       |
@@ -134,6 +143,14 @@ ESP32 najavljuje upload  →  API objavljuje poruku  →  Archiving Worker preuz
 ```
 API objavljuje poruku  →  Notification Worker šalje Email / Push
   →  SignalR in-app notifikacije
+```
+
+### 👤 Prepoznavanje lica (backend matching)
+
+```
+ESP32 (slika + embedding)  →  POST /FaceDetectionEvents/detect  →  RabbitMQ (IVectorMatchRequestedEvent)
+  →  VectorMatching Worker (cosine similarity + threshold)  →  RabbitMQ (IVectorMatchCompletedEvent)
+  →  API Consumer (poveže osobu + score + centroid update)  →  alarmi / notifikacije  →  klijenti
 ```
 
 ---

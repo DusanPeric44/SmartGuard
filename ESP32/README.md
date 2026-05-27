@@ -4,6 +4,8 @@ ESP32 dio SmartGuard sistema je firmware za ESP32‑CAM koji omogućava:
 
 - slanje live JPEG frame‑ova prema backendu (SignalR relay kroz API),
 - lokalno čuvanje snimaka na SD kartici (buffer + event snimci),
+- detekciju lica i ekstrakciju embedding vektora (128 float vrijednosti),
+- slanje slike + embeddinga prema backendu radi prepoznavanja identiteta,
 - provisioning Wi‑Fi kredencijala kroz AP režim,
 - autentifikaciju uređaja prema backendu putem API ključa.
 
@@ -23,13 +25,20 @@ Glavni opis projekta i linkovi na ostale module: [Docs/README.md](../Docs/README
 
 U `SmartGuard.ino` se nalaze konstante koje treba prilagoditi vašoj mreži:
 
-- adresa/port API-ja (live stream, auth, CRUD)
+- adresa/port API-ja (live stream, registracija uređaja, upload događaja lica)
 - adresa upload endpointa (archive servis)
 
 Tipično:
 
 - `API` → `http://<ip-backenda>:5000`
 - `Archive upload` → `http://<ip-backenda>:5001/upload`
+
+Endpointi koje firmware koristi:
+
+- `POST /Devices/register` (registracija uređaja; dobija `apiKey` i `id`)
+- `POST /FaceDetectionEvents/detect` (slanje JPEG + embedding vektora; header `X-Device-Token`)
+
+Važno: ESP32 ne radi prepoznavanje identiteta (matching na bazu poznatih osoba). To se radi na backendu.
 
 ## Flash
 
