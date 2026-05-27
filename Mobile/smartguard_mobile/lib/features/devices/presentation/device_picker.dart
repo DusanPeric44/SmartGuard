@@ -52,9 +52,15 @@ class _DevicePickerSheetState extends ConsumerState<_DevicePickerSheet> {
             ),
             const SizedBox(height: AppDimens.spaceM),
             if (state.status == DevicesStatus.loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppDimens.spaceL),
-                child: CircularProgressIndicator(),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppDimens.spaceL),
+                    child: CircularProgressIndicator(),
+                  ),
+                ],
               )
             else if (state.status == DevicesStatus.error)
               Padding(
@@ -111,4 +117,3 @@ class _StatusDot extends StatelessWidget {
     );
   }
 }
-
