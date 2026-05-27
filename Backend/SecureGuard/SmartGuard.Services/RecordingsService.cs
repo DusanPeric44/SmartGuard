@@ -58,7 +58,7 @@ namespace SmartGuard.Services
 
         protected override IQueryable<Database.Recording> AddInclude(IQueryable<Database.Recording> query, RecordingSearchObject search = null)
         {
-            return query.Include(x => x.Device);
+            return query.Include(x => x.Device).Include(x => x.RecordingStatus);
         }
     }
 }

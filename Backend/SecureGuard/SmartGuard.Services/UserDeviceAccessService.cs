@@ -63,7 +63,7 @@ namespace SmartGuard.Services
             }
 
             var existingAccess = await _context.UserDeviceAccesses
-                .Where(x => x.DeviceId == insert.DeviceId && userIds.Contains(x.UserId))
+                .Where(x => x.DeviceId == insert.DeviceId)
                 .ToListAsync();
 
             var accessByUserId = existingAccess.ToDictionary(x => x.UserId, StringComparer.OrdinalIgnoreCase);
@@ -106,6 +106,15 @@ namespace SmartGuard.Services
                     _context.UserDeviceAccesses.Add(row);
                     accessByUserId[user.Id] = row;
                 }
+            }
+
+            var toDelete = existingAccess
+                .Where(x => !userIds.Contains(x.UserId, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            if (toDelete.Count > 0)
+            {
+                _context.UserDeviceAccesses.RemoveRange(toDelete);
             }
 
             await _context.SaveChangesAsync();
