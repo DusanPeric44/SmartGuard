@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
+#include <cstring>
+#include <math.h>
 #include "SecurityManager.h"
 #include "fd_forward.h"
 #include "fr_forward.h"
@@ -13,21 +15,40 @@ bool _motionDetected = false;
 Preferences preferences;
 
 static mtmn_config_t mtmn_config = {0};
-static face_id_list id_list = {0};
-
-static const int kFaceIdSaveNumber = 7;
-static const int kEnrollConfirmTimes = 1;
-
-struct FaceIdSequenceTracker {
-  int ids[3];
-  uint8_t len;
-};
-
-static FaceIdSequenceTracker g_faceSeq = {{0, 0, 0}, 0};
 static bool g_notifyFaceEvent = false;
+static String g_backendBaseUrl = "";
 
-static void resetFaceIdSequence() {
-  g_faceSeq.len = 0;
+static bool parseHttpBaseUrl(const String& baseUrl, String& host, uint16_t& port) {
+  if (baseUrl.length() == 0) return false;
+
+  String u = baseUrl;
+  if (u.startsWith("http://")) {
+    u = u.substring(7);
+  }
+
+  int slash = u.indexOf('/');
+  if (slash >= 0) {
+    u = u.substring(0, slash);
+  }
+
+  int colon = u.indexOf(':');
+  if (colon >= 0) {
+    host = u.substring(0, colon);
+    port = (uint16_t)u.substring(colon + 1).toInt();
+  } else {
+    host = u;
+    port = 80;
+  }
+
+  return host.length() > 0 && port > 0;
+}
+
+static void writeChunk(WiFiClient& client, const char* data, size_t len) {
+  char header[16];
+  snprintf(header, sizeof(header), "%X\r\n", (unsigned)len);
+  client.write((const uint8_t*)header, strlen(header));
+  client.write((const uint8_t*)data, len);
+  client.write((const uint8_t*)"\r\n", 2);
 }
 
 bool consumeNotifyFaceEvent() {
@@ -36,74 +57,115 @@ bool consumeNotifyFaceEvent() {
   return true;
 }
 
-static bool sequenceContainsFaceId(int faceId) {
-  for (uint8_t i = 0; i < g_faceSeq.len; i++) {
-    if (g_faceSeq.ids[i] == faceId) return true;
-  }
-  return false;
-}
-
-static bool trackFaceIdForSequence(int faceId) {
-  if (faceId < 0) {
-    resetFaceIdSequence();
-    return false;
-  }
-
-  if (g_faceSeq.len == 0) {
-    g_faceSeq.ids[0] = faceId;
-    g_faceSeq.len = 1;
-    return false;
-  }
-
-  int last = g_faceSeq.ids[g_faceSeq.len - 1];
-  if (faceId != last || g_faceSeq.len >= 3) {
-    resetFaceIdSequence();
-    g_faceSeq.ids[0] = faceId;
-    g_faceSeq.len = 1;
-    return false;
-  }
-
-  if (g_faceSeq.len < 3) {
-    g_faceSeq.ids[g_faceSeq.len] = faceId;
-    g_faceSeq.len++;
-  }
-
-  return g_faceSeq.len == 3;
-}
-
-static int runFaceRecognition(dl_matrix3du_t *image_matrix, box_array_t *net_boxes) {
+static bool tryGetFaceEmbedding(dl_matrix3du_t *image_matrix, box_array_t *net_boxes, float outEmbedding[128]) {
   dl_matrix3du_t *aligned_face = dl_matrix3du_alloc(1, FACE_WIDTH, FACE_HEIGHT, 3);
   if (!aligned_face) {
-    Serial.println("Could not allocate face recognition buffer");
-    return -1;
+    return false;
   }
 
-  int matched_id = -1;
-
-  if (align_face(net_boxes, image_matrix, aligned_face) == ESP_OK) {
-    matched_id = recognize_face(&id_list, aligned_face);
-    if (matched_id >= 0) {
-      Serial.printf("Matched Face ID: %d\n", matched_id);
-    } else {
-      int8_t left = enroll_face(&id_list, aligned_face);
-      if (left >= 0) {
-        matched_id = id_list.tail;
-        Serial.printf("New Face ID: %d\n", matched_id);
-      } else {
-        matched_id = -1;
-      }
-    }
-  } else {
-    Serial.println("Face not aligned");
+  if (align_face(net_boxes, image_matrix, aligned_face) != ESP_OK) {
+    dl_matrix3du_free(aligned_face);
+    return false;
   }
 
+  auto embedding = get_face_id(aligned_face);
   dl_matrix3du_free(aligned_face);
-  return matched_id;
+
+  if (!embedding) {
+    return false;
+  }
+
+  memcpy(outEmbedding, embedding->item, sizeof(float) * 128);
+  dl_matrix3d_free(embedding);
+
+  for (int i = 0; i < 128; i++) {
+    if (!isfinite(outEmbedding[i])) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
-void setupSecurityManager(int pirPin) {
+static void sendFaceDetectionEvent(camera_fb_t* fb, const float* embedding, size_t embeddingLen) {
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (!fb || !fb->buf || fb->len == 0) return;
+  if (!embedding || embeddingLen != 128) return;
+
+  String host;
+  uint16_t port = 0;
+  if (!parseHttpBaseUrl(g_backendBaseUrl, host, port)) return;
+
+  WiFiClient client;
+  if (!client.connect(host.c_str(), port)) return;
+
+  const String path = "/FaceDetectionEvents/detect";
+  client.print("POST " + path + " HTTP/1.1\r\n");
+  client.print("Host: " + host + "\r\n");
+  client.print("Content-Type: application/json\r\n");
+  client.print("X-Device-Token: " + getDeviceToken() + "\r\n");
+  client.print("Transfer-Encoding: chunked\r\n");
+  client.print("Connection: close\r\n\r\n");
+
+  const int deviceId = getDeviceId();
+
+  String prefix = "{\"deviceId\":";
+  prefix += deviceId;
+  prefix += ",\"imageBytes\":[";
+  writeChunk(client, prefix.c_str(), prefix.length());
+
+  char buf[512];
+  size_t idx = 0;
+  for (size_t i = 0; i < fb->len; i++) {
+    if (idx > sizeof(buf) - 8) {
+      writeChunk(client, buf, idx);
+      idx = 0;
+    }
+    if (i > 0) {
+      buf[idx++] = ',';
+    }
+    idx += snprintf(buf + idx, sizeof(buf) - idx, "%u", (unsigned)fb->buf[i]);
+  }
+  if (idx > 0) {
+    writeChunk(client, buf, idx);
+  }
+
+  const char* middle = "],\"vector\":[";
+  writeChunk(client, middle, strlen(middle));
+
+  idx = 0;
+  for (size_t i = 0; i < embeddingLen; i++) {
+    if (idx > sizeof(buf) - 16) {
+      writeChunk(client, buf, idx);
+      idx = 0;
+    }
+    if (i > 0) {
+      buf[idx++] = ',';
+    }
+    idx += snprintf(buf + idx, sizeof(buf) - idx, "%.6f", (double)embedding[i]);
+  }
+  if (idx > 0) {
+    writeChunk(client, buf, idx);
+  }
+
+  const char* suffix = "]}";
+  writeChunk(client, suffix, strlen(suffix));
+
+  client.print("0\r\n\r\n");
+
+  String statusLine = client.readStringUntil('\n');
+  String responseBody = client.readString();
+  Serial.println("Face detection event sent. " + statusLine);
+  if (responseBody.length() > 0) {
+    Serial.println("Response body: " + responseBody);
+  }
+  client.stop();
+}
+
+void setupSecurityManager(int pirPin, const char* backendBaseUrl) {
   _pirPin = pirPin;
   pinMode(_pirPin, INPUT);
+  g_backendBaseUrl = backendBaseUrl ? String(backendBaseUrl) : "";
 
   // Initialize face detection config (copied from boilerplate)
   mtmn_config.type = FAST;
@@ -119,8 +181,6 @@ void setupSecurityManager(int pirPin) {
   mtmn_config.o_threshold.score = 0.7;
   mtmn_config.o_threshold.nms = 0.7;
   mtmn_config.o_threshold.candidate_number = 1;
-
-  face_id_init(&id_list, kFaceIdSaveNumber, kEnrollConfirmTimes);
 }
 
 bool registerDevice(const char* serverUrl, const char* registrationKey) {
@@ -186,67 +246,32 @@ int getDeviceId() {
   return id;
 }
 
-void sendFaceDetectionEvent(camera_fb_t* fb, int faceId) {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  String url = "http://192.168.8.152:5000/faceDetectionEvents/detect";
-  http.begin(url);
-  http.addHeader("Content-Type", "image/jpeg");
-  http.addHeader("X-Face-Id", String(faceId));
-  http.addHeader("X-Device-Id", String(getDeviceId()));
-  http.addHeader("X-Device-Token", getDeviceToken());
-  
-  int response = http.POST(fb->buf, fb->len);
-  Serial.println("Face detection event sent. Response: " + String(response));
-  http.end();
-}
-
 bool checkSecurity(camera_fb_t* fb) {
   _motionDetected = digitalRead(_pirPin);
-
-  if (!_motionDetected) {
-    resetFaceIdSequence();
-  }
 
   if (_motionDetected && fb) {
     // Perform Face Detection
     dl_matrix3du_t *image_matrix = dl_matrix3du_alloc(1, fb->width, fb->height, 3);
     if (!image_matrix) {
-      resetFaceIdSequence();
       return true;
     }
 
     if (fmt2rgb888(fb->buf, fb->len, fb->format, image_matrix->item)) {
       box_array_t *net_boxes = face_detect(image_matrix, &mtmn_config);
       if (net_boxes) {
-        int matched_id = runFaceRecognition(image_matrix, net_boxes);
-        if (matched_id >= 0) {
-          bool shouldNotify = trackFaceIdForSequence(matched_id);
-          if (shouldNotify) {
-            g_notifyFaceEvent = true;
-            int faceIdToSend = matched_id;
-            Serial.println("Face detected! FaceId=" + String(faceIdToSend));
-            sendFaceDetectionEvent(fb, faceIdToSend);
-            resetFaceIdSequence();
-          }
-        } else {
-          resetFaceIdSequence();
+        float embedding[128];
+        if (tryGetFaceEmbedding(image_matrix, net_boxes, embedding)) {
+          g_notifyFaceEvent = true;
+          sendFaceDetectionEvent(fb, embedding, 128);
         }
 
         dl_lib_free(net_boxes->score);
         dl_lib_free(net_boxes->box);
         if (net_boxes->landmark != NULL) dl_lib_free(net_boxes->landmark);
         dl_lib_free(net_boxes);
-      } else {
-        resetFaceIdSequence();
       }
-    } else {
-      resetFaceIdSequence();
     }
     dl_matrix3du_free(image_matrix);
-  } else if (_motionDetected && !fb) {
-    resetFaceIdSequence();
   }
 
   return _motionDetected;

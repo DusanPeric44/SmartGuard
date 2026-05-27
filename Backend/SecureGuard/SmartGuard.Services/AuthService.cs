@@ -111,7 +111,7 @@ namespace SmartGuard.Services
             }
 
             var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
-            var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken);
+            var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken);   
 
             if (storedRefreshToken == null ||
                 DateTime.UtcNow > storedRefreshToken.ExpiryDate ||
@@ -126,7 +126,7 @@ namespace SmartGuard.Services
             _context.RefreshTokens.Update(storedRefreshToken);
             await _context.SaveChangesAsync();
 
-            var user = await _userManager.FindByEmailAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            var user = await _userManager.FindByEmailAsync(validatedToken.Claims.Single(x => x.Type == ClaimTypes.Email).Value);
             if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted)
             {
                 throw new UnauthorizedAccessException("Invalid token");

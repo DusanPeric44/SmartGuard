@@ -7,7 +7,7 @@
 /**
  * Initializes the PIR sensor and face recognition components.
  */
-void setupSecurityManager(int pirPin);
+void setupSecurityManager(int pirPin, const char* backendBaseUrl);
 
 /**
  * Checks PIR sensor and performs face detection if triggered.

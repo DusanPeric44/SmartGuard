@@ -7,4 +7,5 @@
   <Project Path="SmartGuard.Services/SmartGuard.Services.csproj" />
   <Project Path="SmartGuard.Notifications.Microservice/SmartGuard.Notifications.Microservice.csproj" />
   <Project Path="SmartGuard.Archive.Microservice/SmartGuard.Archive.Microservice.csproj" />
+  <Project Path="SmartGuard.VectorMatching.Microservice/SmartGuard.VectorMatching.Microservice.csproj" />
 </Solution>

@@ -204,7 +204,7 @@ namespace SmartGuard.Services
                     Id = a.User.Id,
                     Username = a.User.Email ?? string.Empty
                 })],
-                LastSeenAt = entity.LastSeenAt != null ? DateTime.SpecifyKind(entity.LastSeenAt.Value, DateTimeKind.Utc) : DateTime.SpecifyKind(entity.CreatedAt, DateTimeKind.Utc)
+                LastSeenAt = entity.LastSeenAt != null ? entity.LastSeenAt.Value : entity.CreatedAt
             };
 
             return details;

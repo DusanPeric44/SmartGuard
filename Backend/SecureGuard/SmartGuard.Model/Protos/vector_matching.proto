@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package smartguard.vectormatching;
+
+option csharp_namespace = "SmartGuard.Grpc.VectorMatching";
+
+service VectorMatchingDataService {
+  rpc GetFaceDetectionEvent (GetFaceDetectionEventRequest) returns (FaceDetectionEventData);
+  rpc StreamKnownPersonEmbeddings (StreamKnownPersonEmbeddingsRequest) returns (stream KnownPersonEmbedding);
+}
+
+message GetFaceDetectionEventRequest {
+  int32 face_detection_event_id = 1;
+}
+
+message FaceDetectionEventData {
+  int32 face_detection_event_id = 1;
+  int32 device_id = 2;
+  bytes embedding = 3;
+}
+
+message StreamKnownPersonEmbeddingsRequest {
+  int32 expected_embedding_length = 1;
+}
+
+message KnownPersonEmbedding {
+  int32 person_id = 1;
+  bytes embedding = 2;
+}

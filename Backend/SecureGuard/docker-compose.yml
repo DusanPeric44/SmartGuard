@@ -18,6 +18,12 @@ services:
       context: .
       dockerfile: SmartGuard.Notifications.Microservice/Dockerfile
 
+  smartguard.vectormatching.microservice:
+    image: ${DOCKER_REGISTRY-}smartguardvectormatchingmicroservice
+    build:
+      context: .
+      dockerfile: SmartGuard.VectorMatching.Microservice/Dockerfile
+
 
   rabbitmq:
     image: rabbitmq:3-management

@@ -27,7 +27,7 @@ namespace SmartGuard.Model.DTOs.ReportDocuments
         public int Id { get; set; }
         public DateTime TimestampUtc { get; set; }
         public string DeviceName { get; set; }
-        public int? FaceId { get; set; }
+        public double? Score { get; set; }
         public string? PersonFirstName { get; set; }
         public string? PersonLastName { get; set; }
     }
@@ -40,4 +40,3 @@ namespace SmartGuard.Model.DTOs.ReportDocuments
         public DateTime CreatedAtUtc { get; set; }
     }
 }
-

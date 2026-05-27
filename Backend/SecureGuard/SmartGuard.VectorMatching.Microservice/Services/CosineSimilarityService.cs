@@ -1,6 +1,6 @@
 using SmartGuard.Model.Interfaces;
 
-namespace SmartGuard.Services
+namespace SmartGuard.VectorMatching.Microservice.Services
 {
     public class CosineSimilarityService : ICosineSimilarityService
     {

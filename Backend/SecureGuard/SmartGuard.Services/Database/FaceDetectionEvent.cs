@@ -18,7 +18,7 @@ namespace SmartGuard.Services.Database
         public int? PersonId { get; set; }
         public KnownPerson Person { get; set; }
 
-        public int? FaceId { get; set; }
+        public double? Score { get; set; }
         public string Image { get; set; }
         public DateTime Timestamp { get; set; }
         public byte[] Embedding { get; set; }

@@ -13,6 +13,11 @@
     <PackageReference Include="Duende.IdentityServer" Version="7.4.7" />
     <PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="7.4.7" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.67.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="MassTransit.RabbitMQ" Version="9.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
@@ -31,6 +36,10 @@
   <ItemGroup>
     <ProjectReference Include="..\SmartGuard.Services\SmartGuard.Services.csproj" />
     <ProjectReference Include="..\SmartGuard.Model\SmartGuard.Model.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\SmartGuard.Model\Protos\vector_matching.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>

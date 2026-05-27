@@ -40,7 +40,7 @@ builder.Services.AddSingleton(_ =>
         return FirebaseApp.Create(new AppOptions
         {
             Credential = credential,
-            ProjectId = "smartguard-service"
+            ProjectId = "smartguard-54863"
         });
     }
     catch (InvalidOperationException)
@@ -49,7 +49,7 @@ builder.Services.AddSingleton(_ =>
         return FirebaseApp.Create(new AppOptions
         {
             Credential = credential,
-            ProjectId = "smartguard-service"
+            ProjectId = "smartguard-54863"
         });
     }
 });

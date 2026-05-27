@@ -18,6 +18,8 @@ namespace SmartGuard.Services.Database
         public int? FaceId { get; set; }
         public int DetectionCount { get; set; }
 
+        public byte[]? Embedding { get; set; }
+
         public ICollection<FaceDetectionEvent> FaceDetectionEvents { get; set; } = null!;
         public ICollection<UserNotificationPreference> UserNotificationPreferences { get; set; } = null!;
     }

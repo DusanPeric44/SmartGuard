@@ -317,7 +317,7 @@ namespace SmartGuard.Services
                     Id = d.Id,
                     TimestampUtc = d.Timestamp,
                     DeviceName = d.Device?.Name ?? string.Empty,
-                    FaceId = d.FaceId,
+                    Score = d.Score,
                     PersonFirstName = d.PersonId.HasValue ? d.Person?.FirstName : null,
                     PersonLastName = d.PersonId.HasValue ? d.Person?.LastName : null
                 });
@@ -387,7 +387,7 @@ namespace SmartGuard.Services
                     Id = d.Id,
                     TimestampUtc = d.Timestamp,
                     DeviceName = d.Device?.Name ?? string.Empty,
-                    FaceId = d.FaceId,
+                    Score = d.Score,
                     PersonFirstName = d.PersonId.HasValue ? d.Person?.FirstName : null,
                     PersonLastName = d.PersonId.HasValue ? d.Person?.LastName : null
                 });
@@ -457,7 +457,7 @@ namespace SmartGuard.Services
                     Id = d.Id,
                     TimestampUtc = d.Timestamp,
                     DeviceName = d.Device?.Name ?? string.Empty,
-                    FaceId = d.FaceId,
+                    Score = d.Score,
                     PersonFirstName = d.PersonId.HasValue ? d.Person?.FirstName : null,
                     PersonLastName = d.PersonId.HasValue ? d.Person?.LastName : null
                 });

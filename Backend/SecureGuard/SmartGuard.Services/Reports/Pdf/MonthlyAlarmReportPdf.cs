@@ -115,7 +115,7 @@ namespace SmartGuard.Services.Reports.Pdf
                     header.Cell().Element(CellStyle).Text("ID");
                     header.Cell().Element(CellStyle).Text("Time (UTC)");
                     header.Cell().Element(CellStyle).Text("Device");
-                    header.Cell().Element(CellStyle).Text("FaceId");
+                    header.Cell().Element(CellStyle).Text("Score");
                     header.Cell().Element(CellStyle).Text("Person");
                 });
 
@@ -124,7 +124,7 @@ namespace SmartGuard.Services.Reports.Pdf
                     table.Cell().Element(CellStyle).Text(d.Id.ToString());
                     table.Cell().Element(CellStyle).Text(d.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss"));
                     table.Cell().Element(CellStyle).Text(d.DeviceName ?? string.Empty);
-                    table.Cell().Element(CellStyle).Text(d.FaceId?.ToString() ?? string.Empty);
+                    table.Cell().Element(CellStyle).Text(d.Score.HasValue ? d.Score.Value.ToString("F3") : string.Empty);
                     table.Cell().Element(CellStyle).Text($"{d.PersonFirstName} {d.PersonLastName}".Trim());
                 }
             });
@@ -140,4 +140,3 @@ namespace SmartGuard.Services.Reports.Pdf
         }
     }
 }
-

@@ -6,6 +6,6 @@ namespace SmartGuard.Model.Interfaces
 {
     public interface IFaceDetectionEventsService : IBaseCRUDService<FaceDetectionEvent, FaceDetectionEventSearchObject, FaceDetectionEventInsertRequest, FaceDetectionEventUpdateRequest>
     {
-        Task<FaceDetectionEvent> DetectAsync(int deviceId, int faceId, string deviceToken, byte[] jpegBytes);
+        Task<FaceDetectionEvent> DetectAsync(int deviceId, string deviceToken, byte[] imageBytes, float[] vector);
     }
 }

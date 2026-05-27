@@ -93,7 +93,7 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
   
   if(psramFound()){
-    config.frame_size = FRAMESIZE_QVGA; // Use VGA for better performance with face detection
+    config.frame_size = FRAMESIZE_VGA; // Use VGA for better performance with face detection
     config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
@@ -133,7 +133,7 @@ void setup() {
   setupStorageManager();
   
   Serial.println("Initializing Security Manager...");
-  setupSecurityManager(PIR_PIN);
+  setupSecurityManager(PIR_PIN, BACKEND_BASE_URL);
 
   // 4. Device Registration (if not already registered)
   Serial.println("Checking device registration...");

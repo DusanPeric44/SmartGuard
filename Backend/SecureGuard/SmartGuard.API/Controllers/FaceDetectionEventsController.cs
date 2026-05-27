@@ -18,31 +18,20 @@ namespace SmartGuard.API.Controllers
 
         [HttpPost("detect")]
         [AllowAnonymous]
-        public async Task<ActionResult<FaceDetectionEvent>> Detect()
+        public async Task<ActionResult<FaceDetectionEvent>> Detect([FromBody] FaceDetectionVectorDetectRequest request)
         {
-            if (!Request.Headers.TryGetValue("X-Device-Id", out var deviceIdRaw) ||
-                !int.TryParse(deviceIdRaw.ToString(), out var deviceId))
-            {
-                return BadRequest(new { message = "X-Device-Id header is required" });
-            }
-
-            if (!Request.Headers.TryGetValue("X-Face-Id", out var faceIdRaw) ||
-                !int.TryParse(faceIdRaw.ToString(), out var faceId))
-            {
-                return BadRequest(new { message = "X-Face-Id header is required" });
-            }
-
             var deviceToken = Request.Headers["X-Device-Token"].ToString();
             if (string.IsNullOrWhiteSpace(deviceToken))
             {
                 return Unauthorized();
             }
 
-            using var ms = new System.IO.MemoryStream();
-            await Request.Body.CopyToAsync(ms);
-            var jpegBytes = ms.ToArray();
+            if (request == null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
 
-            var created = await _faceDetectionEventsService.DetectAsync(deviceId, faceId, deviceToken, jpegBytes);
+            var created = await _faceDetectionEventsService.DetectAsync(request.DeviceId, deviceToken, request.ImageBytes ?? Array.Empty<byte>(), request.Vector);
             return Ok(created);
         }
     }

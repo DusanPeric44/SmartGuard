@@ -13,6 +13,7 @@ using SmartGuard.API.Extensions;
 using SmartGuard.API.Hubs;
 using SmartGuard.API.Middleware;
 using SmartGuard.API.Services;
+using SmartGuard.API.Grpc;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Options;
 using SmartGuard.Model.Requests;
@@ -81,7 +82,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidateAudience = true,
         ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
     };
 })
  .AddGoogle(options =>
@@ -159,6 +161,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<RecordingUploadStartedConsumer>();
     x.AddConsumer<RecordingUploadCompletedConsumer>();
     x.AddConsumer<ChangeDeviceStatusConsumer>();
+    x.AddConsumer<VectorMatchCompletedConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -177,6 +180,11 @@ builder.Services.AddMassTransit(x =>
         cfg.ReceiveEndpoint("api-device-status-events", e =>
         {
             e.ConfigureConsumer<ChangeDeviceStatusConsumer>(context);
+        });
+
+        cfg.ReceiveEndpoint("api-vector-match-events", e =>
+        {
+            e.ConfigureConsumer<VectorMatchCompletedConsumer>(context);
         });
     });
 });
@@ -209,7 +217,10 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-builder.Services.AddControllers();
+builder.Services.AddGrpc();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter()));
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
@@ -287,5 +298,6 @@ app.MapRazorPages();
 app.MapControllers().RequireAuthorization();
 
 app.MapHub<CameraHub>("/hub/camera");
+app.MapGrpcService<VectorMatchingGrpcService>();
 
 app.Run();

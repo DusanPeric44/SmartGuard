@@ -114,10 +114,8 @@ namespace SmartGuard.Services
                 _context.UserNotificationPreferences.RemoveRange(relatedPreferences);
             }
 
-            var faceId = person.FaceId;
-
             var relatedEvents = await _context.FaceDetectionEvents
-                .Where(e => e.PersonId == id || (faceId.HasValue && e.FaceId == faceId.Value))
+                .Where(e => e.PersonId == id)
                 .Select(e => new { e.Id })
                 .ToListAsync();
 
