@@ -144,7 +144,8 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
                     isBusy: vm.rowBusy[p.id] == true,
                     onEdit: () => _openEditDialog(vm, p),
                     onDelete: () => _confirmDelete(vm, p),
-                    onMerge: (source, target) => _confirmMerge(vm, source, target),
+                    onMerge: (source, target) =>
+                        _confirmMerge(vm, source, target),
                     rowBusy: vm.rowBusy,
                   ),
                 ),
@@ -250,9 +251,7 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Merged.' : (vm.errorMessage ?? 'Error.')),
-      ),
+      SnackBar(content: Text(ok ? 'Merged.' : (vm.errorMessage ?? 'Error.'))),
     );
   }
 }
@@ -324,12 +323,10 @@ class _KnownPersonCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: isBusy ? null : onDelete,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remove'),
-                  ),
+                IconButton.outlined(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: isBusy ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
                 ),
               ],
             ),
@@ -392,21 +389,8 @@ class _MergeableKnownPersonCard extends StatelessWidget {
         onMerge(details.data, person);
       },
       builder: (context, candidateData, rejectedData) {
-        final isCandidate = candidateData.isNotEmpty;
-        final highlightColor = Theme.of(context).colorScheme.primary;
-        final borderColor = isCandidate
-            ? highlightColor
-            : Theme.of(context).colorScheme.outlineVariant;
-
         return AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: borderColor,
-              width: isCandidate ? 2 : 1,
-            ),
-          ),
           child: Draggable<KnownPerson>(
             data: person,
             feedback: SizedBox(
