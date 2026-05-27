@@ -1,15 +1,20 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SmartGuard.Model.Interfaces;
+using System.Security.Claims;
 
 namespace SmartGuard.API.Hubs
 {
+    [Authorize]
     public class CameraHub : Hub
     {
         private readonly IWebSocketBridgeManager _bridgeManager;
+        private readonly IStreamRecordingManager _recordingManager;
 
-        public CameraHub(IWebSocketBridgeManager bridgeManager)
+        public CameraHub(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager)
         {
             _bridgeManager = bridgeManager;
+            _recordingManager = recordingManager;
         }
 
         /// <summary>
@@ -19,6 +24,18 @@ namespace SmartGuard.API.Hubs
         /// <param name="base64Frame">The base64 encoded image data.</param>
         public async Task UploadFrame(string deviceId, string base64Frame)
         {
+            if (!string.IsNullOrWhiteSpace(deviceId) && !string.IsNullOrWhiteSpace(base64Frame))
+            {
+                try
+                {
+                    var bytes = Convert.FromBase64String(base64Frame);
+                    await _recordingManager.TryWriteFrameAsync(deviceId, bytes, Context.ConnectionAborted);
+                }
+                catch (FormatException)
+                {
+                }
+            }
+
             // Broadcast the frame to all other connected clients (e.g., Mobile App)
             // The Mobile app expects the event name "MjpegFrame"
             await Clients.Others.SendAsync("MjpegFrame", deviceId, base64Frame);
@@ -56,14 +73,24 @@ namespace SmartGuard.API.Hubs
             await _bridgeManager.SendToDeviceAsync(deviceId, $"{{\"target\":\"MarkSafe\",\"arguments\":[{faceId}]}}");
         }
 
+        [Authorize(Roles = "HomeOwner")]
         public async Task StartRecording(string deviceId)
         {
+            var userId = Context.User?.FindFirstValue("UserId") ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new HubException("Unauthorized");
+            }
+
+            await _recordingManager.StartAsync(deviceId, userId, Context.ConnectionId, Context.ConnectionAborted);
             await Clients.All.SendAsync("StartRecording", deviceId);
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StartRecording\"}");
         }
 
+        [Authorize(Roles = "HomeOwner")]
         public async Task StopRecording(string deviceId)
         {
+            await _recordingManager.StopAsync(deviceId, "UserStop", Context.ConnectionAborted);
             await Clients.All.SendAsync("StopRecording", deviceId);
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StopRecording\"}");
         }
@@ -73,9 +100,24 @@ namespace SmartGuard.API.Hubs
             return base.OnConnectedAsync();
         }
 
-        public override Task OnDisconnectedAsync(Exception? exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            return base.OnDisconnectedAsync(exception);
+            IReadOnlyList<string> stoppedDeviceIds = Array.Empty<string>();
+            try
+            {
+                stoppedDeviceIds = await _recordingManager.StopByConnectionAsync(Context.ConnectionId, "RecorderDisconnected");
+            }
+            catch
+            {
+            }
+
+            foreach (var deviceId in stoppedDeviceIds)
+            {
+                await Clients.All.SendAsync("StopRecording", deviceId);
+                await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StopRecording\"}");
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }

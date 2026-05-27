@@ -207,6 +207,8 @@ builder.Services.Configure<FileStorageOptions>(o =>
     o.ReportsSubfolder = "reports";
 });
 
+builder.Services.Configure<ArchiveOptions>(builder.Configuration.GetSection("Archive"));
+
 var redisConfiguration = builder.Configuration["Redis:Configuration"];
 if (!string.IsNullOrWhiteSpace(redisConfiguration))
 {
@@ -218,11 +220,13 @@ else
 }
 
 builder.Services.AddGrpc();
+builder.Services.AddHttpClient();
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter()));
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<IStreamRecordingManager, StreamRecordingManager>();
 builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
 builder.Services.AddHostedService<MediaDbMigrationHostedService>();
 builder.Services.AddHostedService<ReportsSchedulerHostedService>();

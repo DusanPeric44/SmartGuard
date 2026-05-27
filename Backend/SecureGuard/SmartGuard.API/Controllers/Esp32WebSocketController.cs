@@ -11,11 +11,13 @@ namespace SmartGuard.API.Controllers
     public class Esp32WebSocketController : ControllerBase
     {
         private readonly IWebSocketBridgeManager _bridgeManager;
+        private readonly IStreamRecordingManager _recordingManager;
         private readonly ILogger<Esp32WebSocketController> _logger;
 
-        public Esp32WebSocketController(IWebSocketBridgeManager bridgeManager, ILogger<Esp32WebSocketController> logger)
+        public Esp32WebSocketController(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager, ILogger<Esp32WebSocketController> logger)
         {
             _bridgeManager = bridgeManager;
+            _recordingManager = recordingManager;
             _logger = logger;
         }
 
@@ -51,6 +53,14 @@ namespace SmartGuard.API.Controllers
                 finally
                 {
                     await _bridgeManager.RemoveSocketAsync(deviceId);
+                    try
+                    {
+                        await _recordingManager.StopAsync(deviceId, "DeviceDisconnected");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to stop recording for device {DeviceId} after WebSocket disconnect", deviceId);
+                    }
                 }
             }
             else
@@ -127,6 +137,7 @@ namespace SmartGuard.API.Controllers
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
                     // Direct binary frame (JPEG)
+                    await _recordingManager.TryWriteFrameAsync(deviceId, data);
                     var base64Frame = Convert.ToBase64String(data);
                     await _bridgeManager.BroadcastFrameAsync(deviceId, base64Frame);
                 }
@@ -141,6 +152,15 @@ namespace SmartGuard.API.Controllers
                     // Heuristic: if it's long, it's likely a base64 frame
                     if (message.Length > 100)
                     {
+                        try
+                        {
+                            var bytes = Convert.FromBase64String(message);
+                            await _recordingManager.TryWriteFrameAsync(deviceId, bytes);
+                        }
+                        catch (FormatException)
+                        {
+                        }
+
                         await _bridgeManager.BroadcastFrameAsync(deviceId, message);
                     }
                     else
