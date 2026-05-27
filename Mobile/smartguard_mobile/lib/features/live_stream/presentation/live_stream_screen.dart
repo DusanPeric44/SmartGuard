@@ -8,6 +8,8 @@ import '../../../core/constants/app_strings.dart';
 import '../../devices/application/devices_controller.dart';
 import '../../devices/application/devices_state.dart';
 import '../../devices/presentation/device_picker.dart';
+import '../../profile/application/profile_controller.dart';
+import '../../profile/domain/profile_models.dart';
 import '../application/live_stream_controller.dart';
 import '../application/live_stream_state.dart';
 
@@ -77,8 +79,11 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
     final state = ref.watch(liveStreamControllerProvider);
     final controller = ref.read(liveStreamControllerProvider.notifier);
     final devices = ref.watch(devicesControllerProvider);
+    final role = ref.watch(profileControllerProvider).profile?.role;
 
     final selectedDevice = devices.selectedDevice;
+    final showRecord =
+        role != null && role != UserRole.viewer && state.deviceId != null;
 
     return SafeArea(
       child: ListView(
@@ -160,16 +165,17 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
                         ),
                       ),
                     ),
-                  Positioned(
-                    right: AppDimens.spaceM,
-                    bottom: AppDimens.spaceM,
-                    child: _RecordButton(
-                      status: state.recordingStatus,
-                      elapsed: state.recordingElapsed,
-                      onStart: controller.startRecording,
-                      onStop: controller.stopRecording,
+                  if (showRecord)
+                    Positioned(
+                      right: AppDimens.spaceM,
+                      bottom: AppDimens.spaceM,
+                      child: _RecordButton(
+                        status: state.recordingStatus,
+                        elapsed: state.recordingElapsed,
+                        onStart: controller.startRecording,
+                        onStop: controller.stopRecording,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
