@@ -9,51 +9,38 @@ enum LiveStreamStatus {
   error,
 }
 
-enum RecordingStatus {
-  idle,
-  starting,
-  recording,
-  stopping,
-  uploading,
-  success,
-  error,
-}
-
 @immutable
 class LiveStreamState {
   const LiveStreamState({
     required this.deviceId,
     required this.status,
-    required this.recordingStatus,
+    required this.recordingActive,
+    required this.recordingActionInProgress,
     required this.latestFrameBytes,
     required this.lastFrameAt,
-    required this.recordingElapsed,
     required this.lastClipId,
-    required this.uploadProgress,
     required this.errorMessage,
   });
 
   const LiveStreamState.initial()
     : deviceId = null,
       status = LiveStreamStatus.idle,
-      recordingStatus = RecordingStatus.idle,
+      recordingActive = false,
+      recordingActionInProgress = false,
       latestFrameBytes = null,
       lastFrameAt = null,
-      recordingElapsed = Duration.zero,
       lastClipId = null,
-      uploadProgress = null,
       errorMessage = null;
 
   final String? deviceId;
   final LiveStreamStatus status;
-  final RecordingStatus recordingStatus;
+  final bool recordingActive;
+  final bool recordingActionInProgress;
 
   final Uint8List? latestFrameBytes;
   final DateTime? lastFrameAt;
 
-  final Duration recordingElapsed;
   final String? lastClipId;
-  final double? uploadProgress;
 
   final String? errorMessage;
 
@@ -61,28 +48,27 @@ class LiveStreamState {
       status == LiveStreamStatus.connecting ||
       status == LiveStreamStatus.reconnecting;
 
-  bool get isRecording => recordingStatus == RecordingStatus.recording;
+  bool get isRecording => recordingActive;
 
   LiveStreamState copyWith({
     String? deviceId,
     LiveStreamStatus? status,
-    RecordingStatus? recordingStatus,
+    bool? recordingActive,
+    bool? recordingActionInProgress,
     Uint8List? latestFrameBytes,
     DateTime? lastFrameAt,
-    Duration? recordingElapsed,
     String? lastClipId,
-    double? uploadProgress,
     String? errorMessage,
   }) {
     return LiveStreamState(
       deviceId: deviceId ?? this.deviceId,
       status: status ?? this.status,
-      recordingStatus: recordingStatus ?? this.recordingStatus,
+      recordingActive: recordingActive ?? this.recordingActive,
+      recordingActionInProgress:
+          recordingActionInProgress ?? this.recordingActionInProgress,
       latestFrameBytes: latestFrameBytes ?? this.latestFrameBytes,
       lastFrameAt: lastFrameAt ?? this.lastFrameAt,
-      recordingElapsed: recordingElapsed ?? this.recordingElapsed,
       lastClipId: lastClipId ?? this.lastClipId,
-      uploadProgress: uploadProgress ?? this.uploadProgress,
       errorMessage: errorMessage,
     );
   }

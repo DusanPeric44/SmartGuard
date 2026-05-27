@@ -12,6 +12,7 @@ abstract interface class LiveStreamRepository {
   Stream<LiveStreamFrame> frames();
   Stream<LiveStreamConnectionEvent> connectionEvents();
   Stream<ClipRecordingCompleted> recordingCompleted();
+  Stream<LiveStreamRecordingEvent> recordingEvents();
 
   Future<void> startRecording({required String deviceId});
   Future<void> stopRecording({required String deviceId});
@@ -30,6 +31,8 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
   final _events = StreamController<LiveStreamConnectionEvent>.broadcast();
   final _recordingCompleted =
       StreamController<ClipRecordingCompleted>.broadcast();
+  final _recordingEvents =
+      StreamController<LiveStreamRecordingEvent>.broadcast();
 
   String? _activeDeviceId;
 
@@ -42,6 +45,9 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
   @override
   Stream<ClipRecordingCompleted> recordingCompleted() =>
       _recordingCompleted.stream;
+
+  @override
+  Stream<LiveStreamRecordingEvent> recordingEvents() => _recordingEvents.stream;
 
   @override
   Future<void> start({required String deviceId}) async {
@@ -120,6 +126,28 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
       if (deviceId != null && clip.deviceId != deviceId) return;
       _recordingCompleted.add(clip);
     });
+
+    _client.on(LiveStreamHub.eventRecordingStarted, (args) {
+      final deviceId = _parseDeviceId(args);
+      if (deviceId == null) return;
+      _recordingEvents.add(
+        LiveStreamRecordingEvent(
+          type: LiveStreamRecordingEventType.started,
+          deviceId: deviceId,
+        ),
+      );
+    });
+
+    _client.on(LiveStreamHub.eventRecordingStopped, (args) {
+      final deviceId = _parseDeviceId(args);
+      if (deviceId == null) return;
+      _recordingEvents.add(
+        LiveStreamRecordingEvent(
+          type: LiveStreamRecordingEventType.stopped,
+          deviceId: deviceId,
+        ),
+      );
+    });
   }
 
   LiveStreamFrame? _parseFrame(List<Object?>? args) {
@@ -171,10 +199,22 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
     return null;
   }
 
+  String? _parseDeviceId(List<Object?>? args) {
+    if (args == null || args.isEmpty) return null;
+    final first = args.first;
+    if (first is String) return first;
+    if (first is Map) {
+      final map = Map<String, dynamic>.from(first);
+      return map[LiveStreamHub.keyDeviceId]?.toString();
+    }
+    return null;
+  }
+
   Future<void> dispose() async {
     await _client.dispose();
     await _frames.close();
     await _events.close();
     await _recordingCompleted.close();
+    await _recordingEvents.close();
   }
 }

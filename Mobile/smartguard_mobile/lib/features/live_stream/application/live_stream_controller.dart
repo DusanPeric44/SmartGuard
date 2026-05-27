@@ -38,9 +38,9 @@ class LiveStreamController extends Notifier<LiveStreamState> {
   StreamSubscription<LiveStreamFrame>? _frameSub;
   StreamSubscription<LiveStreamConnectionEvent>? _eventSub;
   StreamSubscription<ClipRecordingCompleted>? _clipSub;
+  StreamSubscription<LiveStreamRecordingEvent>? _recordingSub;
 
   Timer? _frameGapTimer;
-  Timer? _recordingTimer;
   Timer? _uiThrottleTimer;
 
   String? _pendingBase64;
@@ -95,6 +95,7 @@ class LiveStreamController extends Notifier<LiveStreamState> {
       },
     );
     _clipSub = repo.recordingCompleted().listen(_onClipCompleted);
+    _recordingSub = repo.recordingEvents().listen(_onRecordingEvent);
 
     try {
       await repo.start(deviceId: deviceId);
@@ -118,10 +119,9 @@ class LiveStreamController extends Notifier<LiveStreamState> {
       latestFrameBytes: null,
       lastFrameAt: null,
       errorMessage: null,
-      recordingStatus: RecordingStatus.idle,
-      recordingElapsed: Duration.zero,
+      recordingActive: false,
+      recordingActionInProgress: false,
       lastClipId: null,
-      uploadProgress: null,
     );
   }
 
@@ -148,11 +148,11 @@ class LiveStreamController extends Notifier<LiveStreamState> {
   Future<void> startRecording() async {
     final deviceId = state.deviceId;
     if (deviceId == null) return;
-    if (state.recordingStatus == RecordingStatus.recording) return;
+    if (state.recordingActive) return;
+    if (state.recordingActionInProgress) return;
 
     state = state.copyWith(
-      recordingStatus: RecordingStatus.starting,
-      recordingElapsed: Duration.zero,
+      recordingActionInProgress: true,
       errorMessage: null,
       lastClipId: null,
     );
@@ -161,11 +161,9 @@ class LiveStreamController extends Notifier<LiveStreamState> {
       await ref
           .read(liveStreamRepositoryProvider)
           .startRecording(deviceId: deviceId);
-      state = state.copyWith(recordingStatus: RecordingStatus.recording);
-      _startRecordingTimer();
     } catch (e) {
       state = state.copyWith(
-        recordingStatus: RecordingStatus.error,
+        recordingActionInProgress: false,
         errorMessage: _mapMessage(e),
       );
     }
@@ -174,19 +172,18 @@ class LiveStreamController extends Notifier<LiveStreamState> {
   Future<void> stopRecording() async {
     final deviceId = state.deviceId;
     if (deviceId == null) return;
-    if (state.recordingStatus != RecordingStatus.recording) return;
+    if (!state.recordingActive) return;
+    if (state.recordingActionInProgress) return;
 
-    _stopRecordingTimer();
-    state = state.copyWith(recordingStatus: RecordingStatus.stopping);
+    state = state.copyWith(recordingActionInProgress: true);
 
     try {
       await ref
           .read(liveStreamRepositoryProvider)
           .stopRecording(deviceId: deviceId);
-      state = state.copyWith(recordingStatus: RecordingStatus.uploading);
     } catch (e) {
       state = state.copyWith(
-        recordingStatus: RecordingStatus.error,
+        recordingActionInProgress: false,
         errorMessage: _mapMessage(e),
       );
     }
@@ -279,28 +276,30 @@ class LiveStreamController extends Notifier<LiveStreamState> {
     });
   }
 
-  void _startRecordingTimer() {
-    _recordingTimer?.cancel();
-    _recordingTimer = Timer.periodic(AppDurations.oneSecond, (_) {
-      final next = state.recordingElapsed + AppDurations.oneSecond;
-      state = state.copyWith(recordingElapsed: next);
-      if (next >= AppDurations.recordingMaxDuration) {
-        unawaited(stopRecording());
-      }
-    });
-  }
-
-  void _stopRecordingTimer() {
-    _recordingTimer?.cancel();
-    _recordingTimer = null;
-  }
-
   void _onClipCompleted(ClipRecordingCompleted clip) {
     state = state.copyWith(
-      recordingStatus: RecordingStatus.success,
       lastClipId: clip.clipId,
-      uploadProgress: null,
     );
+  }
+
+  void _onRecordingEvent(LiveStreamRecordingEvent event) {
+    final activeDeviceId = state.deviceId;
+    if (activeDeviceId != null && event.deviceId != activeDeviceId) return;
+
+    switch (event.type) {
+      case LiveStreamRecordingEventType.started:
+        state = state.copyWith(
+          recordingActive: true,
+          recordingActionInProgress: false,
+        );
+        return;
+      case LiveStreamRecordingEventType.stopped:
+        state = state.copyWith(
+          recordingActive: false,
+          recordingActionInProgress: false,
+        );
+        return;
+    }
   }
 
   Future<void> _cancelStreamSubscriptions() async {
@@ -311,14 +310,15 @@ class LiveStreamController extends Notifier<LiveStreamState> {
     await _frameSub?.cancel();
     await _eventSub?.cancel();
     await _clipSub?.cancel();
+    await _recordingSub?.cancel();
     _frameSub = null;
     _eventSub = null;
     _clipSub = null;
+    _recordingSub = null;
   }
 
   void _disposeInternal() {
     _frameGapTimer?.cancel();
-    _recordingTimer?.cancel();
     _uiThrottleTimer?.cancel();
     unawaited(_cancelStreamSubscriptions());
   }

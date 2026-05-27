@@ -12,6 +12,8 @@ class LiveStreamHub {
   static const String eventFrame = 'MjpegFrame';
   static const String eventStatus = 'DeviceStreamStatus';
   static const String eventRecordingCompleted = 'RecordingCompleted';
+  static const String eventRecordingStarted = 'StartRecording';
+  static const String eventRecordingStopped = 'StopRecording';
 
   static const String keyDeviceId = 'deviceId';
   static const String keyJpegBase64 = 'jpegBase64';

@@ -24,3 +24,15 @@ class ClipRecordingCompleted {
   final String deviceId;
   final String clipId;
 }
+
+enum LiveStreamRecordingEventType { started, stopped }
+
+class LiveStreamRecordingEvent {
+  const LiveStreamRecordingEvent({
+    required this.type,
+    required this.deviceId,
+  });
+
+  final LiveStreamRecordingEventType type;
+  final String deviceId;
+}

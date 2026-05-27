@@ -170,8 +170,8 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
                       right: AppDimens.spaceM,
                       bottom: AppDimens.spaceM,
                       child: _RecordButton(
-                        status: state.recordingStatus,
-                        elapsed: state.recordingElapsed,
+                        isRecording: state.recordingActive,
+                        isBusy: state.recordingActionInProgress,
                         onStart: controller.startRecording,
                         onStop: controller.stopRecording,
                       ),
@@ -302,25 +302,19 @@ class _StatusBadge extends StatelessWidget {
 
 class _RecordButton extends StatelessWidget {
   const _RecordButton({
-    required this.status,
-    required this.elapsed,
+    required this.isRecording,
+    required this.isBusy,
     required this.onStart,
     required this.onStop,
   });
 
-  final RecordingStatus status;
-  final Duration elapsed;
+  final bool isRecording;
+  final bool isBusy;
   final VoidCallback onStart;
   final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
-    final isRecording = status == RecordingStatus.recording;
-    final isBusy =
-        status == RecordingStatus.starting ||
-        status == RecordingStatus.stopping ||
-        status == RecordingStatus.uploading;
-
     final label = isRecording
         ? AppStrings.liveStreamStop
         : AppStrings.liveStreamRecord;
@@ -329,22 +323,6 @@ class _RecordButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (isRecording)
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.spaceM,
-              vertical: AppDimens.spaceS,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(AppDimens.pillRadius),
-            ),
-            child: Text(
-              _formatDuration(elapsed),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        const SizedBox(height: AppDimens.spaceS),
         FloatingActionButton(
           onPressed: isBusy ? null : (isRecording ? onStop : onStart),
           backgroundColor: isRecording ? Colors.red : null,
@@ -371,13 +349,4 @@ class _RecordButton extends StatelessWidget {
       ],
     );
   }
-}
-
-String _formatDuration(Duration d) {
-  const pad = '0';
-  const sep = ':';
-  final total = d.inSeconds;
-  final m = (total ~/ 60).toString().padLeft(2, pad);
-  final s = (total % 60).toString().padLeft(2, pad);
-  return '$m$sep$s';
 }
