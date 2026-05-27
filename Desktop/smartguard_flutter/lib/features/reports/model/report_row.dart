@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
 import 'report_status.dart';
 import 'report_type.dart';
 
@@ -37,15 +38,9 @@ class ReportRow {
     reportStatus: ReportStatus.fromMap(
       data['reportStatus'] as Map<String, dynamic>,
     ),
-    periodStartUtc: data['periodStartUtc'].toString().isEmpty
-        ? null
-        : DateTime.parse(data['periodStartUtc'] as String),
-    periodEndUtc: data['periodEndUtc'].toString().isEmpty
-        ? null
-        : DateTime.parse(data['periodEndUtc'] as String),
-    generatedAtUtc: data['generatedAtUtc'].toString().isEmpty
-        ? null
-        : DateTime.parse(data['generatedAtUtc'] as String),
+    periodStartUtc: (data['periodStartUtc'] as Object?).toLocalDateTime(),
+    periodEndUtc: (data['periodEndUtc'] as Object?).toLocalDateTime(),
+    generatedAtUtc: (data['generatedAtUtc'] as Object?).toLocalDateTime(),
     generatedByUserId: data['generatedByUserId'] as dynamic,
     fileUrl: data['fileUrl'] as String,
     error: data['error'] as String?,

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
 
 @immutable
 class AuditLogRow {
@@ -119,5 +120,5 @@ DateTime? _tryDateTime(Object? v) {
   }
   final s = v.toString().trim();
   if (s.isEmpty) return null;
-  return DateTime.tryParse(s);
+  return s.toLocalDateTime();
 }

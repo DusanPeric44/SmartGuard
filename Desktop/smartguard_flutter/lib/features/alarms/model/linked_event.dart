@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
+
 import 'device.dart';
 
 class LinkedEvent {
@@ -35,9 +37,7 @@ class LinkedEvent {
     person: data['person'] as dynamic,
     faceId: data['faceId'] as int?,
     image: data['image'] as String?,
-    timestamp: data['timestamp'] == null
-        ? null
-        : DateTime.parse(data['timestamp'] as String),
+    timestamp: (data['timestamp'] as Object?).toLocalDateTime(),
     embedding: data['embedding'] as String?,
   );
 
