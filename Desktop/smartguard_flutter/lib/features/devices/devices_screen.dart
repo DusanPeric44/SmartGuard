@@ -21,7 +21,6 @@ class DevicesScreen extends StatefulWidget {
 class _DevicesScreenState extends State<DevicesScreen> {
   DevicesRepository? _repo;
   DeviceListViewModel? _vm;
-  final _searchController = TextEditingController();
   String? _statusName;
 
   @override
@@ -39,7 +38,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
   void dispose() {
     _vm?.removeListener(_onVmChanged);
     _vm?.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -63,9 +61,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return Column(
       children: [
         _FiltersCard(
-          controller: _searchController,
           statusName: _statusName,
-          onSearchChanged: (v) => vm.setSearch(v),
           onStatusChanged: (v) async {
             _statusName = v;
             await vm.setStatus(v);
@@ -703,17 +699,13 @@ class _AssignUsersDialogState extends State<_AssignUsersDialog> {
 
 class _FiltersCard extends StatelessWidget {
   const _FiltersCard({
-    required this.controller,
     required this.statusName,
-    required this.onSearchChanged,
     required this.onStatusChanged,
     required this.onRefresh,
     this.onAddDevice,
   });
 
-  final TextEditingController controller;
   final String? statusName;
-  final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onStatusChanged;
   final Future<void> Function() onRefresh;
   final VoidCallback? onAddDevice;
@@ -728,18 +720,6 @@ class _FiltersCard extends StatelessWidget {
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SizedBox(
-              width: 320,
-              child: TextField(
-                controller: controller,
-                onChanged: onSearchChanged,
-                decoration: const InputDecoration(
-                  labelText: 'Search',
-                  hintText: 'Name, ID, IP...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
             SizedBox(
               width: 200,
               child: DropdownButtonFormField<String?>(

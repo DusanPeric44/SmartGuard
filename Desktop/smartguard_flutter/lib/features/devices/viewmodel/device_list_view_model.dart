@@ -23,7 +23,6 @@ class DeviceListViewModel extends ChangeNotifier {
   final Map<String, bool> _rowBusy = <String, bool>{};
   Map<String, bool> get rowBusy => Map.unmodifiable(_rowBusy);
 
-  String _search = '';
   String? _statusName;
 
   int _page = 1;
@@ -39,7 +38,6 @@ class DeviceListViewModel extends ChangeNotifier {
   String? _provisioningStatus;
   String? get provisioningStatus => _provisioningStatus;
 
-  String get search => _search;
   String? get statusName => _statusName;
   int get page => _page;
   int get pageSize => _pageSize;
@@ -56,14 +54,6 @@ class DeviceListViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  void setSearch(String value) {
-    _search = value;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
-      load();
-    });
-  }
-
   Future<void> setStatus(String? statusName) async {
     _statusName = statusName;
     await load();
@@ -76,7 +66,7 @@ class DeviceListViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       final pagedResult = await _repository.list(
-        search: _search,
+        search: "",
         statusId: null,
         page: _page,
         pageSize: _pageSize,
@@ -100,7 +90,7 @@ class DeviceListViewModel extends ChangeNotifier {
     try {
       _page++;
       final pagedResult = await _repository.list(
-        search: _search,
+        search: "",
         statusId: null,
         page: _page,
         pageSize: _pageSize,
