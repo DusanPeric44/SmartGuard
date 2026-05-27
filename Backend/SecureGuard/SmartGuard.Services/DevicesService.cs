@@ -199,12 +199,12 @@ namespace SmartGuard.Services
             var details = new DeviceDetails
             {
                 Device = entity.Adapt<Model.DTOs.Device>(),
-                AssignedUsers = entity.UserDeviceAccesses.Select(a => new DeviceUserDto
+                AssignedUsers = [.. entity.UserDeviceAccesses.Select(a => new DeviceUserDto
                 {
                     Id = a.User.Id,
-                    Username = a.User.UserName
-                }).ToList(),
-                LastSeenAt = DateTime.Now // TODO: Track actual last seen time if needed
+                    Username = a.User.Email ?? string.Empty
+                })],
+                LastSeenAt = entity.LastSeenAt != null ? DateTime.SpecifyKind(entity.LastSeenAt.Value, DateTimeKind.Utc) : DateTime.SpecifyKind(entity.CreatedAt, DateTimeKind.Utc)
             };
 
             return details;
@@ -221,6 +221,11 @@ namespace SmartGuard.Services
             if (device == null) return false;
 
             return device.ApiKey == deviceToken;
+        }
+
+        protected override IQueryable<Database.Device> AddInclude(IQueryable<Database.Device> query, DeviceSearchObject search = null)
+        {
+            return query.Include(x => x.DeviceStatus);
         }
     }
 }

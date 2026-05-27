@@ -20,6 +20,10 @@ namespace SmartGuard.Services.Database.Configurations
 
     public sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
     {
+        public ApplicationUserConfiguration()
+        {
+        }
+
         public void Configure(EntityTypeBuilder<ApplicationUser> builder)
         {
         }

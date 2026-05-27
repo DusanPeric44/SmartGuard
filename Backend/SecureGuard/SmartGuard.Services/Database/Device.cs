@@ -15,6 +15,7 @@ namespace SmartGuard.Services.Database
         public string ApiKey { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? LastSeenAt { get; set; }
         
         [ForeignKey("DeviceStatus")]
         public int StatusId { get; set; }

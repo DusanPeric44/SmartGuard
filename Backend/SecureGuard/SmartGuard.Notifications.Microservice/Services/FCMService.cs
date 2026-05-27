@@ -31,8 +31,15 @@ namespace SmartGuard.Notifications.Microservice.Services
                 }
             };
 
-            var messageId = await _messaging.SendAsync(message);
-            _logger.LogInformation("FCM message sent. MessageId={MessageId}", messageId);
+            try
+            {
+                var messageId = await _messaging.SendAsync(message);
+                _logger.LogInformation("FCM message sent. MessageId={MessageId}", messageId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending FCM message. Token={Token}", token);
+            }
         }
     }
 }

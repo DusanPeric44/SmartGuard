@@ -4,7 +4,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SmartGuard.Services.Database
 {
-    public class SmartGuardContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
+    public class SmartGuardContext : IdentityDbContext<
+        ApplicationUser, 
+        ApplicationRole, 
+        string, 
+        IdentityUserClaim<string>, 
+        ApplicationUserRole, 
+        IdentityUserLogin<string>, 
+        IdentityRoleClaim<string>, 
+        IdentityUserToken<string>>
     {
         public SmartGuardContext(DbContextOptions<SmartGuardContext> options) : base(options)
         {

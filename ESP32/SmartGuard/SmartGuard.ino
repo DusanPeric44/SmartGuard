@@ -11,10 +11,10 @@
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "192.168.8.143"
+#define SIGNALR_HOST "192.168.8.152"
 #define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://192.168.8.143:5001/upload"
-#define BACKEND_BASE_URL "http://192.168.8.143:5000"
+#define BACKEND_SYNC_URL "http://192.168.8.152:5001/upload"
+#define BACKEND_BASE_URL "http://192.168.8.152:5000"
 
 String webSocketPath;
 Preferences devicePrefs;

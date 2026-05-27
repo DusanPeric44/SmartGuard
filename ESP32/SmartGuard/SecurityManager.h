@@ -16,16 +16,6 @@ void setupSecurityManager(int pirPin);
 bool checkSecurity(camera_fb_t* fb);
 
 /**
- * Marks a face ID as safe.
- */
-void markFaceAsSafe(int faceId);
-
-/**
- * Checks if a face ID is safe.
- */
-bool isFaceSafe(int faceId);
-
-/**
  * Returns true once when the face sequence reaches the notify condition.
  */
 bool consumeNotifyFaceEvent();

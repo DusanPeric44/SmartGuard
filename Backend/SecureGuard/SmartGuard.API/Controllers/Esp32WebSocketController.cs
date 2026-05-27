@@ -63,6 +63,8 @@ namespace SmartGuard.API.Controllers
         {
             var buffer = new byte[1024 * 16]; // 16KB chunk buffer
             using var ms = new System.IO.MemoryStream();
+            var heartbeatTimeout = TimeSpan.FromSeconds(30);
+            var lastSeenUtc = DateTime.UtcNow;
             
             while (webSocket.State == WebSocketState.Open)
             {
@@ -71,12 +73,49 @@ namespace SmartGuard.API.Controllers
                 
                 do
                 {
-                    result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    var remaining = (lastSeenUtc + heartbeatTimeout) - DateTime.UtcNow;
+                    if (remaining <= TimeSpan.Zero)
+                    {
+                        _logger.LogWarning("Heartbeat timeout for device {DeviceId}. Closing WebSocket.", deviceId);
+                        try
+                        {
+                            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Heartbeat timeout", CancellationToken.None);
+                        }
+                        catch
+                        {
+                            webSocket.Abort();
+                        }
+                        return;
+                    }
+
+                    try
+                    {
+                        using var cts = new CancellationTokenSource(remaining);
+                        result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogWarning("Heartbeat timeout for device {DeviceId}. Closing WebSocket.", deviceId);
+                        try
+                        {
+                            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Heartbeat timeout", CancellationToken.None);
+                        }
+                        catch
+                        {
+                            webSocket.Abort();
+                        }
+                        return;
+                    }
                     
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
                         await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
                         return;
+                    }
+
+                    if (result.Count > 0)
+                    {
+                        lastSeenUtc = DateTime.UtcNow;
                     }
 
                     await ms.WriteAsync(buffer, 0, result.Count);
@@ -94,6 +133,10 @@ namespace SmartGuard.API.Controllers
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {
                     var message = Encoding.UTF8.GetString(data);
+                    if (message == "HB")
+                    {
+                        continue;
+                    }
                     
                     // Heuristic: if it's long, it's likely a base64 frame
                     if (message.Length > 100)

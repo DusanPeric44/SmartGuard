@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
@@ -14,14 +15,14 @@ namespace SmartGuard.Services
     public class UsersService : BaseGetService<UserDto, ApplicationUser, UsersSearchObject>, IUsersService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger<UsersService> _logger;
 
         public UsersService(
             SmartGuardContext context,
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
+            RoleManager<ApplicationRole> roleManager,
             INotificationPublisher notificationPublisher,
             ILogger<UsersService> logger) : base(context)
         {
@@ -282,6 +283,11 @@ namespace SmartGuard.Services
             }
 
             return new string(chars);
+        }
+
+        protected override IQueryable<ApplicationUser> AddInclude(IQueryable<ApplicationUser> query, UsersSearchObject search = null)
+        {
+            return query.Include(x => x.UserRoles).ThenInclude(x => x.Role);
         }
     }
 }
