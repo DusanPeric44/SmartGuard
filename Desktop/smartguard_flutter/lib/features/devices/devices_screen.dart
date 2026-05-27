@@ -149,7 +149,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   columns: const [
                     DataColumn(label: Text('Name')),
                     DataColumn(label: Text('Status')),
-                    DataColumn(label: Text('Storage')),
                     DataColumn(label: Text('Actions')),
                   ],
                   rows: [
@@ -164,12 +163,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           DataCell(
                             _StatusChip(
                               status: d.status ?? DeviceStatus(0, 'Offline'),
-                            ),
-                          ),
-                          DataCell(
-                            _StorageCell(
-                              used: d.storageUsedGb,
-                              total: d.storageTotalGb,
                             ),
                           ),
                           DataCell(
@@ -554,11 +547,6 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       Text(
                         'Last seen: ${device.status?.name == "Online" ? 'Now' : _ddmmhhmm(details.lastSeenAt)}',
                       ),
-                      const SizedBox(height: 12),
-                      _StorageBar(
-                        used: device.storageUsedGb,
-                        total: device.storageTotalGb,
-                      ),
                     ],
                   ),
                 ),
@@ -810,60 +798,6 @@ class _StatusChip extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Text(label),
-    );
-  }
-}
-
-class _StorageCell extends StatelessWidget {
-  const _StorageCell({required this.used, required this.total});
-
-  final int used;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = total == 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
-    return SizedBox(
-      width: 180,
-      child: Row(
-        children: [
-          Expanded(
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text('$used / $total GB'),
-        ],
-      ),
-    );
-  }
-}
-
-class _StorageBar extends StatelessWidget {
-  const _StorageBar({required this.used, required this.total});
-
-  final int used;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = total == 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
-    final warn = pct >= 0.85;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Storage: $used / $total GB${warn ? ' (low)' : ''}'),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: pct,
-          minHeight: 10,
-          borderRadius: BorderRadius.circular(999),
-          color: warn ? Colors.amberAccent.shade400 : null,
-        ),
-      ],
     );
   }
 }
