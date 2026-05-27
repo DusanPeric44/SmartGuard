@@ -94,8 +94,8 @@ BEGIN
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "smartguard_flutter" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.smartguard. All rights reserved." "\0"
-            VALUE "OriginalFilename", "smartguard_flutter.exe" "\0"
-            VALUE "ProductName", "smartguard_flutter" "\0"
+            VALUE "OriginalFilename", "smartguard.exe" "\0"
+            VALUE "ProductName", "SmartGuard" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
