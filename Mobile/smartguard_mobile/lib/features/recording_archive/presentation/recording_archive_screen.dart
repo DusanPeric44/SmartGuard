@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:smart_guard_flutter/features/profile/application/profile_controller.dart';
+import 'package:smart_guard_flutter/features/profile/domain/profile_models.dart';
 
 import '../../../core/constants/app_dimens.dart';
 import '../application/recording_archive_controller.dart';
@@ -244,6 +246,8 @@ class _RecordingDetailsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(recordingArchiveControllerProvider);
     final controller = ref.read(recordingArchiveControllerProvider.notifier);
+    final profileState = ref.watch(profileControllerProvider);
+    final role = profileState.profile?.role ?? UserRole.viewer;
     final busy = state.downloadingIds.contains(recording.id);
 
     return Padding(
@@ -316,35 +320,39 @@ class _RecordingDetailsSheet extends ConsumerWidget {
                 : recording.typeName.trim(),
           ),
           const SizedBox(height: AppDimens.spaceL),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: busy
-                      ? null
-                      : () async {
-                          await controller.download(recording: recording);
-                          final latest = ref.read(
-                            recordingArchiveControllerProvider,
-                          );
-                          if (context.mounted && latest.errorMessage == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Download started')),
+          if (role != UserRole.viewer)
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: role == UserRole.viewer || busy
+                        ? null
+                        : () async {
+                            await controller.download(recording: recording);
+                            final latest = ref.read(
+                              recordingArchiveControllerProvider,
                             );
-                          }
-                        },
-                  icon: busy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.download),
-                  label: const Text('Download'),
+                            if (context.mounted &&
+                                latest.errorMessage == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Download started'),
+                                ),
+                              );
+                            }
+                          },
+                    icon: busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download),
+                    label: const Text('Download'),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
