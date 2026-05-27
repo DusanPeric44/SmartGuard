@@ -19,4 +19,13 @@ namespace SmartGuard.Model.Requests
         public string LastName { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
     }
+
+    public class KnownPersonCombineRequest
+    {
+        [Required]
+        public int PrimaryPersonId { get; set; }
+
+        [Required]
+        public int SecondaryPersonId { get; set; }
+    }
 }

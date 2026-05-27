@@ -143,5 +143,33 @@ class KnownPersonsViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> mergePersons({
+    required String targetId,
+    required String sourceId,
+  }) async {
+    if (_rowBusy[targetId] == true || _rowBusy[sourceId] == true) return false;
+
+    _rowBusy[targetId] = true;
+    _rowBusy[sourceId] = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.combine(
+        primaryPersonId: targetId,
+        secondaryPersonId: sourceId,
+      );
+      await load();
+      return true;
+    } catch (e) {
+      _errorMessage = UiErrorMapper.toMessage(e);
+      return false;
+    } finally {
+      _rowBusy.remove(targetId);
+      _rowBusy.remove(sourceId);
+      notifyListeners();
+    }
+  }
 }
 

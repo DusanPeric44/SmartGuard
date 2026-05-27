@@ -64,4 +64,19 @@ class ApiKnownPersonsRepository implements KnownPersonsRepository {
   Future<void> delete(String id) async {
     await _api.request<Object?>(method: 'DELETE', path: '/knownPersons/$id');
   }
+
+  @override
+  Future<void> combine({
+    required String primaryPersonId,
+    required String secondaryPersonId,
+  }) async {
+    await _api.request<Object?>(
+      method: 'POST',
+      path: '/KnownPersons/combine',
+      body: <String, Object?>{
+        'primaryPersonId': int.parse(primaryPersonId),
+        'secondaryPersonId': int.parse(secondaryPersonId),
+      },
+    );
+  }
 }

@@ -15,5 +15,10 @@ abstract class KnownPersonsRepository {
   });
 
   Future<void> delete(String id);
+
+  Future<void> combine({
+    required String primaryPersonId,
+    required String secondaryPersonId,
+  });
 }
 

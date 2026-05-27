@@ -1,5 +1,7 @@
+using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -145,6 +147,157 @@ namespace SmartGuard.Services
             await tx.CommitAsync();
             _logger.LogAuditSuccess("KnownPersonDeleted", $"KnownPerson:{id}", $"{person.FirstName} {person.LastName}".Trim());
             return true;
+        }
+
+        public async Task<Model.DTOs.KnownPerson?> CombineAsync(int primaryPersonId, int secondaryPersonId)
+        {
+            if (primaryPersonId == secondaryPersonId)
+                throw new ArgumentException("Primary and secondary person must be different.");
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var primary = await _context.KnownPersons.SingleOrDefaultAsync(x => x.Id == primaryPersonId);
+                var secondary = await _context.KnownPersons.SingleOrDefaultAsync(x => x.Id == secondaryPersonId);
+
+                if (primary == null || secondary == null)
+                    return null;
+
+                var isPrimaryIntruder = string.Equals(primary.FirstName, "Intruder", StringComparison.OrdinalIgnoreCase);
+
+                var secondaryEvents = await _context.FaceDetectionEvents
+                    .Where(e => e.PersonId == secondaryPersonId)
+                    .ToListAsync();
+
+                var secondaryEventIds = secondaryEvents.Select(e => e.Id).ToList();
+
+                foreach (var e in secondaryEvents)
+                {
+                    e.PersonId = primaryPersonId;
+                }
+
+                primary.DetectionCount += secondary.DetectionCount;
+
+                await _context.SaveChangesAsync();
+
+                if (!isPrimaryIntruder && secondaryEventIds.Count > 0)
+                {
+                    var relatedAlerts = await _context.Alerts
+                        .Where(a => a.LinkedEventId.HasValue && secondaryEventIds.Contains(a.LinkedEventId.Value))
+                        .ToListAsync();
+
+                    foreach (var alert in relatedAlerts)
+                    {
+                        alert.IsDeleted = true;
+                        alert.LinkedEventId = null;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                var embeddingsBytes = await _context.FaceDetectionEvents
+                    .AsNoTracking()
+                    .Where(e => e.PersonId == primaryPersonId && e.Embedding != null && e.Embedding.Length > 0)
+                    .OrderByDescending(e => e.Score ?? double.MinValue)
+                    .ThenByDescending(e => e.Timestamp)
+                    .Select(e => e.Embedding)
+                    .Take(20)
+                    .ToListAsync();
+
+                var embeddings = new List<float[]>(embeddingsBytes.Count);
+                foreach (var bytes in embeddingsBytes)
+                {
+                    try
+                    {
+                        var unpacked = VectorPacking.UnpackFloat32(bytes);
+                        if (unpacked.Length == 128)
+                        {
+                            embeddings.Add(unpacked);
+                        }
+                    }
+                    catch (ArgumentException)
+                    {
+                    }
+                }
+
+                if (embeddings.Count > 0)
+                {
+                    var centroid = ComputeCentroid(embeddings);
+                    primary.Embedding = VectorPacking.PackFloat32(centroid);
+                    await _context.SaveChangesAsync();
+                }
+
+                _context.KnownPersons.Remove(secondary);
+                await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+
+                _logger.LogAuditSuccess(
+                    "KnownPersonsCombined",
+                    $"KnownPerson:{primaryPersonId}",
+                    $"Secondary={secondaryPersonId}");
+
+                return primary.Adapt<Model.DTOs.KnownPerson>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogAuditFailed(
+                    "KnownPersonsCombined",
+                    $"KnownPerson:{primaryPersonId}",
+                    $"Secondary={secondaryPersonId}",
+                    ex);
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+        private static float[] ComputeCentroid(List<float[]> embeddings)
+        {
+            if (embeddings == null || embeddings.Count == 0)
+                throw new ArgumentException("No embeddings");
+
+            var dim = embeddings[0].Length;
+            var centroid = new float[dim];
+
+            foreach (var emb in embeddings)
+            {
+                for (int i = 0; i < dim; i++)
+                {
+                    centroid[i] += emb[i];
+                }
+            }
+
+            for (int i = 0; i < dim; i++)
+            {
+                centroid[i] /= embeddings.Count;
+            }
+
+            return Normalize(centroid);
+        }
+
+        private static float[] Normalize(float[] vector)
+        {
+            double sum = 0;
+
+            for (int i = 0; i < vector.Length; i++)
+            {
+                sum += vector[i] * vector[i];
+            }
+
+            var norm = Math.Sqrt(sum);
+
+            if (norm == 0)
+                return vector;
+
+            var result = new float[vector.Length];
+
+            for (int i = 0; i < vector.Length; i++)
+            {
+                result[i] = (float)(vector[i] / norm);
+            }
+
+            return result;
         }
     }
 }

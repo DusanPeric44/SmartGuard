@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
+import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/known_persons/data/api_known_persons_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/data/known_persons_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/model/known_person.dart';
@@ -137,11 +138,14 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
               for (final p in vm.items)
                 SizedBox(
                   width: 260,
-                  child: _KnownPersonCard(
+                  child: _MergeableKnownPersonCard(
+                    enabled: AppScope.of(context).auth.role == UserRole.admin,
                     person: p,
                     isBusy: vm.rowBusy[p.id] == true,
                     onEdit: () => _openEditDialog(vm, p),
                     onDelete: () => _confirmDelete(vm, p),
+                    onMerge: (source, target) => _confirmMerge(vm, source, target),
+                    rowBusy: vm.rowBusy,
                   ),
                 ),
             ],
@@ -213,6 +217,42 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? 'Removed.' : (vm.errorMessage ?? 'Error.'))),
+    );
+  }
+
+  Future<void> _confirmMerge(
+    KnownPersonsViewModel vm,
+    KnownPerson source,
+    KnownPerson target,
+  ) async {
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Merge known persons'),
+        content: Text(
+          'Merge ${source.fullName} into ${target.fullName}? ${source.fullName} will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm Merge'),
+          ),
+        ],
+      ),
+    );
+    if (res != true) return;
+
+    final ok = await vm.mergePersons(targetId: target.id, sourceId: source.id);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Merged.' : (vm.errorMessage ?? 'Error.')),
+      ),
     );
   }
 }
@@ -306,6 +346,102 @@ class _KnownPersonCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MergeableKnownPersonCard extends StatelessWidget {
+  const _MergeableKnownPersonCard({
+    required this.enabled,
+    required this.person,
+    required this.isBusy,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onMerge,
+    required this.rowBusy,
+  });
+
+  final bool enabled;
+  final KnownPerson person;
+  final bool isBusy;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final void Function(KnownPerson source, KnownPerson target) onMerge;
+  final Map<String, bool> rowBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) {
+      return _KnownPersonCard(
+        person: person,
+        isBusy: isBusy,
+        onEdit: onEdit,
+        onDelete: onDelete,
+      );
+    }
+
+    return DragTarget<KnownPerson>(
+      onWillAcceptWithDetails: (details) {
+        final source = details.data;
+        if (source.id == person.id) return false;
+        if (rowBusy[person.id] == true) return false;
+        if (rowBusy[source.id] == true) return false;
+        return true;
+      },
+      onAcceptWithDetails: (details) {
+        onMerge(details.data, person);
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isCandidate = candidateData.isNotEmpty;
+        final highlightColor = Theme.of(context).colorScheme.primary;
+        final borderColor = isCandidate
+            ? highlightColor
+            : Theme.of(context).colorScheme.outlineVariant;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderColor,
+              width: isCandidate ? 2 : 1,
+            ),
+          ),
+          child: Draggable<KnownPerson>(
+            data: person,
+            feedback: SizedBox(
+              width: 260,
+              child: Material(
+                type: MaterialType.transparency,
+                child: Opacity(
+                  opacity: 0.92,
+                  child: _KnownPersonCard(
+                    person: person,
+                    isBusy: false,
+                    onEdit: () {},
+                    onDelete: () {},
+                  ),
+                ),
+              ),
+            ),
+            childWhenDragging: Opacity(
+              opacity: 0.35,
+              child: _KnownPersonCard(
+                person: person,
+                isBusy: isBusy,
+                onEdit: onEdit,
+                onDelete: onDelete,
+              ),
+            ),
+            child: _KnownPersonCard(
+              person: person,
+              isBusy: isBusy,
+              onEdit: onEdit,
+              onDelete: onDelete,
+            ),
+          ),
+        );
+      },
     );
   }
 }
