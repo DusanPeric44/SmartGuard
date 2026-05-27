@@ -7,6 +7,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../devices/application/devices_controller.dart';
 import '../../devices/application/devices_state.dart';
+import '../../devices/domain/device.dart';
 import '../../devices/presentation/device_picker.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../profile/domain/profile_models.dart';
@@ -106,7 +107,7 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
           const SizedBox(height: AppDimens.spaceM),
           _DeviceSelector(
             deviceName: selectedDevice?.name,
-            isOnline: selectedDevice != null,
+            status: selectedDevice?.status,
             onTap: () async {
               final device = await showDevicePicker(context);
               if (device == null) return;
@@ -216,16 +217,23 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
 class _DeviceSelector extends StatelessWidget {
   const _DeviceSelector({
     required this.deviceName,
-    required this.isOnline,
+    required this.status,
     required this.onTap,
   });
 
   final String? deviceName;
-  final bool isOnline;
+  final DeviceStatus? status;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final color = switch (status) {
+      DeviceStatus.online => Colors.green,
+      DeviceStatus.streaming => Colors.blue,
+      DeviceStatus.offline => Colors.grey,
+      DeviceStatus.unknown || null => Colors.orange,
+    };
+
     return InkWell(
       borderRadius: AppDimens.cardRadius,
       onTap: onTap,
@@ -241,7 +249,7 @@ class _DeviceSelector extends StatelessWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: isOnline ? Colors.green : Colors.orange,
+                color: color,
                 shape: BoxShape.circle,
               ),
             ),

@@ -17,19 +17,28 @@ Future<Device?> showDevicePicker(BuildContext context) {
   );
 }
 
-class _DevicePickerSheet extends ConsumerWidget {
+class _DevicePickerSheet extends ConsumerStatefulWidget {
   const _DevicePickerSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DevicePickerSheet> createState() => _DevicePickerSheetState();
+}
+
+class _DevicePickerSheetState extends ConsumerState<_DevicePickerSheet> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = ref.read(devicesControllerProvider);
+      if (state.status == DevicesStatus.loading) return;
+      ref.read(devicesControllerProvider.notifier).load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(devicesControllerProvider);
     final controller = ref.read(devicesControllerProvider.notifier);
-
-    if (state.status == DevicesStatus.idle) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        controller.load();
-      });
-    }
 
     return SafeArea(
       child: Padding(
