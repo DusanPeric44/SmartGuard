@@ -154,8 +154,6 @@ class DeviceListViewModel extends ChangeNotifier {
               name: '',
               status: DeviceStatus(0, ''),
               isActive: false,
-              storageUsedGb: 0,
-              storageTotalGb: 0,
             ),
           );
 

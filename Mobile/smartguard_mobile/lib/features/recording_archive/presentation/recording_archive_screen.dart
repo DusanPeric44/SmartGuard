@@ -14,7 +14,8 @@ class RecordingArchiveScreen extends ConsumerStatefulWidget {
       _RecordingArchiveScreenState();
 }
 
-class _RecordingArchiveScreenState extends ConsumerState<RecordingArchiveScreen> {
+class _RecordingArchiveScreenState
+    extends ConsumerState<RecordingArchiveScreen> {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -147,8 +148,8 @@ class _RecordingCard extends StatelessWidget {
                     Text(
                       _formatDate(recording.timestamp),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: AppDimens.spaceS),
                     _TypeChip(typeName: recording.typeName),
@@ -191,10 +192,9 @@ class _Thumbnail extends StatelessWidget {
               ),
               child: Text(
                 durationLabel,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: Colors.white),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: Colors.white),
               ),
             ),
           ),
@@ -290,7 +290,11 @@ class _RecordingDetailsSheet extends ConsumerWidget {
                     color: Colors.blue.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 42),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 42,
+                  ),
                 ),
               ],
             ),
@@ -298,13 +302,18 @@ class _RecordingDetailsSheet extends ConsumerWidget {
           const SizedBox(height: AppDimens.spaceL),
           _DetailRow(label: 'Device', value: recording.title),
           const SizedBox(height: AppDimens.spaceS),
-          _DetailRow(label: 'Timestamp', value: _formatDate(recording.timestamp)),
+          _DetailRow(
+            label: 'Timestamp',
+            value: _formatDate(recording.timestamp),
+          ),
           const SizedBox(height: AppDimens.spaceS),
           _DetailRow(label: 'Duration', value: recording.durationLabel),
           const SizedBox(height: AppDimens.spaceS),
           _DetailRow(
             label: 'Type',
-            value: recording.typeName.trim().isEmpty ? 'Unknown' : recording.typeName.trim(),
+            value: recording.typeName.trim().isEmpty
+                ? 'Unknown'
+                : recording.typeName.trim(),
           ),
           const SizedBox(height: AppDimens.spaceL),
           Row(
@@ -315,7 +324,9 @@ class _RecordingDetailsSheet extends ConsumerWidget {
                       ? null
                       : () async {
                           await controller.download(recording: recording);
-                          final latest = ref.read(recordingArchiveControllerProvider);
+                          final latest = ref.read(
+                            recordingArchiveControllerProvider,
+                          );
                           if (context.mounted && latest.errorMessage == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Download started')),
@@ -353,10 +364,9 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         Expanded(

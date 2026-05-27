@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:smart_guard_flutter/features/profile/presentation/components/change_password_dialog.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/ui/app_loading_overlay.dart';
@@ -209,111 +209,16 @@ Future<void> _showChangePasswordDialog(
   BuildContext context,
   ProfileController controller,
 ) async {
-  final currentController = TextEditingController();
-  final newController = TextEditingController();
-  final confirmController = TextEditingController();
-
-  String? errorText;
-
-  Future<void> submit(StateSetter setState) async {
-    final current = currentController.text;
-    final next = newController.text;
-    final confirm = confirmController.text;
-
-    if (current.trim().isEmpty ||
-        next.trim().isEmpty ||
-        confirm.trim().isEmpty) {
-      setState(() => errorText = AppStrings.validationRequired);
-      return;
-    }
-    if (next != confirm) {
-      setState(() => errorText = AppStrings.validationPasswordsDoNotMatch);
-      return;
-    }
-    setState(() => errorText = null);
-    try {
-      await controller.changePassword(
-        currentPassword: current,
-        newPassword: next,
-      );
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.passwordUpdated)),
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text(AppStrings.errorUnknown)));
-      }
-    }
-  }
-
   await showDialog<void>(
     context: context,
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setState) {
-          return AlertDialog(
-            title: const Text(AppStrings.profileChangePassword),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.currentPasswordLabel,
-                  ),
-                ),
-                const SizedBox(height: AppDimens.spaceM),
-                TextField(
-                  controller: newController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.newPasswordLabel,
-                  ),
-                ),
-                const SizedBox(height: AppDimens.spaceM),
-                TextField(
-                  controller: confirmController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.confirmNewPasswordLabel,
-                  ),
-                ),
-                if (errorText != null) ...[
-                  const SizedBox(height: AppDimens.spaceM),
-                  Text(
-                    errorText!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(AppStrings.actionCancel),
-              ),
-              FilledButton(
-                onPressed: () => submit(setState),
-                child: const Text(AppStrings.actionSave),
-              ),
-            ],
-          );
+          return ChangePasswordDialog(controller: controller);
         },
       );
     },
   );
-
-  currentController.dispose();
-  newController.dispose();
-  confirmController.dispose();
 }
 
 class _SectionCard extends StatelessWidget {

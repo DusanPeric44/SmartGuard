@@ -71,13 +71,6 @@ class Device {
       _ => DeviceStatus.unknown,
     };
 
-    int parseInt(Object? v) {
-      if (v is int) return v;
-      if (v is num) return v.toInt();
-      final s = v?.toString();
-      return int.tryParse(s ?? '') ?? 0;
-    }
-
     if (id.trim().isEmpty) {
       throw const FormatException('Device: missing id');
     }

@@ -8,16 +8,12 @@ class DeviceRow {
     required this.name,
 
     this.status,
-    required this.storageTotalGb,
-    required this.storageUsedGb,
     required this.isActive,
   });
 
   final String id;
   final String name;
   final DeviceStatus? status;
-  final int storageTotalGb;
-  final int storageUsedGb;
   final bool isActive;
 
   factory DeviceRow.fromJson(Map<String, dynamic> json) {
@@ -28,8 +24,6 @@ class DeviceRow {
       status: json['deviceStatus'] != null
           ? DeviceStatus.fromJson(json['deviceStatus'] as Map<String, dynamic>?)
           : null,
-      storageTotalGb: json['storageTotalGb'] as int? ?? 0,
-      storageUsedGb: json['storageUsedGb'] as int? ?? 0,
       isActive: json['isActive'] as bool? ?? false,
     );
   }
@@ -48,8 +42,6 @@ class DeviceRow {
       name: name ?? this.name,
 
       status: status ?? this.status,
-      storageTotalGb: storageTotalGb ?? this.storageTotalGb,
-      storageUsedGb: storageUsedGb ?? this.storageUsedGb,
       isActive: isActive ?? this.isActive,
     );
   }

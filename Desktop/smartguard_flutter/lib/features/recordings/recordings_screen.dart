@@ -533,11 +533,13 @@ class _RecordingsTable extends StatelessWidget {
         canDownload && r.status == RecordingStatus.available && !busy;
     final canDeleteNow =
         canSoftDelete && r.status != RecordingStatus.deleted && !busy;
+    final deviceLabel =
+        r.deviceName.trim().isNotEmpty ? r.deviceName : 'Device ${r.deviceId}';
 
     return DataRow(
       cells: [
         DataCell(Text('${_yyyyMmDd(r.startedAt)} ${_hhMm(r.startedAt)}')),
-        DataCell(Text(r.deviceName)),
+        DataCell(Text(deviceLabel)),
         DataCell(Text(_typeLabel(r.type))),
         DataCell(statusChip),
         DataCell(Text(_durationLabel(r.durationSeconds))),
