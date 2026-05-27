@@ -1,3 +1,5 @@
+import '../../../core/extensions/local_date_parsing.dart';
+
 enum AlarmUiStatus { pending, confirmed, resolved, unknown }
 
 class Alarm {
@@ -69,8 +71,8 @@ class Alarm {
     }
 
     DateTime? parseDate(Object? v) {
-      if (v is DateTime) return v;
-      if (v is String) return DateTime.tryParse(v);
+      if (v is DateTime) return v.toLocal();
+      if (v is String) return v.toLocalDateTime();
       if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
       if (v is num) return DateTime.fromMillisecondsSinceEpoch(v.toInt());
       return null;

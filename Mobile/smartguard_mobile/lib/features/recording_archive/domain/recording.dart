@@ -1,3 +1,5 @@
+import '../../../core/extensions/local_date_parsing.dart';
+
 class Recording {
   const Recording({
     required this.id,
@@ -71,8 +73,8 @@ class Recording {
 
     DateTime? pickDate(String key) {
       final v = map[key];
-      if (v is String) return DateTime.tryParse(v);
-      if (v is DateTime) return v;
+      if (v is String) return v.toLocalDateTime();
+      if (v is DateTime) return v.toLocal();
       return null;
     }
 
@@ -119,4 +121,3 @@ class Recording {
     );
   }
 }
-
