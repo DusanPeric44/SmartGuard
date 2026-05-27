@@ -28,6 +28,6 @@ void startNewSegment();
 /**
  * Syncs completed videos to the .NET backend.
  */
-void syncFilesToBackend(const char* serverUrl);
+void syncFilesToBackend(const char* serverUrl, const char* recordingType);
 
 #endif

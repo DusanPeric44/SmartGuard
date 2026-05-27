@@ -55,8 +55,11 @@ namespace SmartGuard.Archive.Microservice.Controllers
                 return Unauthorized();
             }
 
+            var recordingTypeRaw = Request.Headers["X-Recording-Type"].ToString();
+            var recordingTypeToken = NormalizeRecordingType(recordingTypeRaw);
+
             var timestampUtc = DateTime.UtcNow;
-            var fileName = $"device_{deviceId}_{timestampUtc:yyyyMMddHHmmss}_{Guid.NewGuid():N}.mp4";
+            var fileName = $"device_{deviceId}_{recordingTypeToken}_{timestampUtc:yyyyMMddHHmmss}_{Guid.NewGuid():N}.mp4";
 
             var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads");
             var videosPath = Path.Combine(uploadsPath, "videos");
@@ -130,6 +133,34 @@ namespace SmartGuard.Archive.Microservice.Controllers
 
                 throw;
             }
+        }
+
+        private static string NormalizeRecordingType(string raw)
+        {
+            var value = (raw ?? string.Empty).Trim();
+            if (value.Length == 0)
+            {
+                return "motion";
+            }
+
+            value = value.Replace(" ", string.Empty).Replace("-", string.Empty).Replace("_", string.Empty);
+            if (string.Equals(value, "motion", StringComparison.OrdinalIgnoreCase))
+            {
+                return "motion";
+            }
+
+            if (string.Equals(value, "facedetected", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "face", StringComparison.OrdinalIgnoreCase))
+            {
+                return "facedetected";
+            }
+
+            if (string.Equals(value, "manual", StringComparison.OrdinalIgnoreCase))
+            {
+                return "manual";
+            }
+
+            return "motion";
         }
 
         private static async Task ConvertMjpegToMp4Async(string inputPath, string outputPath, CancellationToken cancellationToken)

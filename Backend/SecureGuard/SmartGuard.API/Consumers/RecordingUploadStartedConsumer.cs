@@ -30,8 +30,9 @@ namespace SmartGuard.API.Consumers
                 return;
             }
 
+            var recordingTypeName = ResolveRecordingTypeName(message.FileName);
             var recordingTypeId = await _context.RecordingTypes
-                .Where(x => x.Name == "Motion")
+                .Where(x => x.Name == recordingTypeName)
                 .Select(x => x.Id)
                 .FirstAsync(context.CancellationToken);
 
@@ -56,6 +57,34 @@ namespace SmartGuard.API.Consumers
 
             _logger.LogInformation("Recording metadata inserted (DeviceId={DeviceId}, FileName={FileName})", message.DeviceId, message.FileName);
         }
+
+        private static string ResolveRecordingTypeName(string fileName)
+        {
+            var safe = (fileName ?? string.Empty).Trim();
+            if (safe.Length == 0) return "Motion";
+
+            var tokens = safe.Split('_', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (tokens.Length >= 3)
+            {
+                var token = tokens[2];
+                if (string.Equals(token, "manual", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Manual";
+                }
+
+                if (string.Equals(token, "facedetected", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(token, "face", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "FaceDetected";
+                }
+
+                if (string.Equals(token, "motion", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Motion";
+                }
+            }
+
+            return "Motion";
+        }
     }
 }
-

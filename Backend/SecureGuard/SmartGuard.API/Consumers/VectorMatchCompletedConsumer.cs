@@ -77,6 +77,22 @@ namespace SmartGuard.API.Consumers
             var deviceId = faceEvent.DeviceId.Value;
             var deviceName = faceEvent.Device?.Name ?? $"Device {deviceId}";
 
+            string? cooldownKey = null;
+            int? personId = null;
+            if (message.IsMatched && message.MatchedPersonId.HasValue)
+            {
+                personId = message.MatchedPersonId.Value;
+                cooldownKey = $"face-match-notify:{deviceId}:{personId.Value}";
+
+                var cooldownExists = await _cache.GetStringAsync(cooldownKey, context.CancellationToken);
+                if (!string.IsNullOrWhiteSpace(cooldownExists))
+                {
+                    _context.FaceDetectionEvents.Remove(faceEvent);
+                    await _context.SaveChangesAsync(context.CancellationToken);
+                    return;
+                }
+            }
+
             if (faceEvent.Score != message.BestScore)
             {
                 faceEvent.Score = message.BestScore;
@@ -85,12 +101,12 @@ namespace SmartGuard.API.Consumers
 
             if (message.IsMatched && message.MatchedPersonId.HasValue)
             {
-                var personId = message.MatchedPersonId.Value;
-                var cooldownKey = $"face-match-notify:{deviceId}:{personId}";
+                var personIdValue = personId ?? message.MatchedPersonId.Value;
+                var cooldownKeyValue = cooldownKey ?? $"face-match-notify:{deviceId}:{personIdValue}";
 
-                if (faceEvent.PersonId != personId)
+                if (faceEvent.PersonId != personIdValue)
                 {
-                    faceEvent.PersonId = personId;
+                    faceEvent.PersonId = personIdValue;
                     if (knownPerson != null)
                         knownPerson.DetectionCount++;
                     await _context.SaveChangesAsync(context.CancellationToken);
@@ -98,7 +114,7 @@ namespace SmartGuard.API.Consumers
 
                 if (knownPerson != null && string.Equals(knownPerson.FirstName, "Intruder", StringComparison.OrdinalIgnoreCase))
                 {
-                    var alarmCooldownKey = $"face-match-alarm:{deviceId}:{personId}";
+                    var alarmCooldownKey = $"face-match-alarm:{deviceId}:{personIdValue}";
                     var alarmCooldownExists = await _cache.GetStringAsync(alarmCooldownKey, context.CancellationToken);
                     if (string.IsNullOrWhiteSpace(alarmCooldownExists))
                     {
@@ -114,12 +130,6 @@ namespace SmartGuard.API.Consumers
                     }
                 }
 
-                var cooldownExists = await _cache.GetStringAsync(cooldownKey, context.CancellationToken);
-                if (!string.IsNullOrWhiteSpace(cooldownExists))
-                {
-                    return;
-                }
-
                 var deviceAccessUserIds = await _context.UserDeviceAccesses
                     .Where(x => x.DeviceId == deviceId)
                     .Select(x => x.UserId)
@@ -132,7 +142,7 @@ namespace SmartGuard.API.Consumers
                 }
 
                 var existingPreferenceUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personId && deviceAccessUserIds.Contains(x.UserId))
+                    .Where(x => x.PersonId == personIdValue && deviceAccessUserIds.Contains(x.UserId))
                     .Select(x => x.UserId)
                     .ToListAsync(context.CancellationToken);
 
@@ -145,7 +155,7 @@ namespace SmartGuard.API.Consumers
                     var newPreferences = missingPreferenceUserIds.Select(userId => new UserNotificationPreference
                     {
                         UserId = userId,
-                        PersonId = personId,
+                        PersonId = personIdValue,
                         Enabled = true
                     });
                     _context.UserNotificationPreferences.AddRange(newPreferences);
@@ -153,7 +163,7 @@ namespace SmartGuard.API.Consumers
                 }
 
                 var enabledUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personId && deviceAccessUserIds.Contains(x.UserId) && x.Enabled)
+                    .Where(x => x.PersonId == personIdValue && deviceAccessUserIds.Contains(x.UserId) && x.Enabled)
                     .Select(x => x.UserId)
                     .Distinct()
                     .ToListAsync(context.CancellationToken);
@@ -197,7 +207,7 @@ namespace SmartGuard.API.Consumers
                 if (anyPublished)
                 {
                     await _cache.SetStringAsync(
-                        cooldownKey,
+                        cooldownKeyValue,
                         "1",
                         new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
                         context.CancellationToken);

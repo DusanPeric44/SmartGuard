@@ -21,6 +21,7 @@ enum class SyncState
 };
 
 SyncState syncState = SyncState::None;
+const char* pendingRecordingType = "motion";
 
 // We'll keep 3 segments: video_0.mjpeg, video_1.mjpeg, video_2.mjpeg
 const char* filenames[] = {"/video_0.mjpeg", "/video_1.mjpeg", "/video_2.mjpeg"};
@@ -81,6 +82,7 @@ void handleRecording(bool motionDetected, bool notifyFaceEvent, const char* serv
 
   if (notifyFaceEvent && syncState == SyncState::None) {
     syncState = SyncState::WaitForCurrentEnd;
+    pendingRecordingType = "facedetected";
   }
 
   if (motionDetected) {
@@ -102,8 +104,9 @@ void handleRecording(bool motionDetected, bool notifyFaceEvent, const char* serv
     }
 
     if (syncState == SyncState::WaitForNextEnd) {
-      syncFilesToBackend(serverUrl);
+      syncFilesToBackend(serverUrl, pendingRecordingType);
       syncState = SyncState::None;
+      pendingRecordingType = "motion";
       startNewSegment();
       return;
     }
@@ -122,7 +125,7 @@ void recordFrame(camera_fb_t* fb) {
   }
 }
 
-void syncFilesToBackend(const char* serverUrl) {
+void syncFilesToBackend(const char* serverUrl, const char* recordingType) {
   if (!isSDInitialized || WiFi.status() != WL_CONNECTED) return;
 
   const String deviceToken = getDeviceToken();
@@ -159,6 +162,9 @@ void syncFilesToBackend(const char* serverUrl) {
       http.addHeader("Content-Type", "video/x-motion-jpeg");
       http.addHeader("X-Device-Id", String(deviceId));
       http.addHeader("X-Device-Token", deviceToken);
+      if (recordingType != nullptr && String(recordingType).length() > 0) {
+        http.addHeader("X-Recording-Type", String(recordingType));
+      }
       
       int httpResponseCode = http.sendRequest("POST", &file, file.size());
       

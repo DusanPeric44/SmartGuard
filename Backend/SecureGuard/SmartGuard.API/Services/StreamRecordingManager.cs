@@ -231,6 +231,7 @@ namespace SmartGuard.API.Services
 
             request.Headers.Add("X-Device-Id", session.DeviceId.ToString(CultureInfo.InvariantCulture));
             request.Headers.Add("X-Device-Token", session.DeviceToken);
+            request.Headers.Add("X-Recording-Type", "Manual");
 
             request.Content = new StreamContent(fileStream);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("video/x-motion-jpeg");

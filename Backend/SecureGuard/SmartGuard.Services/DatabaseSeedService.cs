@@ -76,7 +76,7 @@ namespace SmartGuard.Services
             }
 
             // 7. Seed Recording Types
-            string[] recordingTypes = { "Motion" };
+            string[] recordingTypes = { "Motion", "FaceDetected", "Manual" };
             foreach (var type in recordingTypes)
             {
                 if (!await _context.RecordingTypes.AnyAsync(x => x.Name == type))
