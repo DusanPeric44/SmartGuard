@@ -93,7 +93,7 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
   
   if(psramFound()){
-    config.frame_size = FRAMESIZE_VGA; // Use VGA for better performance with face detection
+    config.frame_size = FRAMESIZE_QVGA; // Use VGA for better performance with face detection
     config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
