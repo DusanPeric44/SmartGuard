@@ -21,12 +21,14 @@ namespace SmartGuard.Services
         private readonly Database.SmartGuardContext _context;
         private readonly IDistributedCache _cache;
         private readonly FileStorageOptions _fileStorageOptions;
+        private readonly IUserContext _userContext;
 
-        public DashboardService(Database.SmartGuardContext context, IDistributedCache cache, IOptions<FileStorageOptions> fileStorageOptions)
+        public DashboardService(Database.SmartGuardContext context, IDistributedCache cache, IOptions<FileStorageOptions> fileStorageOptions, IUserContext userContext)
         {
             _context = context;
             _cache = cache;
             _fileStorageOptions = fileStorageOptions.Value;
+            _userContext = userContext;
         }
 
         public Task<DashboardDesktop> GetDesktopAsync()
@@ -105,11 +107,17 @@ namespace SmartGuard.Services
                 .Select(x => x.Id)
                 .SingleAsync();
 
-            var devicesCount = await _context.Devices.AsNoTracking().CountAsync();
-            var pendingAlarmsCount = await _context.Alerts.AsNoTracking().CountAsync(a => a.StatusId == pendingAlertStatusId);
+            var devicesCount = await _context.Devices.AsNoTracking()
+                .Where(x => x.UserDeviceAccesses.Select(x => x.UserId).Contains(_userContext.UserId))
+                .CountAsync();
+            var pendingAlarmsCount = await _context.Alerts.AsNoTracking()
+                .Where(x => !x.IsDeleted)
+                .Where(x => x.Device == null || x.Device.UserDeviceAccesses.Select(x => x.UserId).Contains(_userContext.UserId))
+                .CountAsync(a => a.StatusId == pendingAlertStatusId);
 
             var mobileDevices = await _context.Devices
                 .AsNoTracking()
+                .Where(x => x.UserDeviceAccesses.Select(x => x.UserId).Contains(_userContext.UserId))
                 .OrderBy(x => x.Name)
                 .Select(x => new DashboardDeviceListItem
                 {

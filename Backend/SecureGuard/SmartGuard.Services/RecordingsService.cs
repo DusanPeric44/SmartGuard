@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
@@ -53,6 +54,11 @@ namespace SmartGuard.Services
             }
 
             return query;
+        }
+
+        protected override IQueryable<Database.Recording> AddInclude(IQueryable<Database.Recording> query, RecordingSearchObject search = null)
+        {
+            return query.Include(x => x.Device);
         }
     }
 }
