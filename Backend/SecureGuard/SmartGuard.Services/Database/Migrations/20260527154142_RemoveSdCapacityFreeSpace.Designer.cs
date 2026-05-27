@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartGuard.Services.Database;
 
@@ -11,9 +12,11 @@ using SmartGuard.Services.Database;
 namespace SmartGuard.Services.Database.Migrations
 {
     [DbContext(typeof(SmartGuardContext))]
-    partial class SmartGuardContextModelSnapshot : ModelSnapshot
+    [Migration("20260527154142_RemoveSdCapacityFreeSpace")]
+    partial class RemoveSdCapacityFreeSpace
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

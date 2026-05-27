@@ -55,12 +55,12 @@ namespace SmartGuard.Services
             try
             {
                 var created = await base.InsertAsync(insert);
-                _logger.LogAuditSuccess("DeviceCreated", $"Device:{created.Id}", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}; SDCapacity={insert.SDCapacity}; FreeSpace={insert.FreeSpace}");
+                _logger.LogAuditSuccess("DeviceCreated", $"Device:{created.Id}", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}");
                 return created;
             }
             catch (Exception ex)
             {
-                _logger.LogAuditFailed("DeviceCreated", "Device", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}; SDCapacity={insert.SDCapacity}; FreeSpace={insert.FreeSpace}", ex);
+                _logger.LogAuditFailed("DeviceCreated", "Device", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}", ex);
                 throw;
             }
         }
@@ -72,13 +72,13 @@ namespace SmartGuard.Services
                 var updated = await base.UpdateAsync(id, update);
                 if (updated != null)
                 {
-                    _logger.LogAuditSuccess("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}; SDCapacity={update.SDCapacity}; FreeSpace={update.FreeSpace}");
+                    _logger.LogAuditSuccess("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}");
                 }
                 return updated;
             }
             catch (Exception ex)
             {
-                _logger.LogAuditFailed("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}; SDCapacity={update.SDCapacity}; FreeSpace={update.FreeSpace}", ex);
+                _logger.LogAuditFailed("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}", ex);
                 throw;
             }
         }

@@ -28,8 +28,6 @@ class Device {
     required this.status,
     required this.location,
     required this.apiKey,
-    required this.sdCapacity,
-    required this.freeSpace,
     this.deviceStatus,
     this.lastSeenIso,
   });
@@ -40,8 +38,6 @@ class Device {
   final String location;
   final String apiKey;
   final DeviceStatusInfo? deviceStatus;
-  final int sdCapacity;
-  final int freeSpace;
   final String? lastSeenIso;
 
   static Device fromJson(dynamic json) {
@@ -93,8 +89,6 @@ class Device {
       location: (map['location'] ?? '').toString(),
       apiKey: (map['apiKey'] ?? map['api_key'] ?? '').toString(),
       deviceStatus: deviceStatus,
-      sdCapacity: parseInt(map['sdCapacity'] ?? map['sd_capacity']),
-      freeSpace: parseInt(map['freeSpace'] ?? map['free_space']),
       lastSeenIso: map['lastSeen']?.toString(),
     );
   }

@@ -6,8 +6,6 @@ class Device {
   String? location;
   String? apiKey;
   dynamic deviceStatus;
-  int? sdCapacity;
-  int? freeSpace;
 
   Device({
     this.id,
@@ -15,8 +13,6 @@ class Device {
     this.location,
     this.apiKey,
     this.deviceStatus,
-    this.sdCapacity,
-    this.freeSpace,
   });
 
   factory Device.fromMap(Map<String, dynamic> data) => Device(
@@ -25,8 +21,6 @@ class Device {
     location: data['location'] as String?,
     apiKey: data['apiKey'] as String?,
     deviceStatus: data['deviceStatus'] as dynamic,
-    sdCapacity: data['sdCapacity'] as int?,
-    freeSpace: data['freeSpace'] as int?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -35,8 +29,6 @@ class Device {
     'location': location,
     'apiKey': apiKey,
     'deviceStatus': deviceStatus,
-    'sdCapacity': sdCapacity,
-    'freeSpace': freeSpace,
   };
 
   /// `dart:convert`
