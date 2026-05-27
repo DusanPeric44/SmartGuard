@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
 
 enum RecordingType { motion, manual, alarm }
 
@@ -35,7 +36,7 @@ class RecordingRow {
   factory RecordingRow.fromJson(Map<String, dynamic> json) {
     final typeId = (json['recordingTypeId'] as num?)?.toInt();
     final statusId = (json['recordingStatusId'] as num?)?.toInt();
-    final startedRaw =
+    final Object? startedRaw =
         json['timestamp'] ?? json['startedAt'] ?? json['start'] ?? json['time'];
     return RecordingRow(
       id: (json['id'] as num?)?.toInt() ?? int.parse(json['id'].toString()),
@@ -44,15 +45,14 @@ class RecordingRow {
           int.parse(json['deviceId'].toString()),
       deviceName: json['deviceName']?.toString() ?? '',
       startedAt:
-          DateTime.tryParse(startedRaw?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
+          startedRaw.toLocalDateTime() ?? DateTime.fromMillisecondsSinceEpoch(0),
       durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
       sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
       type: _parseType(typeId),
       status: _parseStatus(statusId),
       fileName: _extractFileName(json['filePath']?.toString() ?? ''),
       filePath: json['filePath']?.toString() ?? '',
-      deletedAt: DateTime.tryParse(json['deletedAt']?.toString() ?? ''),
+      deletedAt: (json['deletedAt'] as Object?).toLocalDateTime(),
     );
   }
 

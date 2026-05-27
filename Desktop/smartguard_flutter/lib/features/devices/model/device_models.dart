@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
 
 @immutable
 class DeviceRow {
@@ -124,8 +125,7 @@ class DeviceDetails {
               .toList() ??
           [],
       lastSeenAt:
-          DateTime.tryParse(json['lastSeenAt']?.toString() ?? '')?.toLocal() ??
-          DateTime.now(),
+          (json['lastSeenAt'] as Object?).toLocalDateTime() ?? DateTime.now(),
     );
   }
 }
