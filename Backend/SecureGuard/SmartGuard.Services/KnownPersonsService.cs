@@ -1,14 +1,15 @@
 using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SmartGuard.Model;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
-using SmartGuard.Services.Database;
 using SmartGuard.Services.Audit;
-using Microsoft.Extensions.Logging;
+using SmartGuard.Services.Database;
+using System.Collections;
 
 namespace SmartGuard.Services
 {
@@ -198,7 +199,7 @@ namespace SmartGuard.Services
 
                 var embeddingsBytes = await _context.FaceDetectionEvents
                     .AsNoTracking()
-                    .Where(e => e.PersonId == primaryPersonId && e.Embedding != null && e.Embedding.Length > 0)
+                    .Where(e => e.PersonId == primaryPersonId && e.Embedding != null)
                     .OrderByDescending(e => e.Score ?? double.MinValue)
                     .ThenByDescending(e => e.Timestamp)
                     .Select(e => e.Embedding)

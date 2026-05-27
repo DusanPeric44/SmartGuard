@@ -72,13 +72,13 @@ namespace SmartGuard.Services
                 var updated = await base.UpdateAsync(id, update);
                 if (updated != null)
                 {
-                    _logger.LogAuditSuccess("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}");
+                    _logger.LogAuditSuccess("DeviceUpdated", $"Device:{id}", $"Name={update.Name}");
                 }
                 return updated;
             }
             catch (Exception ex)
             {
-                _logger.LogAuditFailed("DeviceUpdated", $"Device:{id}", $"Name={update.Name}; Location={update.Location}; StatusId={update.StatusId}", ex);
+                _logger.LogAuditFailed("DeviceUpdated", $"Device:{id}", $"Name={update.Name}", ex);
                 throw;
             }
         }
