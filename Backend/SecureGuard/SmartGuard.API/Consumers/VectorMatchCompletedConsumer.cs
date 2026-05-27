@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using SmartGuard.Model;
 using SmartGuard.Model.Events;
 using SmartGuard.Services.Database;
 
@@ -127,6 +128,40 @@ namespace SmartGuard.API.Consumers
                             "1",
                             new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
                             context.CancellationToken);
+                    }
+                }
+
+                if (knownPerson != null)
+                {
+                    var embeddingsBytes = await _context.FaceDetectionEvents
+                        .AsNoTracking()
+                        .Where(e => e.PersonId == personIdValue && e.Embedding != null)
+                        .OrderByDescending(e => e.Timestamp)
+                        .Select(e => e.Embedding)
+                        .Take(20)
+                        .ToListAsync(context.CancellationToken);
+
+                    var embeddings = new List<float[]>(embeddingsBytes.Count);
+                    foreach (var bytes in embeddingsBytes)
+                    {
+                        try
+                        {
+                            var unpacked = VectorPacking.UnpackFloat32(bytes);
+                            if (unpacked.Length == 128)
+                            {
+                                embeddings.Add(unpacked);
+                            }
+                        }
+                        catch (ArgumentException)
+                        {
+                        }
+                    }
+
+                    if (embeddings.Count > 0)
+                    {
+                        var centroid = ComputeCentroid(embeddings);
+                        knownPerson.Embedding = VectorPacking.PackFloat32(centroid);
+                        await _context.SaveChangesAsync(context.CancellationToken);
                     }
                 }
 
@@ -297,6 +332,54 @@ namespace SmartGuard.API.Consumers
                     SendEmail = false
                 }, context.CancellationToken);
             }
+        }
+
+        private static float[] ComputeCentroid(List<float[]> embeddings)
+        {
+            if (embeddings == null || embeddings.Count == 0)
+                throw new ArgumentException("No embeddings");
+
+            var dim = embeddings[0].Length;
+            var centroid = new float[dim];
+
+            foreach (var emb in embeddings)
+            {
+                for (int i = 0; i < dim; i++)
+                {
+                    centroid[i] += emb[i];
+                }
+            }
+
+            for (int i = 0; i < dim; i++)
+            {
+                centroid[i] /= embeddings.Count;
+            }
+
+            return Normalize(centroid);
+        }
+
+        private static float[] Normalize(float[] vector)
+        {
+            double sum = 0;
+
+            for (int i = 0; i < vector.Length; i++)
+            {
+                sum += vector[i] * vector[i];
+            }
+
+            var norm = Math.Sqrt(sum);
+
+            if (norm == 0)
+                return vector;
+
+            var result = new float[vector.Length];
+
+            for (int i = 0; i < vector.Length; i++)
+            {
+                result[i] = (float)(vector[i] / norm);
+            }
+
+            return result;
         }
     }
 }

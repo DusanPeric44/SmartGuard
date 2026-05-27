@@ -109,7 +109,8 @@ namespace SmartGuard.Services
 
             var timestamp = DateTime.UtcNow;
             var imageUrl = await _fileStorage.SaveImageAsync(imageBytes, ".jpg");
-            var embeddingBytes = VectorPacking.PackFloat32(vector);
+            var normalizedVector = Normalize(vector);
+            var embeddingBytes = VectorPacking.PackFloat32(normalizedVector);
 
             var entity = new Database.FaceDetectionEvent
             {
@@ -131,6 +132,29 @@ namespace SmartGuard.Services
             });
 
             return entity.Adapt<Model.DTOs.FaceDetectionEvent>();
+        }
+
+        private static float[] Normalize(float[] vector)
+        {
+            double sum = 0;
+            for (int i = 0; i < vector.Length; i++)
+            {
+                sum += vector[i] * vector[i];
+            }
+
+            var norm = Math.Sqrt(sum);
+            if (norm == 0)
+            {
+                return vector;
+            }
+
+            var result = new float[vector.Length];
+            for (int i = 0; i < vector.Length; i++)
+            {
+                result[i] = (float)(vector[i] / norm);
+            }
+
+            return result;
         }
     }
 }
