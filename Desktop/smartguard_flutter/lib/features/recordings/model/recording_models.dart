@@ -34,22 +34,31 @@ class RecordingRow {
   final DateTime? deletedAt;
 
   factory RecordingRow.fromJson(Map<String, dynamic> json) {
-    final typeId = (json['recordingTypeId'] as num?)?.toInt();
-    final statusId = (json['recordingStatusId'] as num?)?.toInt();
+    final typeId = (json['typeId'] as Object?);
+    final isDeleted = json['isDeleted'] == true;
     final Object? startedRaw =
         json['timestamp'] ?? json['startedAt'] ?? json['start'] ?? json['time'];
+    final device = json['device'];
+    final deviceName =
+        (device is Map ? device['name']?.toString() : null) ??
+        json['deviceName']?.toString() ??
+        '';
     return RecordingRow(
       id: (json['id'] as num?)?.toInt() ?? int.parse(json['id'].toString()),
       deviceId:
           (json['deviceId'] as num?)?.toInt() ??
           int.parse(json['deviceId'].toString()),
-      deviceName: json['deviceName']?.toString() ?? '',
+      deviceName: deviceName,
       startedAt:
-          startedRaw.toLocalDateTime() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
-      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
-      type: _parseType(typeId),
-      status: _parseStatus(statusId),
+          startedRaw.toLocalDateTime() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      durationSeconds:
+          ((json['durationSeconds'] ?? json['duration']) as num?)?.toInt() ?? 0,
+      sizeBytes: ((json['sizeBytes'] ?? json['size']) as num?)?.toInt() ?? 0,
+      type: _parseType((typeId as num?)?.toInt()),
+      status: isDeleted
+          ? RecordingStatus.deleted
+          : _parseStatus((json["recordingStatus"] as Map<String, dynamic>)),
       fileName: _extractFileName(json['filePath']?.toString() ?? ''),
       filePath: json['filePath']?.toString() ?? '',
       deletedAt: (json['deletedAt'] as Object?).toLocalDateTime(),
@@ -65,13 +74,13 @@ class RecordingRow {
     return RecordingType.values[idx];
   }
 
-  static RecordingStatus _parseStatus(int? id) {
-    if (id == null) return RecordingStatus.available;
-    final idx = id - 1;
-    if (idx < 0 || idx >= RecordingStatus.values.length) {
-      return RecordingStatus.available;
-    }
-    return RecordingStatus.values[idx];
+  static RecordingStatus _parseStatus(Map<String, dynamic> status) {
+    final statusName = status['name']?.toString() ?? '';
+    if (statusName.isEmpty) return RecordingStatus.available;
+    return RecordingStatus.values.firstWhere(
+      (element) => element.name == statusName,
+      orElse: () => RecordingStatus.available,
+    );
   }
 
   static String _extractFileName(String s) => s.split('/').last;
