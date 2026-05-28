@@ -424,6 +424,7 @@ class DeviceDetailsScreen extends StatefulWidget {
 class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   DevicesRepository? _repo;
   DeviceDetailsViewModel? _vm;
+  final _nameController = TextEditingController();
 
   @override
   void didChangeDependencies() {
@@ -465,6 +466,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
       vm.removeListener(_onVmChanged);
       vm.dispose();
     }
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -497,6 +499,10 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
     if (details == null) return const SizedBox.shrink();
 
     final device = details.device;
+    final canEditName = caps.canManageDevices && !vm.isLoading;
+    final canConfirmRename = vm.isEditingName &&
+        vm.pendingName.trim().isNotEmpty &&
+        vm.pendingName.trim() != device.name;
     return ListView(
       children: [
         Row(
@@ -529,10 +535,121 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        device.name,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      if (!vm.isEditingName)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: !canEditName
+                                    ? null
+                                    : () {
+                                        _nameController.text = device.name;
+                                        vm.beginEditName();
+                                      },
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Text(
+                                    device.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Edit name',
+                              onPressed: !canEditName
+                                  ? null
+                                  : () {
+                                      _nameController.text = device.name;
+                                      vm.beginEditName();
+                                    },
+                              icon: const Icon(Icons.edit_outlined),
+                            ),
+                          ],
+                        )
+                      else
+                        TextField(
+                          controller: _nameController,
+                          autofocus: true,
+                          enabled: !vm.isLoading,
+                          onChanged: vm.setPendingName,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Cancel',
+                                  onPressed: vm.isLoading
+                                      ? null
+                                      : () {
+                                          vm.cancelEditName();
+                                        },
+                                  icon: const Icon(Icons.close),
+                                ),
+                                IconButton(
+                                  tooltip: 'Confirm',
+                                  onPressed: !canConfirmRename
+                                      ? null
+                                      : () async {
+                                          final ok = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title:
+                                                  const Text('Rename device'),
+                                              content: const Text(
+                                                'Are you sure you want to change device name?',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(false),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                FilledButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(true),
+                                                  child: const Text('Confirm'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (ok != true) return;
+                                          final renamed =
+                                              await vm.renameDevice();
+                                          if (!mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                renamed
+                                                    ? 'Name updated.'
+                                                    : (vm.errorMessage ??
+                                                        'Greška.'),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                  icon: const Icon(Icons.check),
+                                ),
+                              ],
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 8),
                       Text('ID: ${device.id}'),
                       const SizedBox(height: 12),

@@ -24,6 +24,12 @@ class DeviceDetailsViewModel extends ChangeNotifier {
   List<DeviceUser> _allUsers = const [];
   List<DeviceUser> get allUsers => _allUsers;
 
+  bool _isEditingName = false;
+  bool get isEditingName => _isEditingName;
+
+  String _pendingName = '';
+  String get pendingName => _pendingName;
+
   Future<void> init() async {
     await Future.wait([load(), loadUsers()]);
   }
@@ -47,6 +53,45 @@ class DeviceDetailsViewModel extends ChangeNotifier {
       _allUsers = await _repository.listUsers();
       notifyListeners();
     } catch (_) {}
+  }
+
+  void beginEditName() {
+    _pendingName = _details?.device.name ?? '';
+    _isEditingName = true;
+    notifyListeners();
+  }
+
+  void setPendingName(String value) {
+    _pendingName = value;
+    notifyListeners();
+  }
+
+  void cancelEditName() {
+    _pendingName = '';
+    _isEditingName = false;
+    notifyListeners();
+  }
+
+  Future<bool> renameDevice() async {
+    final next = _pendingName.trim();
+    final current = _details?.device.name ?? '';
+    if (next.isEmpty || next == current) return false;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _details = await _repository.renameDevice(deviceId, next);
+      _pendingName = '';
+      _isEditingName = false;
+      return true;
+    } catch (e) {
+      _errorMessage = UiErrorMapper.toMessage(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> saveAssignments(List<String> userIds) async {

@@ -4,6 +4,6 @@ namespace SmartGuard.Model.SearchObjects
     {
         public int? DeviceId { get; set; }
         public int? TypeId { get; set; }
-        public int? StatusId { get; set; }
+        public string? StatusName { get; set; }
     }
 }

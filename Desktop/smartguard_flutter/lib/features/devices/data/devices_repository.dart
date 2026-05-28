@@ -8,6 +8,7 @@ abstract class DevicesRepository {
     int? pageSize,
   });
   Future<DeviceDetails> getDetails(String deviceId);
+  Future<DeviceDetails> renameDevice(String deviceId, String name);
   Future<DeviceDetails> assignUsers(String deviceId, List<String> userIds);
   Future<DeviceRow> setActive(String deviceId, bool isActive);
   Future<List<DeviceUser>> listUsers();

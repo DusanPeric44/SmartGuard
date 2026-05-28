@@ -17,8 +17,8 @@ class ApiAlertsRepository implements AlertsRepository {
       'Page': query.page.toString(),
       'PageSize': query.pageSize.toString(),
     };
-    if (query.statusId != null) {
-      queryParameters['StatusId'] = query.statusId.toString();
+    if (query.statusName != null) {
+      queryParameters['StatusName'] = query.statusName!;
     }
 
     final path = Uri(

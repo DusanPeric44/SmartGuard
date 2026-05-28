@@ -14,6 +14,7 @@ using SmartGuard.API.Hubs;
 using SmartGuard.API.Middleware;
 using SmartGuard.API.Services;
 using SmartGuard.API.Grpc;
+using SmartGuard.Model.Events;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Options;
 using SmartGuard.Model.Requests;
@@ -275,6 +276,40 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.MapGet("/test/send-notification", async (
+        HttpContext httpContext,
+        IPublishEndpoint publishEndpoint,
+        string? userId,
+        string? title,
+        string? message,
+        bool? sendPush,
+        bool? sendEmail,
+        string? targetDeviceToken,
+        string? emailAddress) =>
+    {
+        var resolvedUserId = string.IsNullOrWhiteSpace(userId)
+            ? httpContext.User.FindFirstValue("UserId")
+            : userId.Trim();
+
+        string? payloadUserId = string.IsNullOrWhiteSpace(resolvedUserId) ? null : resolvedUserId;
+        string? payloadTargetDeviceToken = string.IsNullOrWhiteSpace(targetDeviceToken) ? null : targetDeviceToken.Trim();
+        string? payloadEmailAddress = string.IsNullOrWhiteSpace(emailAddress) ? null : emailAddress.Trim();
+
+        var payload = new
+        {
+            Title = string.IsNullOrWhiteSpace(title) ? "Test Notification" : title,
+            Message = string.IsNullOrWhiteSpace(message) ? "Hello from SmartGuard.API test endpoint" : message,
+            UserId = payloadUserId,
+            TargetDeviceToken = payloadTargetDeviceToken,
+            EmailAddress = payloadEmailAddress,
+            SendPush = sendPush ?? false,
+            SendEmail = sendEmail ?? false
+        };
+
+        await publishEndpoint.Publish<ISendNotificationEvent>(payload);
+        return Results.Ok(payload);
+    }).RequireAuthorization();
 }
 
 app.UseHttpsRedirection();

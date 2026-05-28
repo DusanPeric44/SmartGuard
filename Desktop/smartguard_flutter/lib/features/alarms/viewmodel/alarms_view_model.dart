@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:smartguard_flutter/core/ui/error_mapper.dart';
 import 'package:smartguard_flutter/features/alarms/data/alerts_repository.dart';
 import 'package:smartguard_flutter/features/alarms/model/alert_models.dart';
-import 'package:smartguard_flutter/features/alarms/model/alert_status.dart';
 import 'package:smartguard_flutter/features/alarms/model/alerts_query.dart';
 import 'package:smartguard_flutter/features/alarms/model/paged_result.dart';
 
@@ -27,21 +26,6 @@ class AlarmsViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  List<AlertStatus> _statuses = const [];
-  List<AlertStatus> get statuses => _statuses;
-
-  int? _pendingStatusId;
-  int? get pendingStatusId => _pendingStatusId;
-
-  int? _confirmedStatusId;
-  int? get confirmedStatusId => _confirmedStatusId;
-
-  int? _resolvedStatusId;
-  int? get resolvedStatusId => _resolvedStatusId;
-
-  int? _dismissedStatusId;
-  int? get dismissedStatusId => _dismissedStatusId;
-
   int? _selectedAlertId;
   int? get selectedAlertId => _selectedAlertId;
 
@@ -54,35 +38,10 @@ class AlarmsViewModel extends ChangeNotifier {
   int _reqId = 0;
 
   Future<void> init() async {
-    await bootstrap();
+    await load();
   }
 
   Future<void> bootstrap() async {
-    _reqId++;
-    final current = _reqId;
-    _isBootstrapping = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final statuses = await _repository.listStatuses();
-      if (current != _reqId) return;
-      _statuses = statuses;
-
-      _pendingStatusId = _findStatusId('pending', statuses);
-      _confirmedStatusId = _findStatusId('confirmed', statuses);
-      _resolvedStatusId = _findStatusId('resolved', statuses);
-      _dismissedStatusId = _findStatusId('dismissed', statuses);
-    } catch (e) {
-      if (current != _reqId) return;
-      _errorMessage = UiErrorMapper.toMessage(e);
-    } finally {
-      if (current == _reqId) {
-        _isBootstrapping = false;
-        notifyListeners();
-      }
-    }
-
     await load();
   }
 
@@ -126,8 +85,12 @@ class AlarmsViewModel extends ChangeNotifier {
     await load();
   }
 
-  Future<void> setStatusFilter(int? statusId) async {
-    _query = _query.copyWith(statusId: statusId, page: 1);
+  Future<void> setStatusFilter(String? statusName) async {
+    _query = AlertsQuery(
+      statusName: statusName,
+      page: 1,
+      pageSize: _query.pageSize,
+    );
     await load();
   }
 
@@ -181,14 +144,4 @@ class AlarmsViewModel extends ChangeNotifier {
     if (found.isEmpty) return;
     _selectedAlert = found.first;
   }
-}
-
-int? _findStatusId(String token, List<AlertStatus> statuses) {
-  final t = token.trim().toLowerCase();
-  for (final s in statuses) {
-    final name = s.name?.trim().toLowerCase();
-    if (name == null || name.isEmpty) continue;
-    if (name.contains(t)) return s.id!;
-  }
-  return null;
 }

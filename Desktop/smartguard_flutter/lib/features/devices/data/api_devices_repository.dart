@@ -61,6 +61,16 @@ class ApiDevicesRepository implements DevicesRepository {
   }
 
   @override
+  Future<DeviceDetails> renameDevice(String deviceId, String name) async {
+    await _api.request<Object?>(
+      method: 'PUT',
+      path: '/devices/$deviceId',
+      body: <String, Object?>{'name': name},
+    );
+    return getDetails(deviceId);
+  }
+
+  @override
   Future<DeviceDetails> assignUsers(
     String deviceId,
     List<String> userIds,

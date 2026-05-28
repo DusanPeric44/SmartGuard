@@ -84,7 +84,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
           onTabChanged: (idx) async {
             _tabIndex = idx;
             setState(() {});
-            await vm.setStatusFilter(_statusIdForTab(vm, idx));
+            await vm.setStatusFilter(_statusNameForTab(idx));
           },
         ),
         const SizedBox(height: 12),
@@ -249,18 +249,18 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
     );
   }
 
-  int? _statusIdForTab(AlarmsViewModel vm, int tabIndex) {
+  String? _statusNameForTab(int tabIndex) {
     switch (tabIndex) {
       case 0:
         return null;
       case 1:
-        return vm.pendingStatusId;
+        return 'Pending';
       case 2:
-        return vm.confirmedStatusId;
+        return 'Confirmed';
       case 3:
-        return vm.resolvedStatusId;
+        return 'Resolved';
       case 4:
-        return vm.dismissedStatusId;
+        return 'Dismissed';
       default:
         return null;
     }

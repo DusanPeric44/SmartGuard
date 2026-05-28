@@ -46,9 +46,10 @@ namespace SmartGuard.Services
         {
             query = base.AddFilter(query, search);
 
-            if (search?.StatusId.HasValue == true)
+            if (!string.IsNullOrWhiteSpace(search?.StatusName))
             {
-                query = query.Where(x => x.StatusId == search.StatusId.Value);
+                var statusName = search.StatusName.Trim().ToLower();
+                query = query.Where(x => x.AlertStatus.Name.ToLower() == statusName);
             }
 
             return query;
