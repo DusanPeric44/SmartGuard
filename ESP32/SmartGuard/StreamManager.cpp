@@ -6,6 +6,8 @@ WebSocketsClient webSocket;
 bool isStreamingEnabled = false;
 bool isHubConnected = false;
 
+static const int FRAME_INTERVAL_MS = 50;
+
 void sendFrame(camera_fb_t* fb) {
   if (!fb) return;
 
@@ -92,10 +94,9 @@ void handleStream(camera_fb_t* fb) {
   }
 
   static unsigned long lastFrameTime = 0;
-  const int FRAME_INTERVAL = 100; // Limit to ~10 FPS to prevent crashing/congestion
 
   if (isStreamingEnabled && isHubConnected && fb) {
-    if (millis() - lastFrameTime > FRAME_INTERVAL) {
+    if (millis() - lastFrameTime >= (unsigned long)FRAME_INTERVAL_MS) {
       sendFrame(fb);
       lastFrameTime = millis();
     }

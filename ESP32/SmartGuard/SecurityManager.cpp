@@ -6,6 +6,10 @@
 #include "SecurityManager.h"
 #include "fd_forward.h"
 #include "fr_forward.h"
+#include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 #undef max
 #undef min
@@ -15,8 +19,29 @@ bool _motionDetected = false;
 Preferences preferences;
 
 static mtmn_config_t mtmn_config = {0};
-static bool g_notifyFaceEvent = false;
+static volatile bool g_notifyFaceEvent = false;
 static String g_backendBaseUrl = "";
+
+static const uint32_t DETECTION_INTERVAL_MS = 300;
+static const int STABILITY_THRESHOLD = 3;
+static const int DETECT_W = 160;
+static const int DETECT_H = 120;
+static const float BOX_STABILITY_MAX_CENTER_DELTA = 0.25f;
+static const uint32_t EVENT_COOLDOWN_MS = 3000;
+
+typedef struct {
+  uint8_t* jpg;
+  size_t len;
+  uint16_t width;
+  uint16_t height;
+  pixformat_t format;
+  uint32_t capturedMs;
+} DetectFrame;
+
+static QueueHandle_t g_detectQueue = NULL;
+static TaskHandle_t g_faceTaskHandle = NULL;
+static volatile bool g_motionActive = false;
+static volatile uint32_t g_lastEnqueueMs = 0;
 
 static bool parseHttpBaseUrl(const String& baseUrl, String& host, uint16_t& port) {
   if (baseUrl.length() == 0) return false;
@@ -54,6 +79,53 @@ static void writeChunk(WiFiClient& client, const char* data, size_t len) {
 bool consumeNotifyFaceEvent() {
   if (!g_notifyFaceEvent) return false;
   g_notifyFaceEvent = false;
+  return true;
+}
+
+static void downscaleRgb888Nearest(const uint8_t* src, int srcW, int srcH, uint8_t* dst, int dstW, int dstH) {
+  for (int y = 0; y < dstH; y++) {
+    int srcY = (y * srcH) / dstH;
+    const uint8_t* srcRow = src + (srcY * srcW * 3);
+    uint8_t* dstRow = dst + (y * dstW * 3);
+    for (int x = 0; x < dstW; x++) {
+      int srcX = (x * srcW) / dstW;
+      const uint8_t* p = srcRow + (srcX * 3);
+      uint8_t* q = dstRow + (x * 3);
+      q[0] = p[0];
+      q[1] = p[1];
+      q[2] = p[2];
+    }
+  }
+}
+
+static bool getBestBox(const box_array_t* boxes, int imgW, int imgH, float& outCx, float& outCy) {
+  if (!boxes || !boxes->box || boxes->len == 0) return false;
+
+  int bestIdx = -1;
+  int bestArea = -1;
+  for (int i = 0; i < boxes->len; i++) {
+    int x1 = boxes->box[i * 4 + 0];
+    int y1 = boxes->box[i * 4 + 1];
+    int x2 = boxes->box[i * 4 + 2];
+    int y2 = boxes->box[i * 4 + 3];
+    int w = x2 - x1;
+    int h = y2 - y1;
+    int area = w * h;
+    if (area > bestArea) {
+      bestArea = area;
+      bestIdx = i;
+    }
+  }
+  if (bestIdx < 0) return false;
+
+  int x1 = boxes->box[bestIdx * 4 + 0];
+  int y1 = boxes->box[bestIdx * 4 + 1];
+  int x2 = boxes->box[bestIdx * 4 + 2];
+  int y2 = boxes->box[bestIdx * 4 + 3];
+  float cx = ((float)x1 + (float)x2) * 0.5f;
+  float cy = ((float)y1 + (float)y2) * 0.5f;
+  outCx = cx / (float)imgW;
+  outCy = cy / (float)imgH;
   return true;
 }
 
@@ -162,6 +234,113 @@ static void sendFaceDetectionEvent(camera_fb_t* fb, const float* embedding, size
   client.stop();
 }
 
+static void faceDetectionTask(void* parameter) {
+  dl_matrix3du_t* full_matrix = NULL;
+  dl_matrix3du_t* detect_matrix = dl_matrix3du_alloc(1, DETECT_W, DETECT_H, 3);
+
+  int consecutiveDetections = 0;
+  bool triggered = false;
+  uint32_t lastEventMs = 0;
+  bool haveLast = false;
+  float lastCx = 0.0f;
+  float lastCy = 0.0f;
+
+  for (;;) {
+    DetectFrame frame = {};
+    if (!g_detectQueue || xQueueReceive(g_detectQueue, &frame, pdMS_TO_TICKS(1000)) != pdTRUE) {
+      if (!g_motionActive) {
+        consecutiveDetections = 0;
+        triggered = false;
+        haveLast = false;
+      }
+      continue;
+    }
+
+    if (!g_motionActive) {
+      if (frame.jpg) heap_caps_free(frame.jpg);
+      consecutiveDetections = 0;
+      triggered = false;
+      haveLast = false;
+      continue;
+    }
+
+    if (!detect_matrix || !frame.jpg || frame.len == 0) {
+      if (frame.jpg) heap_caps_free(frame.jpg);
+      continue;
+    }
+
+    if (!full_matrix || full_matrix->w != frame.width || full_matrix->h != frame.height) {
+      if (full_matrix) dl_matrix3du_free(full_matrix);
+      full_matrix = dl_matrix3du_alloc(1, frame.width, frame.height, 3);
+    }
+
+    bool facePresent = false;
+    float bestCx = 0.0f;
+    float bestCy = 0.0f;
+
+    if (full_matrix && fmt2rgb888(frame.jpg, frame.len, frame.format, full_matrix->item)) {
+      downscaleRgb888Nearest(full_matrix->item, frame.width, frame.height, detect_matrix->item, DETECT_W, DETECT_H);
+      box_array_t *net_boxes = face_detect(detect_matrix, &mtmn_config);
+      if (net_boxes) {
+        facePresent = getBestBox(net_boxes, DETECT_W, DETECT_H, bestCx, bestCy);
+        if (facePresent) {
+          float embedding[128];
+          if (tryGetFaceEmbedding(detect_matrix, net_boxes, embedding)) {
+            bool stable = true;
+            if (haveLast) {
+              float dx = fabsf(bestCx - lastCx);
+              float dy = fabsf(bestCy - lastCy);
+              stable = dx <= BOX_STABILITY_MAX_CENTER_DELTA && dy <= BOX_STABILITY_MAX_CENTER_DELTA;
+            }
+
+            if (!stable) {
+              consecutiveDetections = 1;
+            } else {
+              consecutiveDetections++;
+            }
+
+            haveLast = true;
+            lastCx = bestCx;
+            lastCy = bestCy;
+
+            uint32_t now = millis();
+            if (consecutiveDetections >= STABILITY_THRESHOLD) {
+              if (!triggered || (now - lastEventMs) >= EVENT_COOLDOWN_MS) {
+                triggered = true;
+                lastEventMs = now;
+                g_notifyFaceEvent = true;
+
+                camera_fb_t fakeFb = {};
+                fakeFb.buf = frame.jpg;
+                fakeFb.len = frame.len;
+                fakeFb.width = frame.width;
+                fakeFb.height = frame.height;
+                fakeFb.format = frame.format;
+                sendFaceDetectionEvent(&fakeFb, embedding, 128);
+              }
+            }
+          } else {
+            facePresent = false;
+          }
+        }
+
+        dl_lib_free(net_boxes->score);
+        dl_lib_free(net_boxes->box);
+        if (net_boxes->landmark != NULL) dl_lib_free(net_boxes->landmark);
+        dl_lib_free(net_boxes);
+      }
+    }
+
+    if (!facePresent) {
+      consecutiveDetections = 0;
+      triggered = false;
+      haveLast = false;
+    }
+
+    if (frame.jpg) heap_caps_free(frame.jpg);
+  }
+}
+
 void setupSecurityManager(int pirPin, const char* backendBaseUrl) {
   _pirPin = pirPin;
   pinMode(_pirPin, INPUT);
@@ -169,7 +348,7 @@ void setupSecurityManager(int pirPin, const char* backendBaseUrl) {
 
   // Initialize face detection config (copied from boilerplate)
   mtmn_config.type = FAST;
-  mtmn_config.min_face = 80;
+  mtmn_config.min_face = 20;
   mtmn_config.pyramid = 0.707;
   mtmn_config.pyramid_times = 4;
   mtmn_config.p_threshold.score = 0.6;
@@ -181,6 +360,21 @@ void setupSecurityManager(int pirPin, const char* backendBaseUrl) {
   mtmn_config.o_threshold.score = 0.7;
   mtmn_config.o_threshold.nms = 0.7;
   mtmn_config.o_threshold.candidate_number = 1;
+
+  if (!g_detectQueue) {
+    g_detectQueue = xQueueCreate(1, sizeof(DetectFrame));
+  }
+  if (!g_faceTaskHandle && g_detectQueue) {
+    xTaskCreatePinnedToCore(
+      faceDetectionTask,
+      "FaceDetect",
+      16384,
+      NULL,
+      1,
+      &g_faceTaskHandle,
+      1
+    );
+  }
 }
 
 bool registerDevice(const char* serverUrl, const char* registrationKey) {
@@ -248,31 +442,48 @@ int getDeviceId() {
 
 bool checkSecurity(camera_fb_t* fb) {
   _motionDetected = digitalRead(_pirPin);
+  g_motionActive = _motionDetected;
 
-  if (_motionDetected && fb) {
-    // Perform Face Detection
-    dl_matrix3du_t *image_matrix = dl_matrix3du_alloc(1, fb->width, fb->height, 3);
-    if (!image_matrix) {
-      return true;
-    }
-
-    if (fmt2rgb888(fb->buf, fb->len, fb->format, image_matrix->item)) {
-      box_array_t *net_boxes = face_detect(image_matrix, &mtmn_config);
-      if (net_boxes) {
-        float embedding[128];
-        if (tryGetFaceEmbedding(image_matrix, net_boxes, embedding)) {
-          g_notifyFaceEvent = true;
-          sendFaceDetectionEvent(fb, embedding, 128);
-        }
-
-        dl_lib_free(net_boxes->score);
-        dl_lib_free(net_boxes->box);
-        if (net_boxes->landmark != NULL) dl_lib_free(net_boxes->landmark);
-        dl_lib_free(net_boxes);
-      }
-    }
-    dl_matrix3du_free(image_matrix);
+  if (!_motionDetected) {
+    return false;
   }
 
-  return _motionDetected;
+  if (!fb || !fb->buf || fb->len == 0 || !g_detectQueue) {
+    return true;
+  }
+
+  uint32_t now = millis();
+  if ((now - g_lastEnqueueMs) < DETECTION_INTERVAL_MS) {
+    return true;
+  }
+  g_lastEnqueueMs = now;
+
+  uint8_t* copyBuf = (uint8_t*)heap_caps_malloc(fb->len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  if (!copyBuf) {
+    copyBuf = (uint8_t*)malloc(fb->len);
+  }
+  if (!copyBuf) {
+    return true;
+  }
+
+  memcpy(copyBuf, fb->buf, fb->len);
+
+  DetectFrame old = {};
+  if (xQueueReceive(g_detectQueue, &old, 0) == pdTRUE) {
+    if (old.jpg) heap_caps_free(old.jpg);
+  }
+
+  DetectFrame frame = {};
+  frame.jpg = copyBuf;
+  frame.len = fb->len;
+  frame.width = fb->width;
+  frame.height = fb->height;
+  frame.format = fb->format;
+  frame.capturedMs = now;
+
+  if (xQueueSend(g_detectQueue, &frame, 0) != pdTRUE) {
+    heap_caps_free(copyBuf);
+  }
+
+  return true;
 }

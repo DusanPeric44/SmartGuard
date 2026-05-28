@@ -2,6 +2,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "camera_pins.h"
 #include "WifiProvisioner.h"
 #include "StreamManager.h"
@@ -16,8 +18,34 @@
 #define BACKEND_SYNC_URL "http://192.168.8.152:5001/upload"
 #define BACKEND_BASE_URL "http://192.168.8.152:5000"
 
+static const int JPEG_QUALITY_STREAM = 20;
+
 String webSocketPath;
 Preferences devicePrefs;
+
+static TaskHandle_t g_streamTaskHandle = NULL;
+
+static void streamLoopTask(void* parameter) {
+  for (;;) {
+    handleStream(NULL);
+
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (fb) {
+      bool motionDetected = checkSecurity(fb);
+      bool notifyFaceEvent = consumeNotifyFaceEvent();
+
+      handleRecording(motionDetected, notifyFaceEvent, BACKEND_SYNC_URL);
+      recordFrame(fb);
+
+      handleStream(fb);
+      esp_camera_fb_return(fb);
+    } else {
+      handleStream(NULL);
+    }
+
+    vTaskDelay(1);
+  }
+}
 
 bool validateDevice(const char* serverBaseUrl) {
   if (WiFi.status() != WL_CONNECTED) return false;
@@ -91,14 +119,17 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.grab_mode = CAMERA_GRAB_LATEST;
   
   if(psramFound()){
-    config.frame_size = FRAMESIZE_QVGA; // Use VGA for better performance with face detection
-    config.jpeg_quality = 10;
+    config.frame_size = FRAMESIZE_VGA;
+    config.jpeg_quality = JPEG_QUALITY_STREAM;
+    config.fb_location = CAMERA_FB_IN_PSRAM;
     config.fb_count = 2;
   } else {
     config.frame_size = FRAMESIZE_QVGA;
-    config.jpeg_quality = 10;
+    config.jpeg_quality = JPEG_QUALITY_STREAM;
+    config.fb_location = CAMERA_FB_IN_DRAM;
     config.fb_count = 1;
   }
 
@@ -184,32 +215,20 @@ void setup() {
   }
 
   Serial.println("System initialized and ready.");
+
+  if (!g_streamTaskHandle) {
+    xTaskCreatePinnedToCore(
+      streamLoopTask,
+      "StreamLoop",
+      8192,
+      NULL,
+      2,
+      &g_streamTaskHandle,
+      0
+    );
+  }
 }
 
 void loop() {
-  // Ensure WebSocket is serviced even if subsequent operations take time
-  handleStream(NULL);
-
-  // Capture a single frame for all components
-  camera_fb_t* fb = esp_camera_fb_get();
-  
-  if (fb) {
-    // 4. Security Check (PIR + Face)
-    bool motionDetected = checkSecurity(fb);
-    bool notifyFaceEvent = consumeNotifyFaceEvent();
-
-    // 5. Recording Logic
-    handleRecording(motionDetected, notifyFaceEvent, BACKEND_SYNC_URL);
-    recordFrame(fb);
-
-    // 6. Streaming (Pass the existing frame)
-    handleStream(fb);
-
-    esp_camera_fb_return(fb);
-  } else {
-    // If no frame, still call handleStream to process WebSocket events/pings
-    handleStream(NULL);
-  }
-
-  delay(10);
+  vTaskDelay(1000);
 }
