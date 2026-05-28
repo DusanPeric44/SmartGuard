@@ -97,6 +97,7 @@ namespace SmartGuard.Services
 
             try
             {
+                await EnsureUserNotificationPreferencesAsync(user.Id);
                 await _notificationPublisher.SendInviteEmailAsync(email, role, temporaryPassword);
             }
             catch
@@ -187,6 +188,38 @@ namespace SmartGuard.Services
             };
             _logger.LogAuditSuccess("UserUpdated", $"User:{id}", $"FirstName={firstName}; LastName={lastName}; Role={result.Role}");
             return result;
+        }
+
+        private async Task EnsureUserNotificationPreferencesAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return;
+
+            var personIds = await _context.KnownPersons
+                .AsNoTracking()
+                .Select(x => x.Id)
+                .ToListAsync(cancellationToken);
+
+            if (personIds.Count == 0) return;
+
+            var existingPersonIds = await _context.UserNotificationPreferences
+                .AsNoTracking()
+                .Where(x => x.UserId == userId && x.PersonId.HasValue)
+                .Select(x => x.PersonId!.Value)
+                .ToListAsync(cancellationToken);
+
+            var existingSet = existingPersonIds.ToHashSet();
+            var missingPersonIds = personIds.Where(x => !existingSet.Contains(x)).ToList();
+            if (missingPersonIds.Count == 0) return;
+
+            var preferences = missingPersonIds.Select(personId => new UserNotificationPreference
+            {
+                UserId = userId,
+                PersonId = personId,
+                Enabled = true
+            });
+
+            _context.UserNotificationPreferences.AddRange(preferences);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<UserDto> UpdateProfileAsync(string id, UpdateProfileRequest request)

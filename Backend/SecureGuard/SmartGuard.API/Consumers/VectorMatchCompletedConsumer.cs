@@ -165,25 +165,24 @@ namespace SmartGuard.API.Consumers
                     }
                 }
 
-                var deviceAccessUserIds = await _context.UserDeviceAccesses
-                    .Where(x => x.DeviceId == deviceId)
-                    .Select(x => x.UserId)
+                var userIds = await _context.Users
+                    .Where(x => !x.IsDeleted)
+                    .Select(x => x.Id)
                     .Distinct()
                     .ToListAsync(context.CancellationToken);
 
-                if (deviceAccessUserIds.Count == 0)
+                if (userIds.Count == 0)
                 {
                     return;
                 }
 
                 var existingPreferenceUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && deviceAccessUserIds.Contains(x.UserId))
+                    .Where(x => x.PersonId == personIdValue && userIds.Contains(x.UserId))
                     .Select(x => x.UserId)
                     .ToListAsync(context.CancellationToken);
 
-                var missingPreferenceUserIds = deviceAccessUserIds
-                    .Where(id => !existingPreferenceUserIds.Contains(id))
-                    .ToList();
+                var existingPreferenceSet = existingPreferenceUserIds.ToHashSet();
+                var missingPreferenceUserIds = userIds.Where(id => !existingPreferenceSet.Contains(id)).ToList();
 
                 if (missingPreferenceUserIds.Count > 0)
                 {
@@ -198,7 +197,7 @@ namespace SmartGuard.API.Consumers
                 }
 
                 var enabledUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && deviceAccessUserIds.Contains(x.UserId) && x.Enabled)
+                    .Where(x => x.PersonId == personIdValue && userIds.Contains(x.UserId) && x.Enabled)
                     .Select(x => x.UserId)
                     .Distinct()
                     .ToListAsync(context.CancellationToken);
@@ -277,9 +276,9 @@ namespace SmartGuard.API.Consumers
             var newAlertDescription = $"Unknown face detected on {deviceName} at {faceEvent.Timestamp:O}.";
             await CreateIntruderAlertAsync(deviceId, faceEvent.Id, newAlertDescription, context.CancellationToken);
 
-            var userIds = await _context.UserDeviceAccesses
-                .Where(x => x.DeviceId == deviceId)
-                .Select(x => x.UserId)
+            var userIds = await _context.Users
+                .Where(x => !x.IsDeleted)
+                .Select(x => x.Id)
                 .Distinct()
                 .ToListAsync(context.CancellationToken);
 
@@ -293,15 +292,13 @@ namespace SmartGuard.API.Consumers
                 .Select(x => x.UserId)
                 .ToListAsync(context.CancellationToken);
 
-            var preferences = userIds
-                .Where(u => !existingUserIds.Contains(u))
-                .Select(u => new UserNotificationPreference
-                {
-                    UserId = u,
-                    PersonId = newPerson.Id,
-                    Enabled = true
-                })
-                .ToList();
+            var existingSet = existingUserIds.ToHashSet();
+            var preferences = userIds.Where(u => !existingSet.Contains(u)).Select(u => new UserNotificationPreference
+            {
+                UserId = u,
+                PersonId = newPerson.Id,
+                Enabled = true
+            }).ToList();
 
             if (preferences.Count > 0)
             {

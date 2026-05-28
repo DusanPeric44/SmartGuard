@@ -87,8 +87,16 @@ namespace SmartGuard.Services
                 throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            // Assign default role
-            await _userManager.AddToRoleAsync(user, "Viewer");
+            try
+            {
+                await _userManager.AddToRoleAsync(user, "Viewer");
+                await EnsureUserNotificationPreferencesAsync(user.Id);
+            }
+            catch
+            {
+                await _userManager.DeleteAsync(user);
+                throw;
+            }
 
             _logger.LogAuditSuccess(user.Id, "UserRegistered", $"User:{user.Id}", $"Email={user.Email}; Role=Viewer");
             return await GenerateAuthResponseAsync(user);
@@ -177,7 +185,16 @@ namespace SmartGuard.Services
                     throw new UserException(string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
 
-                await _userManager.AddToRoleAsync(user, "Viewer");
+                try
+                {
+                    await _userManager.AddToRoleAsync(user, "Viewer");
+                    await EnsureUserNotificationPreferencesAsync(user.Id);
+                }
+                catch
+                {
+                    await _userManager.DeleteAsync(user);
+                    throw;
+                }
                 _logger.LogAuditSuccess(user.Id, "UserExternalRegistered", $"User:{user.Id}", $"Email={email}; Provider={provider}; Role=Viewer");
             }
             else if (string.IsNullOrWhiteSpace(user.RegistrationKey))
@@ -268,6 +285,38 @@ namespace SmartGuard.Services
                 ?? throw new UserException("User not found");
 
             return user.RegistrationKey;
+        }
+
+        private async Task EnsureUserNotificationPreferencesAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return;
+
+            var personIds = await _context.KnownPersons
+                .AsNoTracking()
+                .Select(x => x.Id)
+                .ToListAsync(cancellationToken);
+
+            if (personIds.Count == 0) return;
+
+            var existingPersonIds = await _context.UserNotificationPreferences
+                .AsNoTracking()
+                .Where(x => x.UserId == userId && x.PersonId.HasValue)
+                .Select(x => x.PersonId!.Value)
+                .ToListAsync(cancellationToken);
+
+            var existingSet = existingPersonIds.ToHashSet();
+            var missingPersonIds = personIds.Where(x => !existingSet.Contains(x)).ToList();
+            if (missingPersonIds.Count == 0) return;
+
+            var preferences = missingPersonIds.Select(personId => new UserNotificationPreference
+            {
+                UserId = userId,
+                PersonId = personId,
+                Enabled = true
+            });
+
+            _context.UserNotificationPreferences.AddRange(preferences);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user)

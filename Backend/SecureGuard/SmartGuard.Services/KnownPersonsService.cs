@@ -44,21 +44,25 @@ namespace SmartGuard.Services
 
             var person = await base.InsertAsync(insert);
 
-            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
-            var homeOwnerUsers = await _userManager.GetUsersInRoleAsync("HomeOwner");
-
-            var targetUsers = adminUsers
-                .Concat(homeOwnerUsers)
+            var userIds = await _userManager.Users
                 .Where(x => !x.IsDeleted)
-                .GroupBy(x => x.Id)
-                .Select(g => g.First())
-                .ToList();
+                .Select(x => x.Id)
+                .Distinct()
+                .ToListAsync();
 
-            if (targetUsers.Count > 0)
+            if (userIds.Count > 0)
             {
-                var preferences = targetUsers.Select(u => new Database.UserNotificationPreference
+                var existingUserIds = await _context.UserNotificationPreferences
+                    .Where(x => x.PersonId == person.Id && userIds.Contains(x.UserId))
+                    .Select(x => x.UserId)
+                    .ToListAsync();
+
+                var existingSet = existingUserIds.ToHashSet();
+                var missingUserIds = userIds.Where(x => !existingSet.Contains(x)).ToList();
+
+                var preferences = missingUserIds.Select(userId => new Database.UserNotificationPreference
                 {
-                    UserId = u.Id,
+                    UserId = userId,
                     PersonId = person.Id,
                     Enabled = true
                 });
