@@ -211,7 +211,7 @@ namespace SmartGuard.Services
             var missingPersonIds = personIds.Where(x => !existingSet.Contains(x)).ToList();
             if (missingPersonIds.Count == 0) return;
 
-            var preferences = missingPersonIds.Select(personId => new UserNotificationPreference
+            var preferences = missingPersonIds.Select(personId => new Database.UserNotificationPreference
             {
                 UserId = userId,
                 PersonId = personId,

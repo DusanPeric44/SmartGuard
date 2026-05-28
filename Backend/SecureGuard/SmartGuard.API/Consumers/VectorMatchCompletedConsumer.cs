@@ -165,24 +165,24 @@ namespace SmartGuard.API.Consumers
                     }
                 }
 
-                var userIds = await _context.Users
+                var userIdsForMissingPreference = await _context.Users
                     .Where(x => !x.IsDeleted)
                     .Select(x => x.Id)
                     .Distinct()
                     .ToListAsync(context.CancellationToken);
 
-                if (userIds.Count == 0)
+                if (userIdsForMissingPreference.Count == 0)
                 {
                     return;
                 }
 
                 var existingPreferenceUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && userIds.Contains(x.UserId))
+                    .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId))
                     .Select(x => x.UserId)
                     .ToListAsync(context.CancellationToken);
 
                 var existingPreferenceSet = existingPreferenceUserIds.ToHashSet();
-                var missingPreferenceUserIds = userIds.Where(id => !existingPreferenceSet.Contains(id)).ToList();
+                var missingPreferenceUserIds = userIdsForMissingPreference.Where(id => !existingPreferenceSet.Contains(id)).ToList();
 
                 if (missingPreferenceUserIds.Count > 0)
                 {
@@ -197,7 +197,7 @@ namespace SmartGuard.API.Consumers
                 }
 
                 var enabledUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && userIds.Contains(x.UserId) && x.Enabled)
+                    .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId) && x.Enabled)
                     .Select(x => x.UserId)
                     .Distinct()
                     .ToListAsync(context.CancellationToken);
