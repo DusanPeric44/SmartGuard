@@ -15,6 +15,7 @@ typedef TokenRefreshedHandler =
 class ApiClient {
   ApiClient({
     required this.baseUri,
+    Uri? refreshBaseUri,
     Dio? dio,
     TokenProvider? tokenProvider,
     RefreshTokenProvider? refreshTokenProvider,
@@ -34,6 +35,7 @@ class ApiClient {
        _refreshTokenProvider = refreshTokenProvider,
        _onTokenRefreshed = onTokenRefreshed,
        _onUnauthorized = onUnauthorized,
+       _refreshBaseUri = refreshBaseUri ?? baseUri,
        _timeout = timeout;
 
   final Uri baseUri;
@@ -42,6 +44,7 @@ class ApiClient {
   final RefreshTokenProvider? _refreshTokenProvider;
   final TokenRefreshedHandler? _onTokenRefreshed;
   final UnauthorizedHandler? _onUnauthorized;
+  final Uri _refreshBaseUri;
   final Duration _timeout;
   bool _isHandlingUnauthorized = false;
   Completer<bool>? _refreshCompleter;
@@ -359,7 +362,7 @@ class ApiClient {
     if (token == null || token.isEmpty) return false;
     if (refreshToken == null || refreshToken.isEmpty) return false;
 
-    final refreshUri = _resolve(_refreshPath);
+    final refreshUri = _resolveWithBase(_refreshBaseUri, _refreshPath);
     final response = await _dio
         .requestUri<Object?>(
           refreshUri,
@@ -424,8 +427,12 @@ class ApiClient {
   }
 
   Uri _resolve(String path) {
+    return _resolveWithBase(baseUri, path);
+  }
+
+  Uri _resolveWithBase(Uri base, String path) {
     final normalized = path.startsWith('/') ? path.substring(1) : path;
-    return baseUri.resolve(normalized);
+    return base.resolve(normalized);
   }
 
   ApiErrorKind _kindForStatus(int statusCode) {

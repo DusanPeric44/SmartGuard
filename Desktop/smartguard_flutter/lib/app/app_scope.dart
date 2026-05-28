@@ -7,11 +7,13 @@ class AppScope extends InheritedWidget {
     super.key,
     required this.auth,
     required this.api,
+    required this.notificationsApi,
     required super.child,
   });
 
   final AuthController auth;
   final ApiClient api;
+  final ApiClient notificationsApi;
 
   static AppScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
@@ -23,7 +25,9 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) {
-    return auth != oldWidget.auth || api != oldWidget.api;
+    return auth != oldWidget.auth ||
+        api != oldWidget.api ||
+        notificationsApi != oldWidget.notificationsApi;
   }
 }
 

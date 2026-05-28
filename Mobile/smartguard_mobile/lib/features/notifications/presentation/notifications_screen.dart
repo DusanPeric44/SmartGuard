@@ -35,10 +35,14 @@ class NotificationsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Expanded(
               child: ListView.separated(
-                itemCount: state.titles.length,
+                itemCount: state.items.length,
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
-                  return ListTile(title: Text(state.titles[index]));
+                  final item = state.items[index];
+                  return ListTile(
+                    title: Text(item.title),
+                    subtitle: Text(item.text),
+                  );
                 },
               ),
             ),

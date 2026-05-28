@@ -41,6 +41,7 @@ dependencies:
   http: ^1.6.0
   file_selector: ^1.1.0
   fl_chart: ^1.2.0
+  signalr_netcore: ^1.4.3
 
 dev_dependencies:
   flutter_test:

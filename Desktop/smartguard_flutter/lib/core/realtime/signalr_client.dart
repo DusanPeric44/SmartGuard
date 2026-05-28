@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:signalr_netcore/signalr_client.dart';
 
-import '../config/app_config.dart';
 import 'signalr_constants.dart';
 
 enum SignalRConnectionStatus {
@@ -26,14 +25,14 @@ class SignalRClient {
   SignalRConnectionStatus get status => _status;
 
   static SignalRClient build({
+    required Uri baseUri,
     required String hubPath,
     required Future<String?> Function() accessTokenProvider,
-    String? baseUrl,
     List<Duration> reconnectDelays = SignalRConstants.reconnectDelays,
   }) {
-    final url = Uri.parse(
-      baseUrl ?? AppConfig.apiBaseUrl,
-    ).resolve(hubPath.startsWith('/') ? hubPath.substring(1) : hubPath);
+    final url = baseUri.resolve(
+      hubPath.startsWith('/') ? hubPath.substring(1) : hubPath,
+    );
 
     final connection = HubConnectionBuilder()
         .withUrl(
@@ -80,10 +79,6 @@ class SignalRClient {
 
   void on(String methodName, void Function(List<Object?>? args) handler) {
     _connection.on(methodName, handler);
-  }
-
-  Future<Object?> invoke(String methodName, {List<Object> args = const []}) {
-    return _connection.invoke(methodName, args: args);
   }
 
   void off(String methodName) {

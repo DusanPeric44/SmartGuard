@@ -1,15 +1,119 @@
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using SmartGuard.Model.Options;
 using SmartGuard.Notifications.Microservice.Consumers;
+using SmartGuard.Notifications.Microservice.Database;
 using SmartGuard.Notifications.Microservice.Interfaces;
+using SmartGuard.Notifications.Microservice.Redis;
 using SmartGuard.Notifications.Microservice.Services;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
+using StackExchange.Redis;
+using System.Text;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-// Add Services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        corsBuilder =>
+        {
+            corsBuilder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+        });
+});
+
+builder.Services.AddControllers();
+builder.Services.AddSignalR();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "SmartGuard Notifications Microservice",
+        Description = "Notifications hub + notifications persistence API"
+    });
+
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = JwtBearerDefaults.AuthenticationScheme,
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document)] = []
+    });
+});
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrWhiteSpace(accessToken) &&
+                path.StartsWithSegments("/hub/notifications"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+var redisConfiguration = builder.Configuration["Redis:Configuration"];
+if (!string.IsNullOrWhiteSpace(redisConfiguration))
+{
+    builder.Services.AddStackExchangeRedisCache(o => o.Configuration = redisConfiguration);
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConfiguration));
+    builder.Services.AddSingleton<IRedisConnectionStore, RedisConnectionStore>();
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddSingleton<IRedisConnectionStore, InMemoryConnectionStore>();
+}
+
+builder.Services.AddDbContext<NotificationsDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("NotificationsDatabase")));
+
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 builder.Services.AddSingleton<IMailingService, MailingService>();
 
@@ -61,6 +165,9 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<IFCMService, FCMService>();
+builder.Services.AddScoped<INotificationsRealtimePublisher, NotificationsRealtimePublisher>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SmartGuard.Model.Interfaces.IUserContext, UserContext>();
 
 // Configure MassTransit
 builder.Services.AddMassTransit(x =>
@@ -85,5 +192,28 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-var host = builder.Build();
-host.Run();
+var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers().RequireAuthorization();
+app.MapHub<SmartGuard.Notifications.Microservice.Hubs.NotificationsHub>("/hub/notifications").RequireAuthorization();
+
+app.Run();

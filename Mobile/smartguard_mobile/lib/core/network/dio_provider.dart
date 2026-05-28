@@ -65,3 +65,26 @@ final dioProvider = Provider<Dio>((ref) {
   ref.onDispose(dio.close);
   return dio;
 });
+
+final notificationsDioProvider = Provider<Dio>((ref) {
+  final session = ref.read(sessionControllerProvider.notifier);
+
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.notificationsBaseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: const {'accept': 'application/json'},
+      responseType: ResponseType.json,
+    ),
+  );
+
+  _configureDevTls(dio);
+  dio.interceptors.add(AuthHeaderInterceptor(session: session));
+  dio.interceptors.add(RefreshTokenInterceptor(session: session, dio: dio));
+  dio.interceptors.add(ApiErrorInterceptor());
+
+  ref.onDispose(dio.close);
+  return dio;
+});

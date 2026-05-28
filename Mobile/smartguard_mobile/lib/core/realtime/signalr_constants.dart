@@ -4,6 +4,7 @@ class SignalRConstants {
   const SignalRConstants._();
 
   static const String streamHubPath = '/hubs/stream';
+  static const String notificationsHubPath = '/hub/notifications';
 
   static const List<Duration> reconnectDelays = <Duration>[
     AppDurations.reconnectMinDelay,

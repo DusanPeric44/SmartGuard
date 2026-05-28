@@ -3,6 +3,7 @@ class AppConfig {
 
   static const String defaultApiBaseUrl = 'http://localhost:5000';
   static const String defaultArchiveBaseUrl = defaultApiBaseUrl;
+  static const String defaultNotificationsBaseUrl = 'http://localhost:5002';
   static const String appScheme = 'smartguard';
   static const bool enableStubAuth = bool.fromEnvironment(
     'USE_STUB_AUTH',
@@ -23,6 +24,11 @@ class AppConfig {
     defaultValue: defaultArchiveBaseUrl,
   );
 
+  static const String _configuredNotificationsBaseUrl = String.fromEnvironment(
+    'NOTIFICATIONS_BASE_URL',
+    defaultValue: defaultNotificationsBaseUrl,
+  );
+
   static String resolveApiBaseUrl([String? rawValue]) {
     final candidate = (rawValue ?? _configuredApiBaseUrl).trim();
     return candidate.isEmpty ? defaultApiBaseUrl : candidate;
@@ -41,6 +47,15 @@ class AppConfig {
     return Uri.parse(resolveArchiveBaseUrl(rawValue));
   }
 
+  static String resolveNotificationsBaseUrl([String? rawValue]) {
+    final candidate = (rawValue ?? _configuredNotificationsBaseUrl).trim();
+    return candidate.isEmpty ? defaultNotificationsBaseUrl : candidate;
+  }
+
+  static Uri parseNotificationsBaseUri([String? rawValue]) {
+    return Uri.parse(resolveNotificationsBaseUrl(rawValue));
+  }
+
   static String get apiBaseUrl => resolveApiBaseUrl();
 
   static Uri get apiBaseUri => parseApiBaseUri();
@@ -48,4 +63,8 @@ class AppConfig {
   static String get archiveBaseUrl => resolveArchiveBaseUrl();
 
   static Uri get archiveBaseUri => parseArchiveBaseUri();
+
+  static String get notificationsBaseUrl => resolveNotificationsBaseUrl();
+
+  static Uri get notificationsBaseUri => parseNotificationsBaseUri();
 }

@@ -14,6 +14,12 @@ class AppConfig {
     defaultValue: defaultArchiveBaseUrl,
   );
 
+  static const String defaultNotificationsBaseUrl = 'http://10.0.2.2:5002';
+  static const String notificationsBaseUrl = String.fromEnvironment(
+    'NOTIFICATIONS_BASE_URL',
+    defaultValue: defaultNotificationsBaseUrl,
+  );
+
   static const bool allowBadCertificates = bool.fromEnvironment(
     'ALLOW_BAD_CERTS',
     defaultValue: false,

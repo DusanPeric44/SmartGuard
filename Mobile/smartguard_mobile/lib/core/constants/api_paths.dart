@@ -26,4 +26,9 @@ class ApiPaths {
 
   static const String recordings = '/Recordings';
   static String recordingById(int id) => '/Recordings/$id';
+
+  static const String notifications = '/api/notifications';
+  static String notificationById(int id) => '/api/notifications/$id';
+  static String notificationRead(int id) => '/api/notifications/$id/read';
+  static const String notificationsReadAll = '/api/notifications/read-all';
 }

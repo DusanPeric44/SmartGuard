@@ -4,6 +4,11 @@ import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/app/navigation/app_nav_items.dart';
 import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/core/config/app_config.dart';
+import 'package:smartguard_flutter/core/notifications/notification_item.dart';
+import 'package:smartguard_flutter/core/notifications/notification_dropdown_item.dart';
+import 'package:smartguard_flutter/core/notifications/notifications_api.dart';
+import 'package:smartguard_flutter/core/realtime/signalr_client.dart';
+import 'package:smartguard_flutter/core/realtime/signalr_constants.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.child, required this.currentUri});
@@ -18,11 +23,112 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   bool _railExtended = true;
   final _searchController = TextEditingController();
+  int _unreadCount = 0;
+  bool _notificationsLoading = false;
+  List<NotificationItem> _notifications = const [];
+  bool _didLoadUnreadCount = false;
+  SignalRClient? _notificationsHub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLoadUnreadCount) return;
+    _didLoadUnreadCount = true;
+    _refreshUnreadCount();
+    _startNotificationsRealtime();
+  }
 
   @override
   void dispose() {
+    final hub = _notificationsHub;
+    _notificationsHub = null;
+    if (hub != null) {
+      hub.dispose();
+    }
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _startNotificationsRealtime() async {
+    if (_notificationsHub != null) return;
+
+    final hub = SignalRClient.build(
+      baseUri: AppConfig.notificationsBaseUri,
+      hubPath: SignalRConstants.notificationsHubPath,
+      accessTokenProvider: () => AppScope.of(context).auth.accessToken,
+    );
+    _notificationsHub = hub;
+
+    hub.on('NotificationCountChanged', (args) {
+      final count = _parseUnreadCount(args);
+      if (count == null) return;
+      if (!mounted) return;
+      setState(() => _unreadCount = count);
+    });
+
+    hub.on('NewNotification', (args) {
+      final item = _parseNotification(args);
+      if (item == null) return;
+      if (!mounted) return;
+      setState(() {
+        if (_notifications.any((x) => x.id == item.id)) return;
+        _notifications = [item, ..._notifications]
+            .take(20)
+            .toList(growable: false);
+      });
+    });
+
+    try {
+      await hub.start();
+    } catch (_) {}
+  }
+
+  Future<void> _refreshUnreadCount() async {
+    try {
+      final api = NotificationsApi(api: AppScope.of(context).notificationsApi);
+      final count = await api.getUnreadCount();
+      if (!mounted) return;
+      setState(() => _unreadCount = count);
+    } catch (_) {}
+  }
+
+  int? _parseUnreadCount(List<Object?>? args) {
+    if (args == null || args.isEmpty) return null;
+    final first = args.first;
+    if (first is Map) {
+      final raw = first['unreadCount'];
+      if (raw is int) return raw;
+      return int.tryParse(raw?.toString() ?? '');
+    }
+    return null;
+  }
+
+  NotificationItem? _parseNotification(List<Object?>? args) {
+    if (args == null || args.isEmpty) return null;
+    final first = args.first;
+    if (first is Map) {
+      return NotificationItem.fromJson(Map<String, dynamic>.from(first));
+    }
+    return null;
+  }
+
+  Future<void> _refreshNotificationsDropdown() async {
+    if (_notificationsLoading) return;
+    setState(() => _notificationsLoading = true);
+    try {
+      final api = NotificationsApi(api: AppScope.of(context).notificationsApi);
+      final count = await api.getUnreadCount();
+      final items = await api.getLatest(pageSize: 10);
+      if (!mounted) return;
+      setState(() {
+        _unreadCount = count;
+        _notifications = items;
+        _notificationsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _notificationsLoading = false);
+    }
   }
 
   @override
@@ -49,6 +155,10 @@ class _AppShellState extends State<AppShell> {
                     Text('API base URL: ${AppScope.of(context).api.baseUri}'),
                     const SizedBox(height: 8),
                     Text(
+                      'Notifications base URL: ${AppScope.of(context).notificationsApi.baseUri}',
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
                       'Stub auth: ${AppConfig.enableStubAuth ? 'uključen' : 'isključen'}',
                     ),
                     const SizedBox(height: 8),
@@ -67,12 +177,191 @@ class _AppShellState extends State<AppShell> {
             ),
             icon: const Icon(Icons.tune),
           ),
-          Badge(
-            label: const Text('8'),
-            child: IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.notifications_outlined),
-            ),
+          Builder(
+            builder: (context) {
+              MenuController? menuController;
+              return MenuAnchor(
+                style: MenuStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    Theme.of(context).colorScheme.surface,
+                  ),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
+                ),
+                builder: (context, controller, child) {
+                  menuController = controller;
+                  return Badge(
+                    isLabelVisible: _unreadCount > 0,
+                    label: Text('$_unreadCount'),
+                    child: IconButton(
+                      tooltip: 'Notifications',
+                      onPressed: () async {
+                        if (controller.isOpen) {
+                          controller.close();
+                          return;
+                        }
+                        await _refreshNotificationsDropdown();
+                        controller.open();
+                      },
+                      icon: const Icon(Icons.notifications_outlined),
+                    ),
+                  );
+                },
+                menuChildren: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                    child: SizedBox(
+                      width: 360,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Notifications',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                          ),
+                          if (_unreadCount > 0)
+                            Text(
+                              '$_unreadCount unread',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  if (_notificationsLoading && _notifications.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else if (_notifications.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(width: 360, child: Text('No notifications')),
+                    )
+                  else
+                    for (final item in _notifications.take(10))
+                      MenuItemButton(
+                        onPressed: () async {
+                          menuController?.close();
+                          try {
+                            final api = NotificationsApi(
+                              api: AppScope.of(context).notificationsApi,
+                            );
+                            await api.markAsRead(item.id);
+                          } catch (_) {}
+                          await _refreshNotificationsDropdown();
+                        },
+                        style: const ButtonStyle(
+                          padding: WidgetStatePropertyAll(EdgeInsets.zero),
+                        ),
+                        child: SizedBox(
+                          width: 360,
+                          child: NotificationDropdownItem(item: item),
+                        ),
+                      ),
+                  const Divider(height: 1),
+                  MenuItemButton(
+                    onPressed: _unreadCount == 0
+                        ? null
+                        : () async {
+                            menuController?.close();
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text('Read all'),
+                                  content: const Text(
+                                    'Mark all notifications as read?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Read all'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            if (confirmed == true) {
+                              try {
+                                final api = NotificationsApi(
+                                  api: AppScope.of(context).notificationsApi,
+                                );
+                                await api.markAllAsRead();
+                              } catch (_) {}
+                              await _refreshNotificationsDropdown();
+                            }
+                          },
+                    style: const ButtonStyle(
+                      padding: WidgetStatePropertyAll(EdgeInsets.zero),
+                    ),
+                    child: SizedBox(
+                      width: 360,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.done_all,
+                              size: 18,
+                              color: _unreadCount == 0
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.35)
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Read all',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: _unreadCount == 0
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.35)
+                                        : null,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           IconButton(
             tooltip: 'Odjava',

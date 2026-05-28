@@ -20,6 +20,8 @@ class ChangePasswordDialogState extends State<ChangePasswordDialog> {
   String? errorText;
 
   Future<void> _submit(StateSetter setState) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final current = currentController.text;
     final next = newController.text;
     final confirm = confirmController.text;
@@ -40,18 +42,16 @@ class ChangePasswordDialogState extends State<ChangePasswordDialog> {
         currentPassword: current,
         newPassword: next,
       );
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.passwordUpdated)),
-        );
-      }
+      if (!mounted) return;
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.passwordUpdated)),
+      );
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text(AppStrings.errorUnknown)));
-      }
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.errorUnknown)),
+      );
     }
   }
 

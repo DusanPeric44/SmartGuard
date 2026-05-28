@@ -97,4 +97,10 @@ class AppStrings {
   static const String dashboardQuickAccessTitle = 'Quick Access';
   static const String dashboardQuickAccessEmpty = 'No devices available.';
   static const String dashboardLoadFailed = 'Failed to load dashboard.';
+
+  static const String notificationsTitle = 'Notifications';
+  static const String notificationsEmpty = 'No notifications';
+  static const String notificationsReadAll = 'Read all';
+  static const String notificationsReadAllConfirmMessage =
+      'Mark all notifications as read?';
 }

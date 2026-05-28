@@ -1,33 +1,58 @@
+import '../domain/notification_item.dart';
+
 enum NotificationsStatus { idle, loading, ready, error }
 
 class NotificationsState {
   const NotificationsState._({
     required this.status,
-    required this.titles,
+    required this.unreadCount,
+    required this.items,
     required this.message,
   });
 
   const NotificationsState.idle()
-    : this._(status: NotificationsStatus.idle, titles: const [], message: null);
-
-  const NotificationsState.loading()
     : this._(
-        status: NotificationsStatus.loading,
-        titles: const [],
+        status: NotificationsStatus.idle,
+        unreadCount: 0,
+        items: const [],
         message: null,
       );
 
-  const NotificationsState.ready(List<String> titles)
-    : this._(status: NotificationsStatus.ready, titles: titles, message: null);
+  const NotificationsState.loading({
+    required int unreadCount,
+    required List<NotificationItem> items,
+  })
+    : this._(
+        status: NotificationsStatus.loading,
+        unreadCount: unreadCount,
+        items: items,
+        message: null,
+      );
 
-  const NotificationsState.error(String message)
+  const NotificationsState.ready({
+    required int unreadCount,
+    required List<NotificationItem> items,
+  }) : this._(
+         status: NotificationsStatus.ready,
+         unreadCount: unreadCount,
+         items: items,
+         message: null,
+       );
+
+  const NotificationsState.error(
+    String message, {
+    required int unreadCount,
+    required List<NotificationItem> items,
+  })
     : this._(
         status: NotificationsStatus.error,
-        titles: const [],
+        unreadCount: unreadCount,
+        items: items,
         message: message,
       );
 
   final NotificationsStatus status;
-  final List<String> titles;
+  final int unreadCount;
+  final List<NotificationItem> items;
   final String? message;
 }

@@ -60,6 +60,17 @@ class _SmartGuardAppState extends State<SmartGuardApp> {
       },
       onUnauthorized: () async => auth.handleUnauthorized(),
     );
+    final notificationsApi = ApiClient(
+      baseUri: AppConfig.notificationsBaseUri,
+      refreshBaseUri: AppConfig.apiBaseUri,
+      tokenProvider: tokenStore.getToken,
+      refreshTokenProvider: tokenStore.getRefreshToken,
+      onTokenRefreshed: (token, refreshToken) async {
+        await tokenStore.setToken(token);
+        await tokenStore.setRefreshToken(refreshToken);
+      },
+      onUnauthorized: () async => auth.handleUnauthorized(),
+    );
     final authRepository = AuthRepository(api: api, tokenStore: tokenStore);
     auth = AuthController(repository: authRepository, tokenStore: tokenStore);
     await auth.init();
@@ -79,7 +90,12 @@ class _SmartGuardAppState extends State<SmartGuardApp> {
 
     if (!mounted) return;
     setState(() {
-      _root = SmartGuardRoot(router: router, auth: auth, api: api);
+      _root = SmartGuardRoot(
+        router: router,
+        auth: auth,
+        api: api,
+        notificationsApi: notificationsApi,
+      );
     });
   }
 
@@ -105,17 +121,20 @@ class SmartGuardRoot extends StatelessWidget {
     required this.router,
     required this.auth,
     required this.api,
+    required this.notificationsApi,
   });
 
   final GoRouter router;
   final AuthController auth;
   final ApiClient api;
+  final ApiClient notificationsApi;
 
   @override
   Widget build(BuildContext context) {
     return AppScope(
       auth: auth,
       api: api,
+      notificationsApi: notificationsApi,
       child: MaterialApp.router(
         title: 'SmartGuard',
         theme: AppTheme.dark(),
