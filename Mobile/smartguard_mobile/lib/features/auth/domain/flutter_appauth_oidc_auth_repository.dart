@@ -49,15 +49,8 @@ class FlutterAppAuthOidcAuthRepository implements OidcAuthRepository {
         throw FormatException(error);
       }
 
-      final access =
-          (callback.queryParameters['token'] ??
-                  callback.queryParameters['accessToken'] ??
-                  callback.queryParameters['access_token'])
-              ?.trim();
-      final refresh =
-          (callback.queryParameters['refreshToken'] ??
-                  callback.queryParameters['refresh_token'])
-              ?.trim();
+      final access = (callback.queryParameters['token'])?.trim();
+      final refresh = (callback.queryParameters['refreshToken'])?.trim();
 
       if (access == null || access.isEmpty) {
         throw const FormatException('Missing access token');
