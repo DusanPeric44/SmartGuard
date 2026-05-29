@@ -24,7 +24,11 @@ class FlutterAppAuthOidcAuthRepository implements OidcAuthRepository {
       subscription = _appLinks.uriLinkStream.listen((uri) {
         if (completer.isCompleted) return;
         if (uri.scheme != 'com.smart.guard') return;
-        if (uri.host != 'callback') return;
+        final host = uri.host.trim().toLowerCase();
+        final firstSegment = uri.pathSegments.isNotEmpty
+            ? uri.pathSegments.first.trim().toLowerCase()
+            : '';
+        if (host != 'callback' && firstSegment != 'callback') return;
         completer.complete(uri);
       });
 
@@ -45,13 +49,15 @@ class FlutterAppAuthOidcAuthRepository implements OidcAuthRepository {
         throw FormatException(error);
       }
 
-      final access = (callback.queryParameters['token'] ??
-              callback.queryParameters['accessToken'] ??
-              callback.queryParameters['access_token'])
-          ?.trim();
-      final refresh = (callback.queryParameters['refreshToken'] ??
-              callback.queryParameters['refresh_token'])
-          ?.trim();
+      final access =
+          (callback.queryParameters['token'] ??
+                  callback.queryParameters['accessToken'] ??
+                  callback.queryParameters['access_token'])
+              ?.trim();
+      final refresh =
+          (callback.queryParameters['refreshToken'] ??
+                  callback.queryParameters['refresh_token'])
+              ?.trim();
 
       if (access == null || access.isEmpty) {
         throw const FormatException('Missing access token');
