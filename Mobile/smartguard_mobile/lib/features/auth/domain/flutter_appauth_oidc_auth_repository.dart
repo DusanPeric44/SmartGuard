@@ -1,47 +1,70 @@
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
 import 'auth_models.dart';
 import 'oidc_auth_repository.dart';
 
 class FlutterAppAuthOidcAuthRepository implements OidcAuthRepository {
-  FlutterAppAuthOidcAuthRepository({FlutterAppAuth? appAuth})
-    : _appAuth = appAuth ?? FlutterAppAuth();
+  FlutterAppAuthOidcAuthRepository({AppLinks? appLinks})
+    : _appLinks = appLinks ?? AppLinks();
 
-  final FlutterAppAuth _appAuth;
-
-  static const _clientId = 'flutter_app';
-  static const _redirectUrl = 'com.smart.guard://callback';
-  static const _scopes = <String>['openid', 'profile', 'smart-guard-api'];
+  final AppLinks _appLinks;
 
   @override
   Future<AuthTokens?> signInWithGoogle() async {
-    final issuer = AppConfig.apiBaseUrl;
-    final uri = Uri.tryParse(issuer);
-    final isHttp = uri != null && uri.scheme == 'http';
+    final base = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/*$'), '');
+    final startUri = Uri.parse('$base/auth/google/start');
 
+    final completer = Completer<Uri>();
+    StreamSubscription<Uri>? subscription;
     try {
-      final result = await _appAuth.authorizeAndExchangeCode(
-        AuthorizationTokenRequest(
-          _clientId,
-          _redirectUrl,
-          issuer: issuer,
-          scopes: _scopes,
-          allowInsecureConnections: isHttp,
-        ),
+      subscription = _appLinks.uriLinkStream.listen((uri) {
+        if (completer.isCompleted) return;
+        if (uri.scheme != 'com.smart.guard') return;
+        if (uri.host != 'callback') return;
+        completer.complete(uri);
+      });
+
+      final didLaunch = await launchUrl(
+        startUri,
+        mode: LaunchMode.externalApplication,
       );
-      final access = result.accessToken;
-      final refresh = result.refreshToken;
-      if (access == null || access.trim().isEmpty) {
+      if (!didLaunch) {
+        throw const FormatException('Failed to open browser');
+      }
+
+      final callback = await completer.future.timeout(
+        const Duration(minutes: 2),
+      );
+
+      final error = callback.queryParameters['error'];
+      if (error != null && error.trim().isNotEmpty) {
+        throw FormatException(error);
+      }
+
+      final access = (callback.queryParameters['token'] ??
+              callback.queryParameters['accessToken'] ??
+              callback.queryParameters['access_token'])
+          ?.trim();
+      final refresh = (callback.queryParameters['refreshToken'] ??
+              callback.queryParameters['refresh_token'])
+          ?.trim();
+
+      if (access == null || access.isEmpty) {
         throw const FormatException('Missing access token');
       }
-      if (refresh == null || refresh.trim().isEmpty) {
+      if (refresh == null || refresh.isEmpty) {
         throw const FormatException('Missing refresh token');
       }
 
       return AuthTokens(accessToken: access, refreshToken: refresh);
-    } on FlutterAppAuthUserCancelledException {
+    } on TimeoutException {
       return null;
+    } finally {
+      await subscription?.cancel();
     }
   }
 }
