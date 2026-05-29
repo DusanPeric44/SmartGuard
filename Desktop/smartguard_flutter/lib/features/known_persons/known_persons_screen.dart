@@ -295,22 +295,10 @@ class _KnownPersonCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetaRow(
-                    label: 'Location',
-                    value: person.location,
-                    valueColor: null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _MetaRow(
-                  label: 'Detections',
-                  value: '${person.detectionCount}',
-                  valueColor: Colors.lightBlueAccent.shade400,
-                ),
-              ],
+            _MetaRow(
+              label: 'Detections',
+              value: '${person.detectionCount}',
+              valueColor: Colors.lightBlueAccent.shade400,
             ),
             const SizedBox(height: 12),
             Row(
@@ -443,8 +431,10 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
@@ -453,13 +443,16 @@ class _MetaRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(color: valueColor),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: valueColor),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
