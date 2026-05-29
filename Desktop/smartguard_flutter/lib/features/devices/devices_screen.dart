@@ -500,7 +500,8 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
 
     final device = details.device;
     final canEditName = caps.canManageDevices && !vm.isLoading;
-    final canConfirmRename = vm.isEditingName &&
+    final canConfirmRename =
+        vm.isEditingName &&
         vm.pendingName.trim().isNotEmpty &&
         vm.pendingName.trim() != device.name;
     return ListView(
@@ -548,13 +549,14 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                         vm.beginEditName();
                                       },
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
                                   child: Text(
                                     device.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.headlineSmall,
                                   ),
                                 ),
                               ),
@@ -604,39 +606,41 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                           final ok = await showDialog<bool>(
                                             context: context,
                                             builder: (context) => AlertDialog(
-                                              title:
-                                                  const Text('Rename device'),
+                                              title: const Text(
+                                                'Rename device',
+                                              ),
                                               content: const Text(
                                                 'Are you sure you want to change device name?',
                                               ),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(context)
-                                                          .pop(false),
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
                                                   child: const Text('Cancel'),
                                                 ),
                                                 FilledButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(context)
-                                                          .pop(true),
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
                                                   child: const Text('Confirm'),
                                                 ),
                                               ],
                                             ),
                                           );
                                           if (ok != true) return;
-                                          final renamed =
-                                              await vm.renameDevice();
+                                          final renamed = await vm
+                                              .renameDevice();
                                           if (!mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 renamed
                                                     ? 'Name updated.'
                                                     : (vm.errorMessage ??
-                                                        'Greška.'),
+                                                          'Greška.'),
                                               ),
                                             ),
                                           );
