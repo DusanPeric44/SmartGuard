@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:smart_guard_flutter/features/auth/application/auth_controller.dart';
 
 import '../../../core/auth/session_controller.dart';
 import '../../../core/auth/session_state.dart';
@@ -145,6 +146,8 @@ class ProfileController extends Notifier<ProfileState> {
 
   Future<void> logout() {
     state = const ProfileState.initial();
+    ref.read(authControllerProvider.notifier).setPassword('');
+    ref.read(authControllerProvider.notifier).setEmail('');
     return ref.read(sessionControllerProvider.notifier).logout();
   }
 

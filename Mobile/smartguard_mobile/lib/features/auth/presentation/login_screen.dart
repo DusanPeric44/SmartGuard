@@ -36,6 +36,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+    _loginController.text = '';
+    _passwordController.text = '';
     _loginController.dispose();
     _passwordController.dispose();
     _loginFocus.dispose();

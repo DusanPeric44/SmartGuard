@@ -106,13 +106,12 @@ builder.Services.AddAuthentication(options =>
 
          if (string.IsNullOrWhiteSpace(email))
          {
-             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-             await ctx.Response.WriteAsJsonAsync(new { message = "Invalid Google login" });
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: "invalid_google_login"));
              return;
          }
 
-         var firstName = principal?.FindFirst("given_name")?.Value?.Trim() ?? string.Empty;
-         var lastName = principal?.FindFirst("family_name")?.Value?.Trim() ?? string.Empty;
+         var firstName = principal?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value?.Trim() ?? string.Empty;
+         var lastName = principal?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value?.Trim() ?? string.Empty;
 
          try
          {
@@ -127,25 +126,22 @@ builder.Services.AddAuthentication(options =>
 
              await ctx.HttpContext.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
 
-             ctx.Response.ContentType = "application/json";
-             await ctx.Response.WriteAsJsonAsync(response);
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(token: response.Token,
+                                                                                   refreshToken: response.RefreshToken));
          }
          catch (UnauthorizedAccessException ex)
          {
-             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-             await ctx.Response.WriteAsJsonAsync(new { message = ex.Message });
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ex.Message));
          }
          catch (Exception ex)
          {
-             ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-             await ctx.Response.WriteAsJsonAsync(new { message = ex.Message });
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ex.Message));
          }
      };
      options.Events.OnRemoteFailure = async ctx =>
      {
          ctx.HandleResponse();
-         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-         await ctx.Response.WriteAsJsonAsync(new { message = ctx.Failure?.Message ?? "Google login failed" });
+         ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ctx.Failure?.Message ?? "google_login_failed"));
      };
  })
  .AddMicrosoftAccount(options =>
