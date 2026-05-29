@@ -4,7 +4,7 @@ enum AuthMode { login, register }
 
 enum AuthStatus { idle, validating, submitting, success, error }
 
-enum AuthField { login, fullName, email, password, confirmPassword }
+enum AuthField { login, firstName, lastName, email, password, confirmPassword }
 
 enum AuthFieldError {
   requiredField,
@@ -20,7 +20,8 @@ class AuthState {
     required this.mode,
     required this.status,
     required this.login,
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     required this.password,
     required this.confirmPassword,
@@ -34,7 +35,8 @@ class AuthState {
     : mode = AuthMode.login,
       status = AuthStatus.idle,
       login = '',
-      fullName = '',
+      firstName = '',
+      lastName = '',
       email = '',
       password = '',
       confirmPassword = '',
@@ -47,7 +49,8 @@ class AuthState {
   final AuthStatus status;
 
   final String login;
-  final String fullName;
+  final String firstName;
+  final String lastName;
   final String email;
   final String password;
   final String confirmPassword;
@@ -66,7 +69,8 @@ class AuthState {
     if (mode == AuthMode.login) {
       return login.trim().isNotEmpty && password.trim().isNotEmpty;
     }
-    return fullName.trim().isNotEmpty &&
+    return firstName.trim().isNotEmpty &&
+        lastName.trim().isNotEmpty &&
         email.trim().isNotEmpty &&
         password.trim().isNotEmpty &&
         confirmPassword.trim().isNotEmpty;
@@ -76,7 +80,8 @@ class AuthState {
     AuthMode? mode,
     AuthStatus? status,
     String? login,
-    String? fullName,
+    String? firstName,
+    String? lastName,
     String? email,
     String? password,
     String? confirmPassword,
@@ -89,7 +94,8 @@ class AuthState {
       mode: mode ?? this.mode,
       status: status ?? this.status,
       login: login ?? this.login,
-      fullName: fullName ?? this.fullName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       password: password ?? this.password,
       confirmPassword: confirmPassword ?? this.confirmPassword,
@@ -101,4 +107,3 @@ class AuthState {
     );
   }
 }
-

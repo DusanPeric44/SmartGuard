@@ -16,12 +16,14 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  final _fullNameFocus = FocusNode();
+  final _firstNameFocus = FocusNode();
+  final _lastNameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
   final _confirmPasswordFocus = FocusNode();
@@ -40,11 +42,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _fullNameFocus.dispose();
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
     _confirmPasswordFocus.dispose();
@@ -79,16 +83,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: AppDimens.spaceM),
                   ],
                   TextField(
-                    controller: _fullNameController,
-                    focusNode: _fullNameFocus,
+                    controller: _firstNameController,
+                    focusNode: _firstNameFocus,
                     autofillHints: const [AutofillHints.name],
                     textInputAction: TextInputAction.next,
-                    onChanged: controller.setFullName,
+                    onChanged: controller.setFirstName,
                     onSubmitted: (_) => _emailFocus.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: AppStrings.fullNameLabel,
+                      labelText: AppStrings.firstNameLabel,
                       errorText: _fieldErrorText(
-                        state.fieldErrors[AuthField.fullName],
+                        state.fieldErrors[AuthField.firstName],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppDimens.spaceM),
+                  TextField(
+                    controller: _lastNameController,
+                    focusNode: _lastNameFocus,
+                    autofillHints: const [AutofillHints.name],
+                    textInputAction: TextInputAction.next,
+                    onChanged: controller.setLastName,
+                    onSubmitted: (_) => _emailFocus.requestFocus(),
+                    decoration: InputDecoration(
+                      labelText: AppStrings.lastNameLabel,
+                      errorText: _fieldErrorText(
+                        state.fieldErrors[AuthField.lastName],
                       ),
                     ),
                   ),
@@ -168,6 +187,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text(AppStrings.actionRegister),
+                  ),
+                  const SizedBox(height: AppDimens.spaceM),
+                  OutlinedButton(
+                    onPressed: !state.isSubmitting
+                        ? controller.signInWithGoogle
+                        : null,
+                    child: const Text(AppStrings.actionContinueWithGoogle),
                   ),
                   const SizedBox(height: AppDimens.spaceM),
                   TextButton(

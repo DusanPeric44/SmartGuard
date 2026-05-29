@@ -23,13 +23,19 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<AuthTokens> register({
-    required String fullName,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
   }) async {
     final response = await _dio.post<Object?>(
       ApiPaths.register,
-      data: {'fullName': fullName, 'email': email, 'password': password},
+      data: {
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'password': password,
+      },
     );
     return AuthTokens.fromJson(response.data);
   }

@@ -109,7 +109,8 @@ class AppShell extends ConsumerWidget {
                       if (notifications.unreadCount > 0)
                         Text(
                           '${notifications.unreadCount} unread',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                         ),
@@ -161,7 +162,9 @@ class AppShell extends ConsumerWidget {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              title: const Text(AppStrings.notificationsReadAll),
+                              title: const Text(
+                                AppStrings.notificationsReadAll,
+                              ),
                               content: const Text(
                                 AppStrings.notificationsReadAllConfirmMessage,
                               ),
@@ -202,21 +205,20 @@ class AppShell extends ConsumerWidget {
                           Icons.done_all,
                           size: 18,
                           color: notifications.unreadCount == 0
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.35)
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.35)
                               : Theme.of(context).colorScheme.onSurface,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           AppStrings.notificationsReadAll,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
                                 color: notifications.unreadCount == 0
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.35)
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.35)
                                     : null,
                               ),
                         ),

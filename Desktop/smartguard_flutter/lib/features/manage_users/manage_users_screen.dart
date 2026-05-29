@@ -352,16 +352,6 @@ class _UpsertUserDialogState extends State<_UpsertUserDialog> {
                       }
                       final fn = _firstNameController.text.trim();
                       final ln = _lastNameController.text.trim();
-                      if (u != null && (fn.isEmpty || ln.isEmpty)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'First name and last name are required.',
-                            ),
-                          ),
-                        );
-                        return;
-                      }
                       final ok = u == null
                           ? await widget.vm.createUser(email: e, role: _role)
                           : await widget.vm.updateUser(

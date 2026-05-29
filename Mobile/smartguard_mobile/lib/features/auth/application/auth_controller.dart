@@ -43,8 +43,12 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(login: value, globalErrorMessage: null);
   }
 
-  void setFullName(String value) {
-    state = state.copyWith(fullName: value, globalErrorMessage: null);
+  void setFirstName(String value) {
+    state = state.copyWith(firstName: value, globalErrorMessage: null);
+  }
+
+  void setLastName(String value) {
+    state = state.copyWith(lastName: value, globalErrorMessage: null);
   }
 
   void setEmail(String value) {
@@ -93,7 +97,8 @@ class AuthController extends Notifier<AuthState> {
           password: state.password,
         ),
         AuthMode.register => await repo.register(
-          fullName: state.fullName.trim(),
+          firstName: state.firstName.trim(),
+          lastName: state.lastName.trim(),
           email: state.email.trim(),
           password: state.password,
         ),

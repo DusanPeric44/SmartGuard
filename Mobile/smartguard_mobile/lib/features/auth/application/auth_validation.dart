@@ -20,8 +20,11 @@ class AuthValidation {
       return errors;
     }
 
-    if (state.fullName.trim().isEmpty) {
-      errors[AuthField.fullName] = AuthFieldError.requiredField;
+    if (state.firstName.trim().isEmpty) {
+      errors[AuthField.firstName] = AuthFieldError.requiredField;
+    }
+    if (state.lastName.trim().isEmpty) {
+      errors[AuthField.lastName] = AuthFieldError.requiredField;
     }
     final email = state.email.trim();
     if (email.isEmpty) {
@@ -56,4 +59,3 @@ class AuthValidation {
     return null;
   }
 }
-
