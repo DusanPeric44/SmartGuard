@@ -51,93 +51,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.loginTitle)),
       body: SafeArea(
-        child: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: AppDimens.pagePadding.copyWith(
-            bottom: AppDimens.spaceM + bottomInset,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppDimens.maxContentWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (state.globalErrorMessage != null) ...[
-                    _ErrorBanner(message: state.globalErrorMessage!),
-                    const SizedBox(height: AppDimens.spaceM),
-                  ],
-                  TextField(
-                    controller: _loginController,
-                    focusNode: _loginFocus,
-                    autofillHints: const [
-                      AutofillHints.username,
-                      AutofillHints.email,
-                    ],
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    onChanged: controller.setLogin,
-                    onSubmitted: (_) => _passwordFocus.requestFocus(),
-                    decoration: InputDecoration(
-                      labelText: AppStrings.emailOrUsernameLabel,
-                      errorText: _fieldErrorText(
-                        state.fieldErrors[AuthField.login],
-                      ),
-                    ),
-                  ),
+        child: Center(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: AppDimens.pagePadding.copyWith(
+              bottom: AppDimens.spaceM + bottomInset,
+            ),
+            child: Column(
+              children: [
+                if (state.globalErrorMessage != null) ...[
+                  _ErrorBanner(message: state.globalErrorMessage!),
                   const SizedBox(height: AppDimens.spaceM),
-                  TextField(
-                    controller: _passwordController,
-                    focusNode: _passwordFocus,
-                    autofillHints: const [AutofillHints.password],
-                    obscureText: !state.passwordVisible,
-                    textInputAction: TextInputAction.done,
-                    onChanged: controller.setPassword,
-                    onSubmitted: (_) => controller.submit(),
-                    decoration: InputDecoration(
-                      labelText: AppStrings.passwordLabel,
-                      errorText: _fieldErrorText(
-                        state.fieldErrors[AuthField.password],
+                ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppDimens.maxContentWidth,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: AppDimens.spaceM),
+                      Image.asset(
+                        'assets/images/smartguard-landscape.png',
+                        width: 200,
                       ),
-                      suffixIcon: IconButton(
-                        onPressed: controller.togglePasswordVisible,
-                        icon: Icon(
-                          state.passwordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                      const SizedBox(height: AppDimens.spaceM),
+                      TextField(
+                        controller: _loginController,
+                        focusNode: _loginFocus,
+                        autofillHints: const [
+                          AutofillHints.username,
+                          AutofillHints.email,
+                        ],
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        onChanged: controller.setLogin,
+                        onSubmitted: (_) => _passwordFocus.requestFocus(),
+                        decoration: InputDecoration(
+                          labelText: AppStrings.emailOrUsernameLabel,
+                          errorText: _fieldErrorText(
+                            state.fieldErrors[AuthField.login],
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: AppDimens.spaceM),
+                      TextField(
+                        controller: _passwordController,
+                        focusNode: _passwordFocus,
+                        autofillHints: const [AutofillHints.password],
+                        obscureText: !state.passwordVisible,
+                        textInputAction: TextInputAction.done,
+                        onChanged: controller.setPassword,
+                        onSubmitted: (_) => controller.submit(),
+                        decoration: InputDecoration(
+                          labelText: AppStrings.passwordLabel,
+                          errorText: _fieldErrorText(
+                            state.fieldErrors[AuthField.password],
+                          ),
+                          suffixIcon: IconButton(
+                            onPressed: controller.togglePasswordVisible,
+                            icon: Icon(
+                              state.passwordVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppDimens.spaceL),
+                      FilledButton(
+                        onPressed: state.canSubmit && !state.isSubmitting
+                            ? controller.submit
+                            : null,
+                        child: state.isSubmitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(AppStrings.actionLogin),
+                      ),
+                      const SizedBox(height: AppDimens.spaceM),
+                      OutlinedButton(
+                        onPressed: !state.isSubmitting
+                            ? controller.signInWithGoogle
+                            : null,
+                        child: const Text(AppStrings.actionContinueWithGoogle),
+                      ),
+                      const SizedBox(height: AppDimens.spaceM),
+                      TextButton(
+                        onPressed: () => context.push(AppRoutes.register),
+                        child: const Text(AppStrings.actionGoToRegister),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppDimens.spaceL),
-                  FilledButton(
-                    onPressed: state.canSubmit && !state.isSubmitting
-                        ? controller.submit
-                        : null,
-                    child: state.isSubmitting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text(AppStrings.actionLogin),
-                  ),
-                  const SizedBox(height: AppDimens.spaceM),
-                  OutlinedButton(
-                    onPressed:
-                        !state.isSubmitting ? controller.signInWithGoogle : null,
-                    child: const Text(AppStrings.actionContinueWithGoogle),
-                  ),
-                  const SizedBox(height: AppDimens.spaceM),
-                  TextButton(
-                    onPressed: () => context.go(AppRoutes.register),
-                    child: const Text(AppStrings.actionGoToRegister),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
