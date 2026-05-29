@@ -23,6 +23,27 @@ namespace SmartGuard.API.Extensions
             return services;
         }
 
+        public static string BuildGoogleCallbackUrl(string? token = null, string? refreshToken = null, string? error = null)
+        {
+            var parts = new List<string>(capacity: 3);
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                parts.Add($"token={Uri.EscapeDataString(token)}");
+            }
+            if (!string.IsNullOrWhiteSpace(refreshToken))
+            {
+                parts.Add($"refreshToken={Uri.EscapeDataString(refreshToken)}");
+            }
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                parts.Add($"error={Uri.EscapeDataString(error)}");
+            }
+            var query = string.Join("&", parts);
+            return string.IsNullOrWhiteSpace(query)
+                ? "com.smart.guard://callback"
+                : $"com.smart.guard://callback?{query}";
+        }
+
         private static IEnumerable<IdentityResource> IdentityResources =>
         [
             new IdentityResources.OpenId(),
