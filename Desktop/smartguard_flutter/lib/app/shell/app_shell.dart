@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/app/navigation/app_nav_items.dart';
-import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/core/config/app_config.dart';
 import 'package:smartguard_flutter/core/notifications/notification_item.dart';
 import 'package:smartguard_flutter/core/notifications/notification_dropdown_item.dart';
@@ -72,9 +71,10 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return;
       setState(() {
         if (_notifications.any((x) => x.id == item.id)) return;
-        _notifications = [item, ..._notifications]
-            .take(20)
-            .toList(growable: false);
+        _notifications = [
+          item,
+          ..._notifications,
+        ].take(20).toList(growable: false);
       });
     });
 
@@ -142,41 +142,6 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Row(children: [Expanded(child: Text(pageTitle))]),
         actions: [
-          IconButton(
-            tooltip: 'Diagnostics',
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Diagnostics'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('API base URL: ${AppScope.of(context).api.baseUri}'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Notifications base URL: ${AppScope.of(context).notificationsApi.baseUri}',
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Stub auth: ${AppConfig.enableStubAuth ? 'uključen' : 'isključen'}',
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Role: ${userRoleToWire(AppScope.of(context).auth.role)} (admin-only app)',
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Zatvori'),
-                  ),
-                ],
-              ),
-            ),
-            icon: const Icon(Icons.tune),
-          ),
           Builder(
             builder: (context) {
               MenuController? menuController;
@@ -230,12 +195,11 @@ class _AppShellState extends State<AppShell> {
                           if (_unreadCount > 0)
                             Text(
                               '$_unreadCount unread',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
+                              style: Theme.of(context).textTheme.labelMedium
                                   ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                             ),
                         ],
@@ -255,7 +219,10 @@ class _AppShellState extends State<AppShell> {
                   else if (_notifications.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(12),
-                      child: SizedBox(width: 360, child: Text('No notifications')),
+                      child: SizedBox(
+                        width: 360,
+                        child: Text('No notifications'),
+                      ),
                     )
                   else
                     for (final item in _notifications.take(10))
@@ -333,24 +300,21 @@ class _AppShellState extends State<AppShell> {
                               Icons.done_all,
                               size: 18,
                               color: _unreadCount == 0
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.35)
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.35)
                                   : Theme.of(context).colorScheme.onSurface,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'Read all',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: _unreadCount == 0
                                         ? Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.35)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.35)
                                         : null,
                                   ),
                             ),
