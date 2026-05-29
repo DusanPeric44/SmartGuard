@@ -128,16 +128,6 @@ namespace SmartGuard.Services
             var lastName = request.LastName?.Trim() ?? string.Empty;
             var role = request.Role?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(firstName))
-            {
-                throw new UserException("FirstName is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(lastName))
-            {
-                throw new UserException("LastName is required");
-            }
-
             if (string.IsNullOrWhiteSpace(role))
             {
                 throw new UserException("Role is required");
