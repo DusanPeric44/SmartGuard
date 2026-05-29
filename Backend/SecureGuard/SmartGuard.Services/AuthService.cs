@@ -119,7 +119,7 @@ namespace SmartGuard.Services
             }
 
             var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
-            var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken);   
+            var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken);
 
             if (storedRefreshToken == null ||
                 DateTime.UtcNow > storedRefreshToken.ExpiryDate ||
@@ -219,10 +219,10 @@ namespace SmartGuard.Services
             if (user is ISoftDeletable softDeletable && softDeletable.IsDeleted) return;
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            
+
             var subject = "SmartGuard - Reset Password";
             var body = $"Your password reset token is: {token}. Please use this token to reset your password.";
-            
+
             await _mailingService.SendEmailAsync(user.Email!, subject, body);
         }
 
@@ -263,7 +263,7 @@ namespace SmartGuard.Services
 
         public async Task<UserDto> GetCurrentUserAsync(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email) 
+            var user = await _userManager.FindByEmailAsync(email)
                 ?? throw new UserException("User not found");
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -308,7 +308,7 @@ namespace SmartGuard.Services
             var missingPersonIds = personIds.Where(x => !existingSet.Contains(x)).ToList();
             if (missingPersonIds.Count == 0) return;
 
-            var preferences = missingPersonIds.Select(personId => new UserNotificationPreference
+            var preferences = missingPersonIds.Select(personId => new Database.UserNotificationPreference
             {
                 UserId = userId,
                 PersonId = personId,
@@ -323,7 +323,7 @@ namespace SmartGuard.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
-            
+
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
             {
