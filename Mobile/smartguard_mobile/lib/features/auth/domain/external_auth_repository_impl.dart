@@ -5,10 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
 import 'auth_models.dart';
-import 'oidc_auth_repository.dart';
+import 'external_auth_repository.dart';
 
-class FlutterAppAuthOidcAuthRepository implements OidcAuthRepository {
-  FlutterAppAuthOidcAuthRepository({AppLinks? appLinks})
+class ExternalAuthRepositoryImpl implements ExternalAuthRepository {
+  ExternalAuthRepositoryImpl({AppLinks? appLinks})
     : _appLinks = appLinks ?? AppLinks();
 
   final AppLinks _appLinks;

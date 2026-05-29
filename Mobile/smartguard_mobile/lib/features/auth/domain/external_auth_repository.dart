@@ -1,6 +1,5 @@
 import 'auth_models.dart';
 
-abstract interface class OidcAuthRepository {
+abstract interface class ExternalAuthRepository {
   Future<AuthTokens?> signInWithGoogle();
 }
-
