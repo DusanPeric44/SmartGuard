@@ -32,10 +32,7 @@ class ExternalAuthRepositoryImpl implements ExternalAuthRepository {
         completer.complete(uri);
       });
 
-      final didLaunch = await launchUrl(
-        startUri,
-        mode: LaunchMode.externalApplication,
-      );
+      final didLaunch = await launchUrl(startUri);
       if (!didLaunch) {
         throw const FormatException('Failed to open browser');
       }
