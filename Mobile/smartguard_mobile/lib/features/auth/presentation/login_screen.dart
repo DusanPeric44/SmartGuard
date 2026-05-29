@@ -36,6 +36,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+    _loginController.text = '';
+    _passwordController.text = '';
     _loginController.dispose();
     _passwordController.dispose();
     _loginFocus.dispose();
@@ -127,8 +129,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: AppDimens.spaceM),
                   OutlinedButton(
-                    onPressed:
-                        !state.isSubmitting ? controller.signInWithGoogle : null,
+                    onPressed: !state.isSubmitting
+                        ? controller.signInWithGoogle
+                        : null,
                     child: const Text(AppStrings.actionContinueWithGoogle),
                   ),
                   const SizedBox(height: AppDimens.spaceM),
