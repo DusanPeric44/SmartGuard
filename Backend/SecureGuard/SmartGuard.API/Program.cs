@@ -26,27 +26,6 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-static string BuildGoogleCallbackUrl(string? token = null, string? refreshToken = null, string? error = null)
-{
-    var parts = new List<string>(capacity: 3);
-    if (!string.IsNullOrWhiteSpace(token))
-    {
-        parts.Add($"token={Uri.EscapeDataString(token)}");
-    }
-    if (!string.IsNullOrWhiteSpace(refreshToken))
-    {
-        parts.Add($"refreshToken={Uri.EscapeDataString(refreshToken)}");
-    }
-    if (!string.IsNullOrWhiteSpace(error))
-    {
-        parts.Add($"error={Uri.EscapeDataString(error)}");
-    }
-    var query = string.Join("&", parts);
-    return string.IsNullOrWhiteSpace(query)
-        ? "com.smart.guard://callback"
-        : $"com.smart.guard://callback?{query}";
-}
-
 // Add services to the container.
 builder.Services.AddCors(options =>
 {
@@ -127,12 +106,12 @@ builder.Services.AddAuthentication(options =>
 
          if (string.IsNullOrWhiteSpace(email))
          {
-             ctx.Response.Redirect(BuildGoogleCallbackUrl(error: "invalid_google_login"));
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: "invalid_google_login"));
              return;
          }
 
-         var firstName = principal?.FindFirst("given_name")?.Value?.Trim() ?? string.Empty;
-         var lastName = principal?.FindFirst("family_name")?.Value?.Trim() ?? string.Empty;
+         var firstName = principal?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value?.Trim() ?? string.Empty;
+         var lastName = principal?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value?.Trim() ?? string.Empty;
 
          try
          {
@@ -147,21 +126,22 @@ builder.Services.AddAuthentication(options =>
 
              await ctx.HttpContext.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
 
-             ctx.Response.Redirect(BuildGoogleCallbackUrl(token: response.Token, refreshToken: response.RefreshToken));
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(token: response.Token,
+                                                                                   refreshToken: response.RefreshToken));
          }
          catch (UnauthorizedAccessException ex)
          {
-             ctx.Response.Redirect(BuildGoogleCallbackUrl(error: ex.Message));
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ex.Message));
          }
          catch (Exception ex)
          {
-             ctx.Response.Redirect(BuildGoogleCallbackUrl(error: ex.Message));
+             ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ex.Message));
          }
      };
      options.Events.OnRemoteFailure = async ctx =>
      {
          ctx.HandleResponse();
-         ctx.Response.Redirect(BuildGoogleCallbackUrl(error: ctx.Failure?.Message ?? "google_login_failed"));
+         ctx.Response.Redirect(IdentityServerExtensions.BuildGoogleCallbackUrl(error: ctx.Failure?.Message ?? "google_login_failed"));
      };
  })
  .AddMicrosoftAccount(options =>
