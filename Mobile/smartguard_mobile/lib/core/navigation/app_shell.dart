@@ -78,6 +78,7 @@ class AppShell extends ConsumerWidget {
               menuController = controller;
               return Badge(
                 isLabelVisible: notifications.unreadCount > 0,
+                offset: const Offset(-5, 0),
                 label: Text('${notifications.unreadCount}'),
                 child: IconButton(
                   tooltip: AppStrings.notificationsTitle,

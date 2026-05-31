@@ -57,7 +57,7 @@ class NotificationsController extends Notifier<NotificationsState> {
           (authChanged || _client == null)) {
         _startRealtime();
       }
-    });
+    }, fireImmediately: true);
 
     ref.onDispose(() {
       final client = _client;
@@ -108,8 +108,10 @@ class NotificationsController extends Notifier<NotificationsState> {
 
   NotificationsState _copyWithUnreadCount(int unreadCount) {
     return switch (state.status) {
-      NotificationsStatus.idle =>
-        NotificationsState.ready(unreadCount: unreadCount, items: state.items),
+      NotificationsStatus.idle => NotificationsState.ready(
+        unreadCount: unreadCount,
+        items: state.items,
+      ),
       NotificationsStatus.loading => NotificationsState.loading(
         unreadCount: unreadCount,
         items: state.items,
