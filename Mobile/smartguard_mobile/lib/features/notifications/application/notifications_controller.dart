@@ -40,6 +40,10 @@ class NotificationsController extends Notifier<NotificationsState> {
           previous?.status == SessionStatus.authenticated &&
           next.status != SessionStatus.authenticated;
 
+      if (authChanged) {
+        _wired = false;
+      }
+
       if (loggedOut) {
         state = const NotificationsState.idle();
         _wired = false;
