@@ -21,6 +21,11 @@ bool checkSecurity(camera_fb_t* fb);
 bool consumeNotifyFaceEvent();
 
 /**
+ * Returns true once when a motion event was successfully notified to backend.
+ */
+bool consumeNotifyMotionEvent();
+
+/**
  * Registers the device with the backend using the provided registration key.
  * Stores the returned device token in NVS.
  */

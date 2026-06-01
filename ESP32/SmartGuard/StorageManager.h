@@ -13,7 +13,7 @@ bool setupStorageManager();
 /**
  * Handles the loop recording logic. 
  */
-void handleRecording(bool motionDetected, bool notifyFaceEvent, const char* serverUrl);
+void handleRecording(bool motionDetected, bool notifyFaceEvent, bool notifyMotionEvent, const char* serverUrl);
 
 /**
  * Saves a frame to the current video segment.

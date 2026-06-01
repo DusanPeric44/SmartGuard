@@ -12,6 +12,8 @@ bool isRecording = false;
 bool isSDInitialized = false;
 unsigned long triggerEndTime = 0;
 bool motionActive = false;
+unsigned long lastMotionSyncTriggerTime = 0;
+const unsigned long MOTION_SYNC_COOLDOWN = 60000;
 
 enum class SyncState
 {
@@ -73,7 +75,7 @@ void startNewSegment() {
   }
 }
 
-void handleRecording(bool motionDetected, bool notifyFaceEvent, const char* serverUrl) {
+void handleRecording(bool motionDetected, bool notifyFaceEvent, bool notifyMotionEvent, const char* serverUrl) {
   if (!isSDInitialized) return;
 
   if (!isRecording) {
@@ -83,6 +85,15 @@ void handleRecording(bool motionDetected, bool notifyFaceEvent, const char* serv
   if (notifyFaceEvent && syncState == SyncState::None) {
     syncState = SyncState::WaitForCurrentEnd;
     pendingRecordingType = "facedetected";
+  }
+
+  if (notifyMotionEvent && syncState == SyncState::None) {
+    unsigned long now = millis();
+    if (now - lastMotionSyncTriggerTime >= MOTION_SYNC_COOLDOWN) {
+      syncState = SyncState::WaitForCurrentEnd;
+      pendingRecordingType = "motion";
+      lastMotionSyncTriggerTime = now;
+    }
   }
 
   if (motionDetected) {

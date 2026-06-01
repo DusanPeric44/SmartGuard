@@ -13,10 +13,10 @@
 
 // Configuration
 #define PIR_PIN 13
-#define SIGNALR_HOST "192.168.8.152"
-#define SIGNALR_PORT 5000
-#define BACKEND_SYNC_URL "http://192.168.8.152:5001/upload"
-#define BACKEND_BASE_URL "http://192.168.8.152:5000"
+#define SIGNALR_HOST "api.smartguard.website"
+#define SIGNALR_PORT 80
+#define BACKEND_SYNC_URL "http://archive.smartguard.website/upload"
+#define BACKEND_BASE_URL "http://api.smartguard.website"
 
 static const int JPEG_QUALITY_STREAM = 20;
 
@@ -33,8 +33,9 @@ static void streamLoopTask(void* parameter) {
     if (fb) {
       bool motionDetected = checkSecurity(fb);
       bool notifyFaceEvent = consumeNotifyFaceEvent();
+      bool notifyMotionEvent = consumeNotifyMotionEvent();
 
-      handleRecording(motionDetected, notifyFaceEvent, BACKEND_SYNC_URL);
+      handleRecording(motionDetected, notifyFaceEvent, notifyMotionEvent, BACKEND_SYNC_URL);
       recordFrame(fb);
 
       handleStream(fb);
@@ -124,12 +125,10 @@ void setup() {
   if(psramFound()){
     config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = JPEG_QUALITY_STREAM;
-    config.fb_location = CAMERA_FB_IN_PSRAM;
     config.fb_count = 2;
   } else {
     config.frame_size = FRAMESIZE_QVGA;
     config.jpeg_quality = JPEG_QUALITY_STREAM;
-    config.fb_location = CAMERA_FB_IN_DRAM;
     config.fb_count = 1;
   }
 

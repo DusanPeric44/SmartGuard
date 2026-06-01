@@ -18,6 +18,7 @@ namespace SmartGuard.Services
             services.AddScoped<IAlertsService, AlertsService>();
             services.AddScoped<IAuditLogsService, AuditLogsService>();
             services.AddScoped<IFaceDetectionEventsService, FaceDetectionEventsService>();
+            services.AddScoped<IMotionDetectionEventsService, MotionDetectionEventsService>();
             services.AddScoped<IKnownPersonsService, KnownPersonsService>();
             services.AddScoped<INotificationsService, NotificationsService>();
             services.AddScoped<IRecordingsService, RecordingsService>();

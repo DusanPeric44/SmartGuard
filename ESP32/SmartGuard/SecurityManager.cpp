@@ -20,14 +20,16 @@ Preferences preferences;
 
 static mtmn_config_t mtmn_config = {0};
 static volatile bool g_notifyFaceEvent = false;
+static volatile bool g_notifyMotionEvent = false;
 static String g_backendBaseUrl = "";
 
 static const uint32_t DETECTION_INTERVAL_MS = 300;
-static const int STABILITY_THRESHOLD = 3;
+static const int STABILITY_THRESHOLD = 1;
 static const int DETECT_W = 160;
 static const int DETECT_H = 120;
 static const float BOX_STABILITY_MAX_CENTER_DELTA = 0.25f;
 static const uint32_t EVENT_COOLDOWN_MS = 3000;
+static const uint32_t MOTION_NOTIFY_COOLDOWN_MS = 30000;
 
 typedef struct {
   uint8_t* jpg;
@@ -42,6 +44,8 @@ static QueueHandle_t g_detectQueue = NULL;
 static TaskHandle_t g_faceTaskHandle = NULL;
 static volatile bool g_motionActive = false;
 static volatile uint32_t g_lastEnqueueMs = 0;
+static bool g_lastPirState = false;
+static uint32_t g_lastMotionNotifyMs = 0;
 
 static bool parseHttpBaseUrl(const String& baseUrl, String& host, uint16_t& port) {
   if (baseUrl.length() == 0) return false;
@@ -82,6 +86,12 @@ bool consumeNotifyFaceEvent() {
   return true;
 }
 
+bool consumeNotifyMotionEvent() {
+  if (!g_notifyMotionEvent) return false;
+  g_notifyMotionEvent = false;
+  return true;
+}
+
 static void downscaleRgb888Nearest(const uint8_t* src, int srcW, int srcH, uint8_t* dst, int dstW, int dstH) {
   for (int y = 0; y < dstH; y++) {
     int srcY = (y * srcH) / dstH;
@@ -104,10 +114,10 @@ static bool getBestBox(const box_array_t* boxes, int imgW, int imgH, float& outC
   int bestIdx = -1;
   int bestArea = -1;
   for (int i = 0; i < boxes->len; i++) {
-    int x1 = boxes->box[i * 4 + 0];
-    int y1 = boxes->box[i * 4 + 1];
-    int x2 = boxes->box[i * 4 + 2];
-    int y2 = boxes->box[i * 4 + 3];
+    int x1 = (int)boxes->box[i].box_p[0];
+    int y1 = (int)boxes->box[i].box_p[1];
+    int x2 = (int)boxes->box[i].box_p[2];
+    int y2 = (int)boxes->box[i].box_p[3];
     int w = x2 - x1;
     int h = y2 - y1;
     int area = w * h;
@@ -118,10 +128,10 @@ static bool getBestBox(const box_array_t* boxes, int imgW, int imgH, float& outC
   }
   if (bestIdx < 0) return false;
 
-  int x1 = boxes->box[bestIdx * 4 + 0];
-  int y1 = boxes->box[bestIdx * 4 + 1];
-  int x2 = boxes->box[bestIdx * 4 + 2];
-  int y2 = boxes->box[bestIdx * 4 + 3];
+  int x1 = (int)boxes->box[bestIdx].box_p[0];
+  int y1 = (int)boxes->box[bestIdx].box_p[1];
+  int x2 = (int)boxes->box[bestIdx].box_p[2];
+  int y2 = (int)boxes->box[bestIdx].box_p[3];
   float cx = ((float)x1 + (float)x2) * 0.5f;
   float cy = ((float)y1 + (float)y2) * 0.5f;
   outCx = cx / (float)imgW;
@@ -232,6 +242,37 @@ static void sendFaceDetectionEvent(camera_fb_t* fb, const float* embedding, size
     Serial.println("Response body: " + responseBody);
   }
   client.stop();
+}
+
+static bool sendMotionDetectionEvent() {
+  if (WiFi.status() != WL_CONNECTED) return false;
+  if (g_backendBaseUrl.length() == 0) return false;
+
+  const int deviceId = getDeviceId();
+  const String deviceToken = getDeviceToken();
+  if (deviceToken.length() == 0 || deviceId <= 0) return false;
+
+  HTTPClient http;
+  String url = g_backendBaseUrl + "/MotionDetectionEvents/detect";
+  if (!http.begin(url)) return false;
+
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Device-Token", deviceToken);
+
+  String payload = "{\"deviceId\":";
+  payload += deviceId;
+  payload += "}";
+
+  int code = http.POST(payload);
+  String body = http.getString();
+  http.end();
+
+  Serial.printf("Motion event sent. HTTP %d\n", code);
+  if (body.length() > 0) {
+    Serial.println("Response body: " + body);
+  }
+
+  return code == 200;
 }
 
 static void faceDetectionTask(void* parameter) {
@@ -444,6 +485,17 @@ bool checkSecurity(camera_fb_t* fb) {
   _motionDetected = digitalRead(_pirPin);
   g_motionActive = _motionDetected;
 
+  uint32_t now = millis();
+  if (_motionDetected && !g_lastPirState) {
+    if (now - g_lastMotionNotifyMs >= MOTION_NOTIFY_COOLDOWN_MS) {
+      if (sendMotionDetectionEvent()) {
+        g_lastMotionNotifyMs = now;
+        g_notifyMotionEvent = true;
+      }
+    }
+  }
+  g_lastPirState = _motionDetected;
+
   if (!_motionDetected) {
     return false;
   }
@@ -452,7 +504,6 @@ bool checkSecurity(camera_fb_t* fb) {
     return true;
   }
 
-  uint32_t now = millis();
   if ((now - g_lastEnqueueMs) < DETECTION_INTERVAL_MS) {
     return true;
   }
