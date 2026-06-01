@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/core/auth/user_role.dart';
 import 'package:smartguard_flutter/features/known_persons/data/api_known_persons_repository.dart';
@@ -142,6 +143,10 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
                     enabled: AppScope.of(context).auth.role == UserRole.admin,
                     person: p,
                     isBusy: vm.rowBusy[p.id] == true,
+                    onTap: () => context.go(
+                      '/known-persons/${p.id}/detections',
+                      extra: p.fullName,
+                    ),
                     onEdit: () => _openEditDialog(vm, p),
                     onDelete: () => _confirmDelete(vm, p),
                     onMerge: (source, target) =>
@@ -260,12 +265,14 @@ class _KnownPersonCard extends StatelessWidget {
   const _KnownPersonCard({
     required this.person,
     required this.isBusy,
+    required this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
 
   final KnownPerson person;
   final bool isBusy;
+  final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -276,59 +283,63 @@ class _KnownPersonCard extends StatelessWidget {
         : Colors.greenAccent.shade400;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Photo(
-              photoUrl:
-                  AppScope.of(context).api.baseUri.toString() + person.picture,
-              badgeText: person.isIntruder ? 'Intruder' : 'Known',
-              badgeColor: badgeColor,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              person.fullName,
-              style: Theme.of(context).textTheme.titleMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 10),
-            _MetaRow(
-              label: 'Detections',
-              value: '${person.detectionCount}',
-              valueColor: Colors.lightBlueAccent.shade400,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: isBusy ? null : onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Edit'),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isBusy ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Photo(
+                photoUrl:
+                    AppScope.of(context).api.baseUri.toString() + person.picture,
+                badgeText: person.isIntruder ? 'Intruder' : 'Known',
+                badgeColor: badgeColor,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                person.fullName,
+                style: Theme.of(context).textTheme.titleMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 10),
+              _MetaRow(
+                label: 'Detections',
+                value: '${person.detectionCount}',
+                valueColor: Colors.lightBlueAccent.shade400,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: isBusy ? null : onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton.outlined(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: isBusy ? null : onDelete,
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                ],
+              ),
+              if (isBusy) ...[
+                const SizedBox(height: 10),
+                const Center(
+                  child: SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-                const SizedBox(width: 12),
-                IconButton.outlined(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: isBusy ? null : onDelete,
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                ),
               ],
-            ),
-            if (isBusy) ...[
-              const SizedBox(height: 10),
-              const Center(
-                child: SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -340,6 +351,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
     required this.enabled,
     required this.person,
     required this.isBusy,
+    required this.onTap,
     required this.onEdit,
     required this.onDelete,
     required this.onMerge,
@@ -349,6 +361,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
   final bool enabled;
   final KnownPerson person;
   final bool isBusy;
+  final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final void Function(KnownPerson source, KnownPerson target) onMerge;
@@ -360,6 +373,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
       return _KnownPersonCard(
         person: person,
         isBusy: isBusy,
+        onTap: onTap,
         onEdit: onEdit,
         onDelete: onDelete,
       );
@@ -390,6 +404,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
                   child: _KnownPersonCard(
                     person: person,
                     isBusy: false,
+                    onTap: null,
                     onEdit: () {},
                     onDelete: () {},
                   ),
@@ -401,6 +416,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
               child: _KnownPersonCard(
                 person: person,
                 isBusy: isBusy,
+                onTap: onTap,
                 onEdit: onEdit,
                 onDelete: onDelete,
               ),
@@ -408,6 +424,7 @@ class _MergeableKnownPersonCard extends StatelessWidget {
             child: _KnownPersonCard(
               person: person,
               isBusy: isBusy,
+              onTap: onTap,
               onEdit: onEdit,
               onDelete: onDelete,
             ),

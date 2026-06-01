@@ -10,6 +10,7 @@ import 'package:smartguard_flutter/features/audit_logs/audit_logs_screen.dart';
 import 'package:smartguard_flutter/features/dashboard/dashboard_screen.dart';
 import 'package:smartguard_flutter/features/devices/devices_screen.dart';
 import 'package:smartguard_flutter/features/known_persons/known_persons_screen.dart';
+import 'package:smartguard_flutter/features/known_persons/detections/known_person_detections_screen.dart';
 import 'package:smartguard_flutter/features/manage_users/manage_users_screen.dart';
 import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
 import 'package:smartguard_flutter/features/reports/reports_screen.dart';
@@ -103,6 +104,16 @@ GoRouter buildRouter({
             path: '/known-persons',
             name: 'known-persons',
             builder: (context, state) => const KnownPersonsScreen(),
+            routes: [
+              GoRoute(
+                path: ':personId/detections',
+                name: 'known-person-detections',
+                builder: (context, state) => KnownPersonDetectionsScreen(
+                  personId: state.pathParameters['personId'] ?? 'unknown',
+                  personName: state.extra is String ? state.extra as String : null,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/reports',

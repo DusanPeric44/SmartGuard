@@ -134,6 +134,81 @@ namespace SmartGuard.Services
             return entity.Adapt<Model.DTOs.FaceDetectionEvent>();
         }
 
+        protected override IQueryable<Database.FaceDetectionEvent> AddFilter(IQueryable<Database.FaceDetectionEvent> query, FaceDetectionEventSearchObject search = null)
+        {
+            if (search?.DeviceId.HasValue == true)
+            {
+                query = query.Where(x => x.DeviceId == search.DeviceId.Value);
+            }
+
+            if (search?.PersonId.HasValue == true)
+            {
+                query = query.Where(x => x.PersonId == search.PersonId.Value);
+            }
+
+            if (search?.From.HasValue == true)
+            {
+                var from = search.From.Value;
+                query = query.Where(x => x.Timestamp >= from);
+            }
+
+            if (search?.To.HasValue == true)
+            {
+                var to = search.To.Value;
+                query = query.Where(x => x.Timestamp <= to);
+            }
+
+            return query;
+        }
+
+        public async Task<PagedResult<FaceDetectionEventImage>> GetImagesForPersonAsync(int personId, FaceDetectionEventSearchObject? search = null)
+        {
+            search ??= new FaceDetectionEventSearchObject();
+
+            var query = _context.FaceDetectionEvents
+                .AsNoTracking()
+                .Where(x => x.PersonId == personId);
+
+            if (search.From.HasValue)
+            {
+                var from = search.From.Value;
+                query = query.Where(x => x.Timestamp >= from);
+            }
+
+            if (search.To.HasValue)
+            {
+                var to = search.To.Value;
+                query = query.Where(x => x.Timestamp <= to);
+            }
+
+            query = query.OrderByDescending(x => x.Timestamp);
+
+            var count = await query.CountAsync();
+
+            if (search.Page.HasValue == true && search.PageSize.HasValue == true)
+            {
+                int pageSize = search.PageSize.Value > 100 ? 100 : search.PageSize.Value;
+                query = query.Skip((search.Page.Value - 1) * pageSize).Take(pageSize);
+            }
+
+            var result = await query
+                .Select(x => new FaceDetectionEventImage
+                {
+                    Id = x.Id,
+                    DeviceId = x.DeviceId,
+                    Image = x.Image,
+                    Timestamp = x.Timestamp,
+                    Score = x.Score
+                })
+                .ToListAsync();
+
+            return new PagedResult<FaceDetectionEventImage>
+            {
+                Count = count,
+                Result = result
+            };
+        }
+
         private static float[] Normalize(float[] vector)
         {
             double sum = 0;
