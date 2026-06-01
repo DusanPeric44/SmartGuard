@@ -2,6 +2,7 @@ using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Services;
+using SmartGuard.Services.Notifications;
 using System.Reflection;
 
 namespace SmartGuard.Services
@@ -46,6 +47,7 @@ namespace SmartGuard.Services
             
             // Helper Services
             services.AddScoped<ICosineSimilarityService, CosineSimilarityService>();
+            services.AddScoped<NotificationDispatchService>();
 
             return services;
         }

@@ -5,6 +5,7 @@ using SmartGuard.Notifications.Microservice.Database;
 using SmartGuard.Notifications.Microservice.Database.Entities;
 using SmartGuard.Notifications.Microservice.Interfaces;
 using SmartGuard.Notifications.Microservice.Services;
+using System.Collections.Generic;
 
 namespace SmartGuard.Notifications.Microservice.Consumers
 {
@@ -41,6 +42,7 @@ namespace SmartGuard.Notifications.Microservice.Consumers
                 var entity = new NotificationEntity
                 {
                     UserId = userId,
+                    Type = message.Type,
                     Title = message.Title,
                     Text = message.Message,
                     Timestamp = DateTime.UtcNow,
@@ -54,6 +56,7 @@ namespace SmartGuard.Notifications.Microservice.Consumers
                 {
                     Id = entity.Id,
                     UserId = entity.UserId,
+                    Type = entity.Type,
                     Title = entity.Title,
                     Text = entity.Text,
                     Timestamp = entity.Timestamp,
@@ -70,7 +73,11 @@ namespace SmartGuard.Notifications.Microservice.Consumers
 
             if (message.SendPush && !string.IsNullOrEmpty(message.TargetDeviceToken))
             {
-                await _fcmService.SendPushNotificationAsync(message.TargetDeviceToken, message.Title, message.Message);
+                await _fcmService.SendPushNotificationAsync(
+                    message.TargetDeviceToken,
+                    message.Title,
+                    message.Message,
+                    new Dictionary<string, string> { ["type"] = message.Type });
             }
         }
     }

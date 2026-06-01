@@ -38,6 +38,7 @@ namespace SmartGuard.Notifications.Microservice.Controllers
             {
                 Id = entity.Id,
                 UserId = entity.UserId,
+                Type = entity.Type,
                 Title = entity.Title,
                 Text = entity.Text,
                 Timestamp = entity.Timestamp,
@@ -82,6 +83,7 @@ namespace SmartGuard.Notifications.Microservice.Controllers
                 {
                     Id = x.Id,
                     UserId = x.UserId,
+                    Type = x.Type,
                     Title = x.Title,
                     Text = x.Text,
                     Timestamp = x.Timestamp,

@@ -2,17 +2,23 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using SmartGuard.Model.Events;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Notifications;
 
 namespace SmartGuard.API.Consumers
 {
     public class ChangeDeviceStatusConsumer : IConsumer<IChangeDeviceStatusEvent>
     {
         private readonly SmartGuardContext _context;
+        private readonly NotificationDispatchService _notifications;
         private readonly ILogger<ChangeDeviceStatusConsumer> _logger;
 
-        public ChangeDeviceStatusConsumer(SmartGuardContext context, ILogger<ChangeDeviceStatusConsumer> logger)
+        public ChangeDeviceStatusConsumer(
+            SmartGuardContext context,
+            NotificationDispatchService notifications,
+            ILogger<ChangeDeviceStatusConsumer> logger)
         {
             _context = context;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -65,6 +71,28 @@ namespace SmartGuard.API.Consumers
             await _context.SaveChangesAsync(context.CancellationToken);
 
             _logger.LogInformation("Device status updated (DeviceId={DeviceDbId}, StatusName={StatusName})", device.Id, message.StatusName);
+
+            if (message.StatusName is not ("Online" or "Offline"))
+            {
+                return;
+            }
+
+            var admins = await _notifications.GetAdminUserIdsAsync(context.CancellationToken);
+            if (admins.Count == 0)
+            {
+                return;
+            }
+
+            var type = message.StatusName == "Online" ? "DeviceOnline" : "DeviceOffline";
+            var title = message.StatusName == "Online"
+                ? "SmartGuard - Device online"
+                : "SmartGuard - Device offline";
+
+            var deviceName = string.IsNullOrWhiteSpace(device.Name) ? $"Device {device.Id}" : device.Name;
+            var timestamp = message.TimestampUtc;
+            var body = $"{deviceName} is now {message.StatusName} at {timestamp:O}.";
+
+            await _notifications.PublishSignalRAsync(admins, type, title, body, context.CancellationToken);
         }
     }
 }

@@ -2,6 +2,7 @@ namespace SmartGuard.Model.Events
 {
     public interface ISendNotificationEvent
     {
+        string Type { get; }
         string Title { get; }
         string Message { get; }
         string? UserId { get; }

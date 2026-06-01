@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SmartGuard.Model.Events;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Notifications;
 
 namespace SmartGuard.Services
 {
@@ -14,18 +15,18 @@ namespace SmartGuard.Services
 
         private readonly SmartGuardContext _context;
         private readonly IDistributedCache _cache;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly NotificationDispatchService _notifications;
         private readonly ILogger<MotionDetectionEventsService> _logger;
 
         public MotionDetectionEventsService(
             SmartGuardContext context,
             IDistributedCache cache,
-            IPublishEndpoint publishEndpoint,
+            NotificationDispatchService notifications,
             ILogger<MotionDetectionEventsService> logger)
         {
             _context = context;
             _cache = cache;
-            _publishEndpoint = publishEndpoint;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -58,35 +59,24 @@ namespace SmartGuard.Services
             var title = "SmartGuard - Motion detected";
             var body = $"Motion detected on {deviceName} at {timestamp:O}.";
 
-            var tokens = await _context.UserPushTokens
-                .AsNoTracking()
-                .Select(x => x.Token)
-                .ToListAsync();
+            var assignedUserIds = await _notifications.GetDeviceAssignedUserIdsAsync(deviceId);
+            var adminUserIds = await _notifications.GetAdminUserIdsAsync();
+            var recipients = assignedUserIds.Concat(adminUserIds).Distinct().ToList();
 
-            var anyPublished = false;
-            foreach (var token in tokens.Distinct())
+            var anySignalr = recipients.Count > 0;
+            if (anySignalr)
             {
-                if (string.IsNullOrWhiteSpace(token)) continue;
-
-                anyPublished = true;
-                await _publishEndpoint.Publish<ISendNotificationEvent>(new
-                {
-                    Title = title,
-                    Message = body,
-                    UserId = (string?)null,
-                    TargetDeviceToken = token,
-                    EmailAddress = (string?)null,
-                    SendPush = true,
-                    SendEmail = false
-                });
+                await _notifications.PublishSignalRAsync(recipients, "MotionDetected", title, body);
             }
+
+            await _notifications.PublishPushToNonAdminsAsync(recipients, "MotionDetected", title, body);
 
             await _cache.SetStringAsync(
                 cooldownKey,
                 "1",
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CooldownTtl });
 
-            _logger.LogInformation("Motion event processed (DeviceId={DeviceId}, PushPublished={PushPublished})", deviceId, anyPublished);
+            _logger.LogInformation("Motion event processed (DeviceId={DeviceId}, SignalRPublished={SignalRPublished})", deviceId, anySignalr);
 
             return false;
         }
