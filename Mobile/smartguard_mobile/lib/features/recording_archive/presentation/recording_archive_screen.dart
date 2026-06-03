@@ -143,17 +143,10 @@ class _RecordingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      recording.title,
+                      _formatDate(recording.timestamp),
                       style: Theme.of(context).textTheme.titleMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppDimens.spaceS),
-                    Text(
-                      _formatDate(recording.timestamp),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
                     ),
                     const SizedBox(height: AppDimens.spaceS),
                     _TypeChip(typeName: recording.typeName),
@@ -495,7 +488,8 @@ class _RecordingVideoPlayerState extends State<_RecordingVideoPlayer> {
           );
         }
 
-        final aspect = controller.value.aspectRatio.isFinite &&
+        final aspect =
+            controller.value.aspectRatio.isFinite &&
                 controller.value.aspectRatio > 0
             ? controller.value.aspectRatio
             : 16 / 9;
@@ -653,7 +647,7 @@ String _formatDate(DateTime dt) {
   final hour = hour12.toString().padLeft(2, '0');
   final minute = d.minute.toString().padLeft(2, '0');
   final ampm = d.hour >= 12 ? 'PM' : 'AM';
-  return '$month $day, $year $hour:$minute $ampm';
+  return '$hour:$minute $ampm on $month $day, $year';
 }
 
 class _ErrorBanner extends StatelessWidget {
