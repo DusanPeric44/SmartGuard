@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:smartguard_flutter/core/extensions/local_date_parsing.dart';
 
-enum RecordingType { motion, manual, alarm }
+enum RecordingType { motion, faceDetected, manual }
 
-enum RecordingStatus { available, processing, failed, deleted }
+enum RecordingStatus { pending, uploading, completed, failed, archived }
 
 @immutable
 class RecordingRow {
@@ -35,7 +35,6 @@ class RecordingRow {
 
   factory RecordingRow.fromJson(Map<String, dynamic> json) {
     final typeId = (json['typeId'] as Object?);
-    final isDeleted = json['isDeleted'] == true;
     final Object? startedRaw =
         json['timestamp'] ?? json['startedAt'] ?? json['start'] ?? json['time'];
     final device = json['device'];
@@ -56,9 +55,7 @@ class RecordingRow {
           ((json['durationSeconds'] ?? json['duration']) as num?)?.toInt() ?? 0,
       sizeBytes: ((json['sizeBytes'] ?? json['size']) as num?)?.toInt() ?? 0,
       type: _parseType((typeId as num?)?.toInt()),
-      status: isDeleted
-          ? RecordingStatus.deleted
-          : _parseStatus((json["recordingStatus"] as Map<String, dynamic>)),
+      status: _parseStatus((json["recordingStatus"] as Map<String, dynamic>)),
       fileName: _extractFileName(json['filePath']?.toString() ?? ''),
       filePath: json['filePath']?.toString() ?? '',
       deletedAt: (json['deletedAt'] as Object?).toLocalDateTime(),
@@ -75,11 +72,11 @@ class RecordingRow {
   }
 
   static RecordingStatus _parseStatus(Map<String, dynamic> status) {
-    final statusName = status['name']?.toString() ?? '';
-    if (statusName.isEmpty) return RecordingStatus.available;
+    final statusName = status['name']?.toString().toLowerCase() ?? '';
+    if (statusName.isEmpty) return RecordingStatus.failed;
     return RecordingStatus.values.firstWhere(
       (element) => element.name == statusName,
-      orElse: () => RecordingStatus.available,
+      orElse: () => RecordingStatus.failed,
     );
   }
 
