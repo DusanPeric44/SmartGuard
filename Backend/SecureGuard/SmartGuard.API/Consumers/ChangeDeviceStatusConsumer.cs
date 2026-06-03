@@ -90,7 +90,7 @@ namespace SmartGuard.API.Consumers
 
             var deviceName = string.IsNullOrWhiteSpace(device.Name) ? $"Device {device.Id}" : device.Name;
             var timestamp = message.TimestampUtc;
-            var body = $"{deviceName} is now {message.StatusName} at {timestamp:O}.";
+            var body = $"{deviceName} is now {message.StatusName}.";
 
             await _notifications.PublishSignalRAsync(admins, type, title, body, context.CancellationToken);
         }

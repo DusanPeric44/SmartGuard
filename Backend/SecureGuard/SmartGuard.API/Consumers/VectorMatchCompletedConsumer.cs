@@ -125,7 +125,7 @@ namespace SmartGuard.API.Consumers
                     if (string.IsNullOrWhiteSpace(alarmCooldownExists))
                     {
                         var intruderName = knownPerson.FirstName + " " + knownPerson.LastName;
-                        var alertDescription = $"Intruder detected: {intruderName} on {deviceName} at {faceEvent.Timestamp:O} (score={message.BestScore:F3}).";
+                        var alertDescription = $"Intruder detected: {intruderName} on {deviceName}.";
                         await CreateIntruderAlertAsync(deviceId, faceEvent.Id, alertDescription, context.CancellationToken);
 
                         await _cache.SetStringAsync(
@@ -223,7 +223,7 @@ namespace SmartGuard.API.Consumers
                 var title = isIntruder
                     ? "SmartGuard - Intruder detected"
                     : "SmartGuard - Known person detected";
-                var body = $"{personName} detected on {deviceName} at {faceEvent.Timestamp:O} (score={message.BestScore:F3}).";
+                var body = $"{personName} detected on {deviceName}.";
 
                 await _notifications.PublishSignalRAsync(enabledUserIds, type, title, body, context.CancellationToken);
                 await _notifications.PublishPushToNonAdminsAsync(enabledUserIds, type, title, body, context.CancellationToken);
@@ -260,7 +260,7 @@ namespace SmartGuard.API.Consumers
             faceEvent.PersonId = newPerson.Id;
             await _context.SaveChangesAsync(context.CancellationToken);
 
-            var newAlertDescription = $"Unknown face detected on {deviceName} at {faceEvent.Timestamp:O}.";
+            var newAlertDescription = $"Unknown face detected on {deviceName}.";
             await CreateIntruderAlertAsync(deviceId, faceEvent.Id, newAlertDescription, context.CancellationToken);
 
             var userIds = await _context.Users
@@ -294,7 +294,7 @@ namespace SmartGuard.API.Consumers
             }
 
             var unknownTitle = "SmartGuard - Intruder detected";
-            var unknownBody = $"Unknown face detected on {deviceName} at {faceEvent.Timestamp:O}.";
+            var unknownBody = $"Unknown face detected on {deviceName}.";
 
             await _notifications.PublishSignalRAsync(userIds, "IntruderDetected", unknownTitle, unknownBody, context.CancellationToken);
             await _notifications.PublishPushToNonAdminsAsync(userIds, "IntruderDetected", unknownTitle, unknownBody, context.CancellationToken);

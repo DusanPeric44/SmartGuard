@@ -106,7 +106,7 @@ namespace SmartGuard.Services
             if (admins.Count > 0)
             {
                 var title = "SmartGuard - New user registered";
-                var body = $"New user registered: {user.Email} at {DateTime.UtcNow:O}.";
+                var body = $"New user registered: {user.Email}.";
                 await _notifications.PublishSignalRAsync(admins, "NewUserRegistered", title, body);
             }
 
@@ -212,7 +212,7 @@ namespace SmartGuard.Services
                 if (admins.Count > 0)
                 {
                     var title = "SmartGuard - New user registered";
-                    var body = $"New user registered: {email} via {provider} at {DateTime.UtcNow:O}.";
+                    var body = $"New user registered: {email} via {provider}";
                     await _notifications.PublishSignalRAsync(admins, "NewUserRegistered", title, body);
                 }
                 _logger.LogAuditSuccess(user.Id, "UserExternalRegistered", $"User:{user.Id}", $"Email={email}; Provider={provider}; Role=Viewer");
