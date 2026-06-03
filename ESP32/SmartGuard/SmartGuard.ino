@@ -12,7 +12,7 @@
 #include "FlashManager.h"
 
 // Configuration
-#define PIR_PIN 13
+#define PIR_PIN 3
 #define SIGNALR_HOST "api.smartguard.website"
 #define SIGNALR_PORT 80
 #define BACKEND_SYNC_URL "http://archive.smartguard.website/upload"
