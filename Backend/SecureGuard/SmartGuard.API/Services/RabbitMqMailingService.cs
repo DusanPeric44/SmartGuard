@@ -17,6 +17,7 @@ namespace SmartGuard.API.Services
         {
             await _publishEndpoint.Publish<ISendNotificationEvent>(new
             {
+                Type = "GenericEmail",
                 Title = subject,
                 Message = body,
                 UserId = (string?)null,

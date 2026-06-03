@@ -17,6 +17,7 @@ namespace SmartGuard.Notifications.Microservice.Database
                 entity.HasKey(x => x.Id);
 
                 entity.Property(x => x.UserId).IsRequired();
+                entity.Property(x => x.Type).IsRequired();
                 entity.Property(x => x.Title).IsRequired();
                 entity.Property(x => x.Text).IsRequired();
 

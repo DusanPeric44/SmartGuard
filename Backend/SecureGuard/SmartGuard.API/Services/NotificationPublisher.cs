@@ -20,6 +20,7 @@ namespace SmartGuard.API.Services
 
             await _publishEndpoint.Publish<ISendNotificationEvent>(new
             {
+                Type = "InviteEmail",
                 Title = title,
                 Message = message,
                 UserId = (string?)null,

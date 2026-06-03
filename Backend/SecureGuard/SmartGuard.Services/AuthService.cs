@@ -13,6 +13,7 @@ using SmartGuard.Model.Interfaces;
 using SmartGuard.Model.Requests;
 using SmartGuard.Services.Audit;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Notifications;
 
 namespace SmartGuard.Services
 {
@@ -23,6 +24,7 @@ namespace SmartGuard.Services
         private readonly IConfiguration _configuration;
         private readonly SmartGuardContext _context;
         private readonly IMailingService _mailingService;
+        private readonly NotificationDispatchService _notifications;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
@@ -31,6 +33,7 @@ namespace SmartGuard.Services
             IConfiguration configuration,
             SmartGuardContext context,
             IMailingService mailingService,
+            NotificationDispatchService notifications,
             ILogger<AuthService> logger)
         {
             _userManager = userManager;
@@ -38,6 +41,7 @@ namespace SmartGuard.Services
             _configuration = configuration;
             _context = context;
             _mailingService = mailingService;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -96,6 +100,14 @@ namespace SmartGuard.Services
             {
                 await _userManager.DeleteAsync(user);
                 throw;
+            }
+
+            var admins = await _notifications.GetAdminUserIdsAsync();
+            if (admins.Count > 0)
+            {
+                var title = "SmartGuard - New user registered";
+                var body = $"New user registered: {user.Email} at {DateTime.UtcNow:O}.";
+                await _notifications.PublishSignalRAsync(admins, "NewUserRegistered", title, body);
             }
 
             _logger.LogAuditSuccess(user.Id, "UserRegistered", $"User:{user.Id}", $"Email={user.Email}; Role=Viewer");
@@ -194,6 +206,14 @@ namespace SmartGuard.Services
                 {
                     await _userManager.DeleteAsync(user);
                     throw;
+                }
+
+                var admins = await _notifications.GetAdminUserIdsAsync();
+                if (admins.Count > 0)
+                {
+                    var title = "SmartGuard - New user registered";
+                    var body = $"New user registered: {email} via {provider} at {DateTime.UtcNow:O}.";
+                    await _notifications.PublishSignalRAsync(admins, "NewUserRegistered", title, body);
                 }
                 _logger.LogAuditSuccess(user.Id, "UserExternalRegistered", $"User:{user.Id}", $"Email={email}; Provider={provider}; Role=Viewer");
             }

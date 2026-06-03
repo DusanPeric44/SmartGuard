@@ -2,6 +2,7 @@ class NotificationItem {
   const NotificationItem({
     required this.id,
     required this.userId,
+    required this.type,
     required this.title,
     required this.text,
     required this.timestamp,
@@ -10,6 +11,7 @@ class NotificationItem {
 
   final int id;
   final String userId;
+  final String type;
   final String title;
   final String text;
   final DateTime timestamp;
@@ -18,6 +20,7 @@ class NotificationItem {
   static NotificationItem fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final userId = json['userId'];
+    final type = json['type'];
     final title = json['title'];
     final text = json['text'];
     final timestamp = json['timestamp'];
@@ -26,6 +29,7 @@ class NotificationItem {
     return NotificationItem(
       id: id is int ? id : int.parse(id.toString()),
       userId: userId?.toString() ?? '',
+      type: type?.toString() ?? '',
       title: title?.toString() ?? '',
       text: text?.toString() ?? '',
       timestamp: timestamp is String ? DateTime.parse(timestamp) : DateTime(1970),

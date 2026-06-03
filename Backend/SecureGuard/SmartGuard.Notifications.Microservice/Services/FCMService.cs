@@ -1,5 +1,6 @@
 using SmartGuard.Notifications.Microservice.Interfaces;
 using FirebaseAdmin.Messaging;
+using System.Collections.Generic;
 
 namespace SmartGuard.Notifications.Microservice.Services
 {
@@ -14,7 +15,7 @@ namespace SmartGuard.Notifications.Microservice.Services
             _messaging = messaging;
         }
 
-        public async Task SendPushNotificationAsync(string token, string title, string body)
+        public async Task SendPushNotificationAsync(string token, string title, string body, IReadOnlyDictionary<string, string>? data = null)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -28,7 +29,8 @@ namespace SmartGuard.Notifications.Microservice.Services
                 {
                     Title = title,
                     Body = body
-                }
+                },
+                Data = data == null ? null : new Dictionary<string, string>(data)
             };
 
             try

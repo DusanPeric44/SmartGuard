@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using SmartGuard.Model;
 using SmartGuard.Model.Events;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Notifications;
 
 namespace SmartGuard.API.Consumers
 {
@@ -11,14 +12,18 @@ namespace SmartGuard.API.Consumers
     {
         private readonly SmartGuardContext _context;
         private readonly IDistributedCache _cache;
-        private readonly IPublishEndpoint _publishEndpoint;
+        private readonly NotificationDispatchService _notifications;
         private readonly ILogger<VectorMatchCompletedConsumer> _logger;
 
-        public VectorMatchCompletedConsumer(SmartGuardContext context, IDistributedCache cache, IPublishEndpoint publishEndpoint, ILogger<VectorMatchCompletedConsumer> logger)
+        public VectorMatchCompletedConsumer(
+            SmartGuardContext context,
+            IDistributedCache cache,
+            NotificationDispatchService notifications,
+            ILogger<VectorMatchCompletedConsumer> logger)
         {
             _context = context;
             _cache = cache;
-            _publishEndpoint = publishEndpoint;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -207,45 +212,27 @@ namespace SmartGuard.API.Consumers
                     return;
                 }
 
-                var tokens = await _context.UserPushTokens
-                    .Where(t => enabledUserIds.Contains(t.UserId))
-                    .Select(t => t.Token)
-                    .ToListAsync(context.CancellationToken);
+                var personName = knownPerson == null
+                    ? $"Person {personIdValue}"
+                    : knownPerson.FirstName + " " + knownPerson.LastName;
 
-                string? personName = null;
+                var isIntruder = knownPerson != null &&
+                    string.Equals(knownPerson.FirstName, "Intruder", StringComparison.OrdinalIgnoreCase);
 
-                if (knownPerson != null)
-                    personName = knownPerson.FirstName + " " + knownPerson.LastName;
+                var type = isIntruder ? "IntruderDetected" : "KnownPersonDetected";
+                var title = isIntruder
+                    ? "SmartGuard - Intruder detected"
+                    : "SmartGuard - Known person detected";
+                var body = $"{personName} detected on {deviceName} at {faceEvent.Timestamp:O} (score={message.BestScore:F3}).";
 
-                var title = "SmartGuard - Face matched";
-                var body = $"Matched {personName} on {deviceName} at {faceEvent.Timestamp:O} (score={message.BestScore:F3}).";
+                await _notifications.PublishSignalRAsync(enabledUserIds, type, title, body, context.CancellationToken);
+                await _notifications.PublishPushToNonAdminsAsync(enabledUserIds, type, title, body, context.CancellationToken);
 
-                var anyPublished = false;
-                foreach (var token in tokens.Distinct())
-                {
-                    if (string.IsNullOrWhiteSpace(token)) continue;
-
-                    anyPublished = true;
-                    await _publishEndpoint.Publish<ISendNotificationEvent>(new
-                    {
-                        Title = title,
-                        Message = body,
-                        UserId = (string?)null,
-                        TargetDeviceToken = token,
-                        EmailAddress = (string?)null,
-                        SendPush = true,
-                        SendEmail = false
-                    }, context.CancellationToken);
-                }
-
-                if (anyPublished)
-                {
-                    await _cache.SetStringAsync(
-                        cooldownKeyValue,
-                        "1",
-                        new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
-                        context.CancellationToken);
-                }
+                await _cache.SetStringAsync(
+                    cooldownKeyValue,
+                    "1",
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
+                    context.CancellationToken);
 
                 return;
             }
@@ -306,29 +293,11 @@ namespace SmartGuard.API.Consumers
                 await _context.SaveChangesAsync(context.CancellationToken);
             }
 
-            var allTokens = await _context.UserPushTokens
-                .Where(t => userIds.Contains(t.UserId))
-                .Select(t => t.Token)
-                .ToListAsync(context.CancellationToken);
-
-            var unknownTitle = "SmartGuard - Unknown face detected";
+            var unknownTitle = "SmartGuard - Intruder detected";
             var unknownBody = $"Unknown face detected on {deviceName} at {faceEvent.Timestamp:O}.";
 
-            foreach (var token in allTokens.Distinct())
-            {
-                if (string.IsNullOrWhiteSpace(token)) continue;
-
-                await _publishEndpoint.Publish<ISendNotificationEvent>(new
-                {
-                    Title = unknownTitle,
-                    Message = unknownBody,
-                    UserId = (string?)null,
-                    TargetDeviceToken = token,
-                    EmailAddress = (string?)null,
-                    SendPush = true,
-                    SendEmail = false
-                }, context.CancellationToken);
-            }
+            await _notifications.PublishSignalRAsync(userIds, "IntruderDetected", unknownTitle, unknownBody, context.CancellationToken);
+            await _notifications.PublishPushToNonAdminsAsync(userIds, "IntruderDetected", unknownTitle, unknownBody, context.CancellationToken);
         }
 
         private static float[] ComputeCentroid(List<float[]> embeddings)

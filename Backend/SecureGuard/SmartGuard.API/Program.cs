@@ -294,6 +294,7 @@ if (app.Environment.IsDevelopment())
 
         var payload = new
         {
+            Type = "Test",
             Title = string.IsNullOrWhiteSpace(title) ? "Test Notification" : title,
             Message = string.IsNullOrWhiteSpace(message) ? "Hello from SmartGuard.API test endpoint" : message,
             UserId = payloadUserId,
