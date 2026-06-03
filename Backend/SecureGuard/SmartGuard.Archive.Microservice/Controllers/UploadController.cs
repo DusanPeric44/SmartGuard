@@ -171,7 +171,7 @@ namespace SmartGuard.Archive.Microservice.Controllers
             }
 
             var conversion = FFmpeg.Conversions.New();
-            conversion.AddParameter($"-r 3 -i \"{inputPath}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"");
+            conversion.AddParameter($"-r 10 -i \"{inputPath}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"");
             await conversion.Start(cancellationToken);
         }
 
