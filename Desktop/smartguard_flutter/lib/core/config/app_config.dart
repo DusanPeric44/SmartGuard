@@ -1,9 +1,11 @@
 class AppConfig {
   const AppConfig._();
 
-  static const String defaultApiBaseUrl = 'http://localhost:5000';
-  static const String defaultArchiveBaseUrl = defaultApiBaseUrl;
-  static const String defaultNotificationsBaseUrl = 'http://localhost:5002';
+  static const String defaultApiBaseUrl = 'https://api.smartguard.website';
+  static const String defaultArchiveBaseUrl =
+      'https://archive.smartguard.website';
+  static const String defaultNotificationsBaseUrl =
+      'https://notifications.smartguard.website';
   static const String appScheme = 'smartguard';
   static const bool enableStubAuth = bool.fromEnvironment(
     'USE_STUB_AUTH',

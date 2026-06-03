@@ -57,7 +57,7 @@ namespace SmartGuard.Services
             var timestamp = DateTime.UtcNow;
 
             var title = "SmartGuard - Motion detected";
-            var body = $"Motion detected on {deviceName} at {timestamp:O}.";
+            var body = $"Motion detected on {deviceName}.";
 
             var assignedUserIds = await _notifications.GetDeviceAssignedUserIdsAsync(deviceId);
             var adminUserIds = await _notifications.GetAdminUserIdsAsync();
