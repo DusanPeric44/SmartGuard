@@ -348,8 +348,6 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
   }
 
   List<Widget> _buildActions() {
-    if (_step == 3) return [];
-
     return [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
@@ -400,14 +398,9 @@ class _ProvisioningWizardState extends State<_ProvisioningWizard> {
       registrationKey: widget.registrationKey,
     );
 
+    if (!mounted) return;
     if (deviceId != null) {
-      if (mounted) Navigator.of(context).pop(deviceId);
-    } else {
-      setState(() {
-        _step = 2;
-        _error =
-            'Uređaj nije pronađen nakon 30 sekundi. Molimo pokušajte ponovo (povežite se na ESP32 AP i ponovite unos).';
-      });
+      Navigator.of(context).pop(deviceId);
     }
   }
 }
