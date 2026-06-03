@@ -428,8 +428,8 @@ class _FiltersCard extends StatelessWidget {
                     child: Text('Manual'),
                   ),
                   DropdownMenuItem(
-                    value: RecordingType.alarm,
-                    child: Text('Alarm'),
+                    value: RecordingType.faceDetected,
+                    child: Text('Face Detected'),
                   ),
                 ],
                 onChanged: onTypeChanged,
@@ -446,20 +446,24 @@ class _FiltersCard extends StatelessWidget {
                     child: Text('All statuses'),
                   ),
                   DropdownMenuItem(
-                    value: RecordingStatus.available,
-                    child: Text('Available'),
+                    value: RecordingStatus.pending,
+                    child: Text('Pending'),
                   ),
                   DropdownMenuItem(
-                    value: RecordingStatus.processing,
-                    child: Text('Processing'),
+                    value: RecordingStatus.uploading,
+                    child: Text('Uploading'),
+                  ),
+                  DropdownMenuItem(
+                    value: RecordingStatus.uploading,
+                    child: Text('Uploading'),
                   ),
                   DropdownMenuItem(
                     value: RecordingStatus.failed,
                     child: Text('Failed'),
                   ),
                   DropdownMenuItem(
-                    value: RecordingStatus.deleted,
-                    child: Text('Deleted'),
+                    value: RecordingStatus.archived,
+                    child: Text('Archived'),
                   ),
                 ],
                 onChanged: onStatusChanged,
@@ -529,12 +533,11 @@ class _RecordingsTable extends StatelessWidget {
     final key = r.id.toString();
     final busy = rowBusy[key] == true;
     final statusChip = _StatusChip(status: r.status);
-    final canDownloadNow =
-        canDownload && r.status == RecordingStatus.available && !busy;
-    final canDeleteNow =
-        canSoftDelete && r.status != RecordingStatus.deleted && !busy;
-    final deviceLabel =
-        r.deviceName.trim().isNotEmpty ? r.deviceName : 'Device ${r.deviceId}';
+    final canDownloadNow = canDownload && !busy;
+    final canDeleteNow = canSoftDelete && !busy;
+    final deviceLabel = r.deviceName.trim().isNotEmpty
+        ? r.deviceName
+        : 'Device ${r.deviceId}';
 
     return DataRow(
       cells: [
@@ -689,33 +692,37 @@ String _typeLabel(RecordingType type) {
       return 'Motion';
     case RecordingType.manual:
       return 'Manual';
-    case RecordingType.alarm:
-      return 'Alarm';
+    case RecordingType.faceDetected:
+      return 'Face Detected';
   }
 }
 
 String _statusLabel(RecordingStatus status) {
   switch (status) {
-    case RecordingStatus.available:
-      return 'Available';
-    case RecordingStatus.processing:
-      return 'Processing';
+    case RecordingStatus.completed:
+      return 'Completed';
+    case RecordingStatus.pending:
+      return 'Pending';
+    case RecordingStatus.uploading:
+      return 'Uploading';
     case RecordingStatus.failed:
       return 'Failed';
-    case RecordingStatus.deleted:
-      return 'Deleted';
+    case RecordingStatus.archived:
+      return 'Archived';
   }
 }
 
 Color _statusColor(BuildContext context, RecordingStatus status) {
   switch (status) {
-    case RecordingStatus.available:
+    case RecordingStatus.uploading:
+      return Colors.blueAccent.shade400;
+    case RecordingStatus.completed:
       return Colors.greenAccent.shade400;
-    case RecordingStatus.processing:
+    case RecordingStatus.pending:
       return Colors.amberAccent.shade400;
     case RecordingStatus.failed:
       return Theme.of(context).colorScheme.error;
-    case RecordingStatus.deleted:
+    case RecordingStatus.archived:
       return Colors.blueGrey.shade300;
   }
 }
