@@ -384,7 +384,7 @@ static void faceDetectionTask(void* parameter) {
 
 void setupSecurityManager(int pirPin, const char* backendBaseUrl) {
   _pirPin = pirPin;
-  pinMode(_pirPin, INPUT);
+  pinMode(_pirPin, INPUT_PULLDOWN);
   g_backendBaseUrl = backendBaseUrl ? String(backendBaseUrl) : "";
 
   // Initialize face detection config (copied from boilerplate)
@@ -487,12 +487,15 @@ bool checkSecurity(camera_fb_t* fb) {
 
   uint32_t now = millis();
   if (_motionDetected && !g_lastPirState) {
+    Serial.println("MOTION DETECTED");
     if (now - g_lastMotionNotifyMs >= MOTION_NOTIFY_COOLDOWN_MS) {
       if (sendMotionDetectionEvent()) {
         g_lastMotionNotifyMs = now;
         g_notifyMotionEvent = true;
       }
     }
+  } else if (!_motionDetected && g_lastPirState) {
+    Serial.println("MOTION CLEARED");
   }
   g_lastPirState = _motionDetected;
 
