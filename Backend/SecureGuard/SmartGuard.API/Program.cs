@@ -326,6 +326,8 @@ app.UseWebSockets();
 
 app.UseCors("AllowAll");
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseIdentityServer();
 app.UseAuthorization();
