@@ -7,9 +7,12 @@ import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/core/auth/app_capabilities.dart';
 import 'package:smartguard_flutter/features/recordings/data/api_recordings_repository.dart';
 import 'package:smartguard_flutter/features/recordings/data/recordings_repository.dart';
-import 'package:smartguard_flutter/features/recordings/model/recording_device_option.dart';
 import 'package:smartguard_flutter/features/recordings/model/recording_models.dart';
 import 'package:smartguard_flutter/features/recordings/viewmodel/recordings_view_model.dart';
+import 'package:smartguard_flutter/features/recordings/widgets/recordings_filters_card.dart';
+import 'package:smartguard_flutter/features/recordings/widgets/recordings_format.dart';
+import 'package:smartguard_flutter/features/recordings/widgets/recordings_pager.dart';
+import 'package:smartguard_flutter/features/recordings/widgets/recordings_table.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
 class RecordingsScreen extends StatefulWidget {
@@ -64,7 +67,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
 
     return Column(
       children: [
-        _FiltersCard(
+        RecordingsFiltersCard(
           searchController: _searchController,
           devices: devices,
           selectedDeviceId: _selectedDeviceId,
@@ -154,7 +157,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _RecordingsTable(
+              child: RecordingsTable(
                 rows: page.items,
                 rowBusy: vm.rowBusy,
                 canDownload: caps.canDownload,
@@ -166,7 +169,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _Pager(
+        RecordingsPager(
           total: page.total,
           page: page.page,
           pageSize: page.pageSize,
@@ -217,13 +220,19 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
       return;
     }
 
+    final vm = _vm;
+    if (vm == null) return;
+    final row = (vm.page?.items ?? const []).where((r) => r.id == id).firstOrNull;
+    final label = row == null
+        ? 'snimak'
+        : 'snimak (${row.deviceName.trim().isEmpty ? 'uređaj' : row.deviceName} '
+              '· ${recordingDate(row.startedAt)} ${recordingTime(row.startedAt)})';
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Soft delete'),
-        content: Text(
-          'Obrisati snimak $id? Snimak će biti označen kao obrisan.',
-        ),
+        content: Text('Obrisati $label? Snimak će biti označen kao obrisan.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -238,14 +247,12 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
     );
     if (ok != true) return;
 
-    final vm = _vm;
-    if (vm == null) return;
     await vm.softDelete(id);
     if (!mounted) return;
     if (vm.errorMessage == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Snimak $id je obrisan.')));
+      ).showSnackBar(const SnackBar(content: Text('Snimak je obrisan.')));
     }
   }
 
@@ -332,397 +339,5 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
     final file = File(location.path);
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
-  }
-}
-
-class _FiltersCard extends StatelessWidget {
-  const _FiltersCard({
-    required this.searchController,
-    required this.devices,
-    required this.selectedDeviceId,
-    required this.selectedRange,
-    required this.selectedType,
-    required this.selectedStatus,
-    required this.onSearchChanged,
-    required this.onPickRange,
-    required this.onDeviceChanged,
-    required this.onTypeChanged,
-    required this.onStatusChanged,
-    required this.onReset,
-  });
-
-  final TextEditingController searchController;
-  final List<RecordingDeviceOption> devices;
-  final int? selectedDeviceId;
-  final DateTimeRange? selectedRange;
-  final RecordingType? selectedType;
-  final RecordingStatus? selectedStatus;
-
-  final ValueChanged<String> onSearchChanged;
-  final VoidCallback onPickRange;
-  final ValueChanged<int?> onDeviceChanged;
-  final ValueChanged<RecordingType?> onTypeChanged;
-  final ValueChanged<RecordingStatus?> onStatusChanged;
-  final VoidCallback onReset;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 500,
-              child: TextField(
-                controller: searchController,
-                onChanged: onSearchChanged,
-                decoration: const InputDecoration(
-                  labelText: 'Search',
-                  hintText: 'Device ili ID snimka...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 500,
-              child: DropdownButtonFormField<int?>(
-                initialValue: selectedDeviceId,
-                items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('All devices'),
-                  ),
-                  for (final d in devices)
-                    DropdownMenuItem<int>(
-                      value: d.id,
-                      child: Text(
-                        d.name,
-                        style: const TextStyle(overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                ],
-                onChanged: onDeviceChanged,
-                decoration: const InputDecoration(labelText: 'Device'),
-              ),
-            ),
-            SizedBox(
-              width: 200,
-              child: DropdownButtonFormField<RecordingType?>(
-                initialValue: selectedType,
-                items: const [
-                  DropdownMenuItem<RecordingType?>(
-                    value: null,
-                    child: Text('All types'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingType.motion,
-                    child: Text('Motion'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingType.manual,
-                    child: Text('Manual'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingType.faceDetected,
-                    child: Text('Face Detected'),
-                  ),
-                ],
-                onChanged: onTypeChanged,
-                decoration: const InputDecoration(labelText: 'Type'),
-              ),
-            ),
-            SizedBox(
-              width: 220,
-              child: DropdownButtonFormField<RecordingStatus?>(
-                initialValue: selectedStatus,
-                items: const [
-                  DropdownMenuItem<RecordingStatus?>(
-                    value: null,
-                    child: Text('All statuses'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingStatus.pending,
-                    child: Text('Pending'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingStatus.uploading,
-                    child: Text('Uploading'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingStatus.uploading,
-                    child: Text('Uploading'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingStatus.failed,
-                    child: Text('Failed'),
-                  ),
-                  DropdownMenuItem(
-                    value: RecordingStatus.archived,
-                    child: Text('Archived'),
-                  ),
-                ],
-                onChanged: onStatusChanged,
-                decoration: const InputDecoration(labelText: 'Status'),
-              ),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: onPickRange,
-              icon: const Icon(Icons.date_range),
-              label: Text(_rangeLabel(selectedRange) ?? 'Date range'),
-            ),
-            TextButton.icon(
-              onPressed: onReset,
-              icon: const Icon(Icons.refresh),
-              label: Text('Reset', style: theme.textTheme.labelLarge),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String? _rangeLabel(DateTimeRange? range) {
-    if (range == null) return null;
-    final s = _yyyyMmDd(range.start);
-    final e = _yyyyMmDd(range.end);
-    return '$s → $e';
-  }
-}
-
-class _RecordingsTable extends StatelessWidget {
-  const _RecordingsTable({
-    required this.rows,
-    required this.rowBusy,
-    required this.canDownload,
-    required this.canSoftDelete,
-    required this.onDownload,
-    required this.onSoftDelete,
-  });
-
-  final List<RecordingRow> rows;
-  final Map<String, bool> rowBusy;
-  final bool canDownload;
-  final bool canSoftDelete;
-  final ValueChanged<RecordingRow> onDownload;
-  final ValueChanged<int> onSoftDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: DataTable(
-        columns: [
-          const DataColumn(label: Text('Timestamp')),
-          const DataColumn(label: Text('Device')),
-          const DataColumn(label: Text('Type')),
-          const DataColumn(label: Text('Status')),
-          const DataColumn(numeric: true, label: Text('Duration')),
-          const DataColumn(numeric: true, label: Text('Size')),
-          const DataColumn(label: Text('Actions')),
-        ],
-        rows: [for (final r in rows) _row(context, r)],
-      ),
-    );
-  }
-
-  DataRow _row(BuildContext context, RecordingRow r) {
-    final key = r.id.toString();
-    final busy = rowBusy[key] == true;
-    final statusChip = _StatusChip(status: r.status);
-    final canDownloadNow = canDownload && !busy;
-    final canDeleteNow = canSoftDelete && !busy;
-    final deviceLabel = r.deviceName.trim().isNotEmpty
-        ? r.deviceName
-        : 'Device ${r.deviceId}';
-
-    return DataRow(
-      cells: [
-        DataCell(Text('${_yyyyMmDd(r.startedAt)} ${_hhMm(r.startedAt)}')),
-        DataCell(Text(deviceLabel)),
-        DataCell(Text(_typeLabel(r.type))),
-        DataCell(statusChip),
-        DataCell(Text(_durationLabel(r.durationSeconds))),
-        DataCell(Text(_bytesLabel(r.sizeBytes))),
-        DataCell(
-          Row(
-            children: [
-              IconButton(
-                tooltip: canDownload ? 'Download' : 'Nema dozvolu',
-                onPressed: canDownloadNow ? () => onDownload(r) : null,
-                icon: const Icon(Icons.download_outlined),
-              ),
-              IconButton(
-                tooltip: canSoftDelete ? 'Soft delete' : 'Nema dozvolu',
-                onPressed: canDeleteNow ? () => onSoftDelete(r.id) : null,
-                icon: const Icon(Icons.delete_outline),
-              ),
-              if (busy)
-                const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final RecordingStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _statusLabel(status);
-    final color = _statusColor(context, status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(label),
-    );
-  }
-}
-
-class _Pager extends StatelessWidget {
-  const _Pager({
-    required this.total,
-    required this.page,
-    required this.pageSize,
-    required this.isLoading,
-    required this.onPrev,
-    required this.onNext,
-    required this.onPageSizeChanged,
-  });
-
-  final int total;
-  final int page;
-  final int pageSize;
-  final bool isLoading;
-  final VoidCallback? onPrev;
-  final VoidCallback? onNext;
-  final ValueChanged<int> onPageSizeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = total == 0 ? 0 : ((page - 1) * pageSize) + 1;
-    final end = (page * pageSize).clamp(0, total);
-    return Row(
-      children: [
-        Text('Showing $start-$end of $total'),
-        const Spacer(),
-        SizedBox(
-          width: 140,
-          child: DropdownButtonFormField<int>(
-            initialValue: pageSize,
-            items: const [
-              DropdownMenuItem(value: 10, child: Text('10 / page')),
-              DropdownMenuItem(value: 25, child: Text('25 / page')),
-              DropdownMenuItem(value: 50, child: Text('50 / page')),
-              DropdownMenuItem(value: 100, child: Text('100 / page')),
-            ],
-            onChanged: isLoading
-                ? null
-                : (v) => v == null ? null : onPageSizeChanged(v),
-          ),
-        ),
-        const SizedBox(width: 12),
-        IconButton(
-          tooltip: 'Previous',
-          onPressed: isLoading ? null : onPrev,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Text('$page'),
-        IconButton(
-          tooltip: 'Next',
-          onPressed: isLoading ? null : onNext,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
-    );
-  }
-}
-
-String _yyyyMmDd(DateTime dt) {
-  final y = dt.year.toString().padLeft(4, '0');
-  final m = dt.month.toString().padLeft(2, '0');
-  final d = dt.day.toString().padLeft(2, '0');
-  return '$y-$m-$d';
-}
-
-String _hhMm(DateTime dt) {
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
-}
-
-String _durationLabel(int seconds) {
-  final m = seconds ~/ 60;
-  final s = seconds % 60;
-  return '${m}m ${s}s';
-}
-
-String _bytesLabel(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  final kb = bytes / 1024.0;
-  if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
-  final mb = kb / 1024.0;
-  if (mb < 1024) return '${mb.toStringAsFixed(1)} MB';
-  final gb = mb / 1024.0;
-  return '${gb.toStringAsFixed(2)} GB';
-}
-
-String _typeLabel(RecordingType type) {
-  switch (type) {
-    case RecordingType.motion:
-      return 'Motion';
-    case RecordingType.manual:
-      return 'Manual';
-    case RecordingType.faceDetected:
-      return 'Face Detected';
-  }
-}
-
-String _statusLabel(RecordingStatus status) {
-  switch (status) {
-    case RecordingStatus.completed:
-      return 'Completed';
-    case RecordingStatus.pending:
-      return 'Pending';
-    case RecordingStatus.uploading:
-      return 'Uploading';
-    case RecordingStatus.failed:
-      return 'Failed';
-    case RecordingStatus.archived:
-      return 'Archived';
-  }
-}
-
-Color _statusColor(BuildContext context, RecordingStatus status) {
-  switch (status) {
-    case RecordingStatus.uploading:
-      return Colors.blueAccent.shade400;
-    case RecordingStatus.completed:
-      return Colors.greenAccent.shade400;
-    case RecordingStatus.pending:
-      return Colors.amberAccent.shade400;
-    case RecordingStatus.failed:
-      return Theme.of(context).colorScheme.error;
-    case RecordingStatus.archived:
-      return Colors.blueGrey.shade300;
   }
 }

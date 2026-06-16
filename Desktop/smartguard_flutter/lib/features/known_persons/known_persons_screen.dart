@@ -6,6 +6,8 @@ import 'package:smartguard_flutter/features/known_persons/data/api_known_persons
 import 'package:smartguard_flutter/features/known_persons/data/known_persons_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/model/known_person.dart';
 import 'package:smartguard_flutter/features/known_persons/viewmodel/known_persons_view_model.dart';
+import 'package:smartguard_flutter/features/known_persons/widgets/edit_known_person_dialog.dart';
+import 'package:smartguard_flutter/features/known_persons/widgets/mergeable_known_person_card.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
 class KnownPersonsScreen extends StatefulWidget {
@@ -139,7 +141,7 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
               for (final p in vm.items)
                 SizedBox(
                   width: 260,
-                  child: _MergeableKnownPersonCard(
+                  child: MergeableKnownPersonCard(
                     enabled: AppScope.of(context).auth.role == UserRole.admin,
                     person: p,
                     isBusy: vm.rowBusy[p.id] == true,
@@ -185,14 +187,14 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return _EditKnownPersonDialog(vm: vm, person: person);
+        return EditKnownPersonDialog(vm: vm, person: person);
       },
     );
 
     if (res == true && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Updated.')));
+      ).showSnackBar(const SnackBar(content: Text('Person updated.')));
     }
   }
 
@@ -222,7 +224,9 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
     final ok = await vm.deletePerson(person.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Removed.' : (vm.errorMessage ?? 'Error.'))),
+      SnackBar(
+        content: Text(ok ? 'Person removed.' : (vm.errorMessage ?? 'Error.')),
+      ),
     );
   }
 
@@ -256,403 +260,9 @@ class _KnownPersonsScreenState extends State<KnownPersonsScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Merged.' : (vm.errorMessage ?? 'Error.'))),
-    );
-  }
-}
-
-class _KnownPersonCard extends StatelessWidget {
-  const _KnownPersonCard({
-    required this.person,
-    required this.isBusy,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final KnownPerson person;
-  final bool isBusy;
-  final VoidCallback? onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final badgeColor = person.isIntruder
-        ? Colors.redAccent.shade400
-        : Colors.greenAccent.shade400;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isBusy ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Photo(
-                photoUrl:
-                    AppScope.of(context).api.baseUri.toString() + person.picture,
-                badgeText: person.isIntruder ? 'Intruder' : 'Known',
-                badgeColor: badgeColor,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                person.fullName,
-                style: Theme.of(context).textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 10),
-              _MetaRow(
-                label: 'Detections',
-                value: '${person.detectionCount}',
-                valueColor: Colors.lightBlueAccent.shade400,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: isBusy ? null : onEdit,
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton.outlined(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: isBusy ? null : onDelete,
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  ),
-                ],
-              ),
-              if (isBusy) ...[
-                const SizedBox(height: 10),
-                const Center(
-                  child: SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+      SnackBar(
+        content: Text(ok ? 'Persons merged.' : (vm.errorMessage ?? 'Error.')),
       ),
-    );
-  }
-}
-
-class _MergeableKnownPersonCard extends StatelessWidget {
-  const _MergeableKnownPersonCard({
-    required this.enabled,
-    required this.person,
-    required this.isBusy,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onMerge,
-    required this.rowBusy,
-  });
-
-  final bool enabled;
-  final KnownPerson person;
-  final bool isBusy;
-  final VoidCallback? onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final void Function(KnownPerson source, KnownPerson target) onMerge;
-  final Map<String, bool> rowBusy;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!enabled) {
-      return _KnownPersonCard(
-        person: person,
-        isBusy: isBusy,
-        onTap: onTap,
-        onEdit: onEdit,
-        onDelete: onDelete,
-      );
-    }
-
-    return DragTarget<KnownPerson>(
-      onWillAcceptWithDetails: (details) {
-        final source = details.data;
-        if (source.id == person.id) return false;
-        if (rowBusy[person.id] == true) return false;
-        if (rowBusy[source.id] == true) return false;
-        return true;
-      },
-      onAcceptWithDetails: (details) {
-        onMerge(details.data, person);
-      },
-      builder: (context, candidateData, rejectedData) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          child: Draggable<KnownPerson>(
-            data: person,
-            feedback: SizedBox(
-              width: 260,
-              child: Material(
-                type: MaterialType.transparency,
-                child: Opacity(
-                  opacity: 0.92,
-                  child: _KnownPersonCard(
-                    person: person,
-                    isBusy: false,
-                    onTap: null,
-                    onEdit: () {},
-                    onDelete: () {},
-                  ),
-                ),
-              ),
-            ),
-            childWhenDragging: Opacity(
-              opacity: 0.35,
-              child: _KnownPersonCard(
-                person: person,
-                isBusy: isBusy,
-                onTap: onTap,
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
-            ),
-            child: _KnownPersonCard(
-              person: person,
-              isBusy: isBusy,
-              onTap: onTap,
-              onEdit: onEdit,
-              onDelete: onDelete,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(color: valueColor),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Photo extends StatelessWidget {
-  const _Photo({
-    required this.photoUrl,
-    required this.badgeText,
-    required this.badgeColor,
-  });
-
-  final String photoUrl;
-  final String badgeText;
-  final Color badgeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final image = photoUrl.trim().isEmpty
-        ? CircleAvatar()
-        : Image.network(
-            photoUrl,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 160,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return SizedBox(
-                width: double.infinity,
-                height: 160,
-                child: Center(
-                  child: SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: progress.expectedTotalBytes == null
-                          ? null
-                          : (progress.cumulativeBytesLoaded /
-                                    (progress.expectedTotalBytes ?? 1))
-                                .clamp(0.0, 1.0),
-                    ),
-                  ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset('assets/images/empty-avatar.png');
-            },
-          );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: [
-          SizedBox(width: double.infinity, height: 160, child: image),
-          Positioned(
-            left: 10,
-            top: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: badgeColor.withValues(alpha: 0.55)),
-              ),
-              child: Text(
-                badgeText,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditKnownPersonDialog extends StatefulWidget {
-  const _EditKnownPersonDialog({required this.vm, required this.person});
-
-  final KnownPersonsViewModel vm;
-  final KnownPerson person;
-
-  @override
-  State<_EditKnownPersonDialog> createState() => _EditKnownPersonDialogState();
-}
-
-class _EditKnownPersonDialogState extends State<_EditKnownPersonDialog> {
-  late final TextEditingController _first = TextEditingController(
-    text: widget.person.firstName,
-  );
-  late final TextEditingController _last = TextEditingController(
-    text: widget.person.lastName,
-  );
-
-  @override
-  void dispose() {
-    _first.dispose();
-    _last.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: widget.vm,
-      builder: (context, _) {
-        final busy = widget.vm.rowBusy[widget.person.id] == true;
-        return AlertDialog(
-          title: const Text('Edit person'),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _first,
-                  enabled: !busy,
-                  decoration: const InputDecoration(
-                    labelText: 'First name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _last,
-                  enabled: !busy,
-                  decoration: const InputDecoration(
-                    labelText: 'Last name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: busy ? null : () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: busy
-                  ? null
-                  : () async {
-                      final f = _first.text.trim();
-                      final l = _last.text.trim();
-                      if (f.isEmpty || l.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('First and last name are required.'),
-                          ),
-                        );
-                        return;
-                      }
-                      final ok = await widget.vm.updatePerson(
-                        id: widget.person.id,
-                        firstName: f,
-                        lastName: l,
-                      );
-                      if (!context.mounted) return;
-                      if (ok) {
-                        Navigator.of(context).pop(true);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(widget.vm.errorMessage ?? 'Error.'),
-                          ),
-                        );
-                      }
-                    },
-              child: busy
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

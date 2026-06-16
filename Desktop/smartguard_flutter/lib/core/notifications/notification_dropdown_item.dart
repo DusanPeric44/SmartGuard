@@ -13,7 +13,7 @@ class NotificationDropdownItem extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     final isUnread = !item.isRead;
-    final background = isUnread ? scheme.primary.withOpacity(0.10) : null;
+    final background = isUnread ? scheme.primary.withValues(alpha: 0.10) : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -36,7 +36,7 @@ class NotificationDropdownItem extends StatelessWidget {
               height: 8,
               width: 8,
               decoration: BoxDecoration(
-                color: isUnread ? scheme.primary : scheme.outline.withOpacity(0.6),
+                color: isUnread ? scheme.primary : scheme.outline.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
             ),
@@ -60,7 +60,7 @@ class NotificationDropdownItem extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.85),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -70,7 +70,7 @@ class NotificationDropdownItem extends StatelessWidget {
           Icon(
             Icons.chevron_right,
             size: 18,
-            color: scheme.onSurface.withOpacity(0.55),
+            color: scheme.onSurface.withValues(alpha: 0.55),
           ),
         ],
       ),

@@ -30,9 +30,14 @@ class AuthController extends ChangeNotifier {
   Future<void> init() async {
     _isInitializing = true;
     notifyListeners();
-    _isAuthenticated = await _repository.hasToken();
-    _role = (await _tokenStore.getRole()) ?? UserRole.viewer;
-    _registrationKey = await _tokenStore.getRegistrationKey();
+    final results = await Future.wait([
+      _repository.hasToken(),
+      _tokenStore.getRole(),
+      _tokenStore.getRegistrationKey(),
+    ]);
+    _isAuthenticated = results[0] as bool;
+    _role = (results[1] as UserRole?) ?? UserRole.viewer;
+    _registrationKey = results[2] as String?;
 
     if (_isAuthenticated &&
         _role == UserRole.admin &&

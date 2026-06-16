@@ -20,7 +20,7 @@ class AlarmsViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  bool _isBootstrapping = false;
+  final bool _isBootstrapping = false;
   bool get isBootstrapping => _isBootstrapping;
 
   String? _errorMessage;

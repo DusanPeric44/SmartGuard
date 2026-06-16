@@ -251,6 +251,8 @@ class _AppShellState extends State<AppShell> {
                         ? null
                         : () async {
                             menuController?.close();
+                            final notificationsApi =
+                                AppScope.of(context).notificationsApi;
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (context) {
@@ -277,7 +279,7 @@ class _AppShellState extends State<AppShell> {
                             if (confirmed == true) {
                               try {
                                 final api = NotificationsApi(
-                                  api: AppScope.of(context).notificationsApi,
+                                  api: notificationsApi,
                                 );
                                 await api.markAllAsRead();
                               } catch (_) {}
@@ -302,7 +304,7 @@ class _AppShellState extends State<AppShell> {
                               color: _unreadCount == 0
                                   ? Theme.of(
                                       context,
-                                    ).colorScheme.onSurface.withOpacity(0.35)
+                                    ).colorScheme.onSurface.withValues(alpha: 0.35)
                                   : Theme.of(context).colorScheme.onSurface,
                             ),
                             const SizedBox(width: 12),
@@ -314,7 +316,7 @@ class _AppShellState extends State<AppShell> {
                                         ? Theme.of(context)
                                               .colorScheme
                                               .onSurface
-                                              .withOpacity(0.35)
+                                              .withValues(alpha: 0.35)
                                         : null,
                                   ),
                             ),

@@ -13,6 +13,7 @@ import 'package:smartguard_flutter/features/known_persons/known_persons_screen.d
 import 'package:smartguard_flutter/features/known_persons/detections/known_person_detections_screen.dart';
 import 'package:smartguard_flutter/features/manage_users/manage_users_screen.dart';
 import 'package:smartguard_flutter/features/recordings/recordings_screen.dart';
+import 'package:smartguard_flutter/features/reference_data/reference_data_screen.dart';
 import 'package:smartguard_flutter/features/reports/reports_screen.dart';
 
 GoRouter buildRouter({
@@ -124,6 +125,11 @@ GoRouter buildRouter({
             path: '/audit',
             name: 'audit',
             builder: (context, state) => const AuditLogsScreen(),
+          ),
+          GoRoute(
+            path: '/reference-data',
+            name: 'reference-data',
+            builder: (context, state) => const ReferenceDataScreen(),
           ),
         ],
       ),

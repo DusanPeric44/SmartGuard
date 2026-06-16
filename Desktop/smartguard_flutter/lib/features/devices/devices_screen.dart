@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
@@ -9,6 +7,10 @@ import 'package:smartguard_flutter/features/devices/data/devices_repository.dart
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
 import 'package:smartguard_flutter/features/devices/viewmodel/device_details_view_model.dart';
 import 'package:smartguard_flutter/features/devices/viewmodel/device_list_view_model.dart';
+import 'package:smartguard_flutter/features/devices/widgets/device_assign_users_dialog.dart';
+import 'package:smartguard_flutter/features/devices/widgets/device_status_chip.dart';
+import 'package:smartguard_flutter/features/devices/widgets/devices_filters_card.dart';
+import 'package:smartguard_flutter/features/devices/widgets/provisioning_wizard.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -60,7 +62,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
     return Column(
       children: [
-        _FiltersCard(
+        DevicesFiltersCard(
           statusName: _statusName,
           onStatusChanged: (v) async {
             _statusName = v;
@@ -93,7 +95,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final deviceId = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _ProvisioningWizard(vm: vm, registrationKey: key),
+      builder: (context) => ProvisioningWizard(vm: vm, registrationKey: key),
     );
 
     if (deviceId != null && mounted) {
@@ -157,7 +159,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           ),
 
                           DataCell(
-                            _StatusChip(
+                            DeviceStatusChip(
                               status: d.status ?? DeviceStatus(0, 'Offline'),
                             ),
                           ),
@@ -205,203 +207,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
         ),
       ),
     );
-  }
-}
-
-class _ProvisioningWizard extends StatefulWidget {
-  const _ProvisioningWizard({required this.vm, required this.registrationKey});
-
-  final DeviceListViewModel vm;
-  final String registrationKey;
-
-  @override
-  State<_ProvisioningWizard> createState() => _ProvisioningWizardState();
-}
-
-class _ProvisioningWizardState extends State<_ProvisioningWizard> {
-  int _step = 1;
-  final _ssid = TextEditingController();
-  final _password = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    _ssid.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: widget.vm,
-      builder: (context, _) {
-        return AlertDialog(
-          title: Text(_title),
-          content: SizedBox(
-            width: 480,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_step == 1) _buildStep1(),
-                if (_step == 2) _buildStep2(),
-                if (_step == 3) _buildStep3(),
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: _buildActions(),
-        );
-      },
-    );
-  }
-
-  String get _title {
-    switch (_step) {
-      case 1:
-        return 'Povezivanje sa uređajem';
-      case 2:
-        return 'Podešavanje Wi-Fi mreže';
-      case 3:
-        return 'Registracija uređaja';
-      default:
-        return 'Dodaj novi uređaj';
-    }
-  }
-
-  Widget _buildStep1() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Molimo vas da se povežete na Wi-Fi pristupnu tačku uređaja.\n\n'
-          '1. Otvorite Wi-Fi podešavanja na vašem računaru.\n'
-          '2. Pronađite mrežu koja počinje sa "ESP32-SmartCam-AP".\n'
-          '3. Povežite se (lozinka je "password123").\n'
-          '4. Kada se povežete, kliknite na dugme "Dalje".',
-        ),
-        const SizedBox(height: 24),
-        Center(
-          child: OutlinedButton.icon(
-            onPressed: _openWifiSettings,
-            icon: const Icon(Icons.settings_display),
-            label: const Text('Otvori Wi-Fi podešavanja'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Unesite podatke za vašu kućnu Wi-Fi mrežu na koju želite povezati uređaj.',
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _ssid,
-          decoration: const InputDecoration(
-            labelText: 'Wi-Fi SSID (Naziv mreže)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _password,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Wi-Fi Lozinka',
-            border: OutlineInputBorder(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep3() {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        const CircularProgressIndicator(),
-        const SizedBox(height: 24),
-        Text(
-          widget.vm.provisioningStatus ?? 'Molimo sačekajte...',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Ovaj proces može potrajati do 30 sekundi.',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildActions() {
-    return [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Otkaži'),
-      ),
-      if (_step == 1)
-        FilledButton(
-          onPressed: () => setState(() => _step = 2),
-          child: const Text('Dalje'),
-        ),
-      if (_step == 2)
-        FilledButton(
-          onPressed: _startProvisioning,
-          child: const Text('Poveži uređaj'),
-        ),
-    ];
-  }
-
-  Future<void> _openWifiSettings() async {
-    try {
-      if (Platform.isWindows) {
-        await Process.run('start', [
-          'ms-settings:network-wifi',
-        ], runInShell: true);
-      }
-    } catch (_) {
-      // Ignore errors opening settings
-    }
-  }
-
-  Future<void> _startProvisioning() async {
-    final s = _ssid.text.trim();
-    final p = _password.text.trim();
-
-    if (s.isEmpty) {
-      setState(() => _error = 'SSID je obavezan.');
-      return;
-    }
-
-    setState(() {
-      _step = 3;
-      _error = null;
-    });
-
-    final deviceId = await widget.vm.provisionDevice(
-      ssid: s,
-      password: p,
-      registrationKey: widget.registrationKey,
-    );
-
-    if (!mounted) return;
-    if (deviceId != null) {
-      Navigator.of(context).pop(deviceId);
-    }
   }
 }
 
@@ -622,12 +427,13 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                             ),
                                           );
                                           if (ok != true) return;
+                                          if (!context.mounted) return;
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
                                           final renamed = await vm
                                               .renameDevice();
-                                          if (!mounted) return;
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (!context.mounted) return;
+                                          messenger.showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 renamed
@@ -650,7 +456,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       const SizedBox(height: 8),
                       Text('ID: ${device.id}'),
                       const SizedBox(height: 12),
-                      _StatusChip(
+                      DeviceStatusChip(
                         status: device.status ?? DeviceStatus(0, 'Offline'),
                       ),
                       const SizedBox(height: 12),
@@ -711,7 +517,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
     final res = await showDialog<Set<String>>(
       context: context,
       builder: (context) =>
-          _AssignUsersDialog(allUsers: all, selected: selected),
+          DeviceAssignUsersDialog(allUsers: all, selected: selected),
     );
     if (res == null) return;
 
@@ -724,188 +530,6 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         ),
       ),
     );
-  }
-}
-
-class _AssignUsersDialog extends StatefulWidget {
-  const _AssignUsersDialog({required this.allUsers, required this.selected});
-
-  final List<DeviceUser> allUsers;
-  final Set<String> selected;
-
-  @override
-  State<_AssignUsersDialog> createState() => _AssignUsersDialogState();
-}
-
-class _AssignUsersDialogState extends State<_AssignUsersDialog> {
-  late final Set<String> _selected = Set<String>.from(widget.selected);
-  final _search = TextEditingController();
-
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final q = _search.text.trim().toLowerCase();
-    final filtered = q.isEmpty
-        ? widget.allUsers
-        : widget.allUsers
-              .where((u) => u.email.toLowerCase().contains(q))
-              .toList(growable: false);
-
-    return AlertDialog(
-      title: const Text('Assign users'),
-      content: SizedBox(
-        width: 420,
-        height: 420,
-        child: Column(
-          children: [
-            TextField(
-              controller: _search,
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Search users',
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final u = filtered[index];
-                  final selected = _selected.contains(u.id);
-                  return CheckboxListTile(
-                    value: selected,
-                    onChanged: (v) {
-                      setState(() {
-                        if (v == true) {
-                          _selected.add(u.id);
-                        } else {
-                          _selected.remove(u.id);
-                        }
-                      });
-                    },
-                    title: Text(u.email),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Otkaži'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_selected),
-          child: const Text('Sačuvaj'),
-        ),
-      ],
-    );
-  }
-}
-
-class _FiltersCard extends StatelessWidget {
-  const _FiltersCard({
-    required this.statusName,
-    required this.onStatusChanged,
-    required this.onRefresh,
-    this.onAddDevice,
-  });
-
-  final String? statusName;
-  final ValueChanged<String?> onStatusChanged;
-  final Future<void> Function() onRefresh;
-  final VoidCallback? onAddDevice;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 200,
-              child: DropdownButtonFormField<String?>(
-                initialValue: statusName,
-                decoration: const InputDecoration(labelText: 'Status'),
-                items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('All')),
-                  DropdownMenuItem<String?>(
-                    value: 'Online',
-                    child: Text('Online'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'Offline',
-                    child: Text('Offline'),
-                  ),
-                  DropdownMenuItem<String?>(
-                    value: 'Maintenance',
-                    child: Text('Maintenance'),
-                  ),
-                ],
-                onChanged: onStatusChanged,
-              ),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: () => onRefresh(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
-            ),
-            if (onAddDevice != null)
-              FilledButton.icon(
-                onPressed: onAddDevice,
-                icon: const Icon(Icons.add),
-                label: const Text('Add New Device'),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final DeviceStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = status.name;
-    final color = _statusColor(context, status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(label),
-    );
-  }
-}
-
-Color _statusColor(BuildContext context, DeviceStatus status) {
-  switch (status.name) {
-    case 'Online':
-      return Colors.greenAccent.shade400;
-    case 'Offline':
-      return Colors.blueGrey.shade300;
-    case 'Maintenance':
-      return Colors.amberAccent.shade400;
-    default:
-      return Colors.grey;
   }
 }
 
