@@ -227,7 +227,6 @@ builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IStreamRecordingManager, StreamRecordingManager>();
 builder.Services.AddSingleton<IWebSocketBridgeManager, WebSocketBridgeManager>();
-builder.Services.AddHostedService<MediaDbMigrationHostedService>();
 builder.Services.AddHostedService<ReportsSchedulerHostedService>();
 
 builder.Services.AddEndpointsApiExplorer();
