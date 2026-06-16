@@ -153,6 +153,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddRazorPages();
 
 // 4. Dependency Injection (Scoped)
+var rabbitMqVHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<RecordingUploadStartedConsumer>();
@@ -162,7 +164,7 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", rabbitMqVHost, h =>
         {
             h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
