@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_dimens.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/ui/app_error_state.dart';
 import '../application/alarm_center_controller.dart';
 import '../application/alarm_center_state.dart';
@@ -105,7 +106,7 @@ class _AlarmCenterScreenState extends ConsumerState<AlarmCenterScreen> {
                         alarm: alarm,
                         canAct: canAct,
                         busy: busy,
-                        onConfirm: () => controller.confirm(id: alarm.id),
+                        onConfirm: () => _showConfirmDialog(alarmId: alarm.id),
                         onDismiss: () => _showDismissDialog(alarmId: alarm.id),
                       ),
                     );
@@ -117,6 +118,34 @@ class _AlarmCenterScreenState extends ConsumerState<AlarmCenterScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showConfirmDialog({required int alarmId}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(AppStrings.alarmConfirmTitle),
+          content: const Text(AppStrings.alarmConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(AppStrings.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(AppStrings.alarmActionConfirm),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+    await ref
+        .read(alarmCenterControllerProvider.notifier)
+        .confirm(id: alarmId);
   }
 
   Future<void> _showDismissDialog({required int alarmId}) async {
@@ -209,7 +238,7 @@ class _AlarmTile extends StatelessWidget {
                 ),
               const SizedBox(height: AppDimens.spaceS),
               Text(
-                _formatDate(alarm.createdAt),
+                _formatAlarmDate(alarm.createdAt),
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
@@ -240,21 +269,29 @@ class _AlarmTile extends StatelessWidget {
                 ),
               ),
             ),
+          const SizedBox(height: AppDimens.spaceM),
+          _AuditDetails(alarm: alarm),
           if (showActions) ...[
             const SizedBox(height: AppDimens.spaceM),
             Row(
               children: [
                 Expanded(
-                  child: FilledButton(
-                    onPressed: busy ? null : onConfirm,
-                    child: const Text('Confirm'),
+                  child: Tooltip(
+                    message: busy ? AppStrings.disabledActionInProgress : '',
+                    child: FilledButton(
+                      onPressed: busy ? null : onConfirm,
+                      child: const Text(AppStrings.alarmActionConfirm),
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppDimens.spaceM),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: busy ? null : onDismiss,
-                    child: const Text('Dismiss'),
+                  child: Tooltip(
+                    message: busy ? AppStrings.disabledActionInProgress : '',
+                    child: OutlinedButton(
+                      onPressed: busy ? null : onDismiss,
+                      child: const Text(AppStrings.alarmActionDismiss),
+                    ),
                   ),
                 ),
               ],
@@ -275,34 +312,98 @@ class _AlarmTile extends StatelessWidget {
     final base = Uri.parse(AppConfig.apiBaseUrl);
     return base.resolve(value).toString();
   }
+}
 
-  static String _formatDate(DateTime? dt) {
-    if (dt == null) return '';
-    final d = dt.toLocal();
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+class _AuditDetails extends StatelessWidget {
+  const _AuditDetails({required this.alarm});
+
+  final Alarm alarm;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusLabel = switch (alarm.uiStatus) {
+      AlarmUiStatus.pending => 'Pending',
+      AlarmUiStatus.confirmed => 'Confirmed',
+      AlarmUiStatus.resolved => 'Resolved',
+      AlarmUiStatus.unknown =>
+        (alarm.statusName?.trim().isNotEmpty ?? false)
+            ? alarm.statusName!.trim()
+            : 'Unknown',
+    };
+
+    final rows = <(String, String)>[
+      (AppStrings.alarmDetailStatusLabel, statusLabel),
+      if (alarm.createdAt != null)
+        (AppStrings.alarmDetailCreatedLabel, _formatAlarmDate(alarm.createdAt)),
+      if ((alarm.dismissalReason?.trim().isNotEmpty ?? false))
+        (AppStrings.alarmDetailReasonLabel, alarm.dismissalReason!.trim()),
+      if ((alarm.handledBy?.trim().isNotEmpty ?? false))
+        (
+          AppStrings.alarmDetailHandledByLabel,
+          alarm.handledAt != null
+              ? '${alarm.handledBy!.trim()} · ${_formatAlarmDate(alarm.handledAt)}'
+              : alarm.handledBy!.trim(),
+        ),
     ];
-    final month = months[d.month - 1];
-    final day = d.day.toString().padLeft(2, '0');
-    final year = d.year.toString();
 
-    final hour12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
-    final hour = hour12.toString().padLeft(2, '0');
-    final minute = d.minute.toString().padLeft(2, '0');
-    final ampm = d.hour >= 12 ? 'PM' : 'AM';
-    return '$month $day, $year $hour:$minute $ampm';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (label, value) in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppDimens.spaceS),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
   }
+}
+
+String _formatAlarmDate(DateTime? dt) {
+  if (dt == null) return '';
+  final d = dt.toLocal();
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final month = months[d.month - 1];
+  final day = d.day.toString().padLeft(2, '0');
+  final year = d.year.toString();
+  final hour12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  final hour = hour12.toString().padLeft(2, '0');
+  final minute = d.minute.toString().padLeft(2, '0');
+  final ampm = d.hour >= 12 ? 'PM' : 'AM';
+  return '$month $day, $year $hour:$minute $ampm';
 }
 
 class _StatusChip extends StatelessWidget {

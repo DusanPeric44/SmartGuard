@@ -27,9 +27,12 @@ class AppStrings {
   static const String actionContinueWithGoogle = 'Continue with Google';
 
   static const String validationRequired = 'This field is required';
-  static const String validationInvalidEmail = 'Enter a valid email';
-  static const String validationPasswordTooShort = 'Password is too short';
-  static const String validationPasswordTooLong = 'Password is too long';
+  static const String validationInvalidEmail =
+      'Enter a valid email address (e.g. name@example.com)';
+  static const String validationPasswordTooShort =
+      'Password must be between 8 and 64 characters';
+  static const String validationPasswordTooLong =
+      'Password must be between 8 and 64 characters';
   static const String validationPasswordsDoNotMatch = 'Passwords do not match';
 
   static const String errorNetwork = 'No internet connection';
@@ -72,6 +75,9 @@ class AppStrings {
   static const String newPasswordLabel = 'New password';
   static const String confirmNewPasswordLabel = 'Confirm new password';
   static const String passwordUpdated = 'Password updated';
+  static const String profileUpdated = 'Profile updated successfully';
+
+  static const String registerSuccess = 'Account created successfully';
 
   static const String knownPersonsTitle = 'Known Persons';
   static const String knownPersonsInfo =
@@ -97,6 +103,41 @@ class AppStrings {
   static const String dashboardQuickAccessTitle = 'Quick Access';
   static const String dashboardQuickAccessEmpty = 'No devices available.';
   static const String dashboardLoadFailed = 'Failed to load dashboard.';
+
+  static const String deviceStatusOnline = 'Online';
+  static const String deviceStatusOffline = 'Offline';
+  static const String deviceStatusStreaming = 'Streaming';
+  static const String deviceStatusUnknown = 'Unknown';
+
+  // Device detail (master-detail)
+  static const String deviceDetailTitle = 'Device';
+  static const String deviceDetailStatusLabel = 'Status';
+  static const String deviceDetailLocationLabel = 'Location';
+  static const String deviceDetailLastSeenLabel = 'Last seen';
+  static const String deviceDetailAlarmsTitle = 'Recent alarms';
+  static const String deviceDetailRecordingsTitle = 'Recent recordings';
+  static const String deviceDetailNoAlarms = 'No alarms for this device.';
+  static const String deviceDetailNoRecordings = 'No recordings for this device.';
+  static const String deviceDetailNotFound = 'Device not found.';
+  static const String deviceDetailOpenLive = 'Start Stream';
+
+  // Alarm detail / audit
+  static const String alarmDetailStatusLabel = 'Status';
+  static const String alarmDetailCreatedLabel = 'Date';
+  static const String alarmDetailReasonLabel = 'Dismissal reason';
+  static const String alarmDetailHandledByLabel = 'Handled by';
+  static const String alarmConfirmTitle = 'Confirm alarm';
+  static const String alarmConfirmMessage =
+      'Confirm this alarm? This marks it as a real event and cannot be undone.';
+  static const String alarmActionConfirm = 'Confirm';
+  static const String alarmActionDismiss = 'Dismiss';
+
+  // Disabled-state explanations
+  static const String disabledViewerDownload =
+      'Downloads are not available for the viewer role';
+  static const String disabledConnectFirst = 'Connect a device first';
+  static const String disabledActionInProgress = 'Action in progress…';
+  static const String disabledProfileLoading = 'Loading profile…';
 
   static const String notificationsTitle = 'Notifications';
   static const String notificationsEmpty = 'No notifications';

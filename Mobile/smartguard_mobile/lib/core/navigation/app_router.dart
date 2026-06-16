@@ -9,6 +9,7 @@ import '../../features/alarm_center/presentation/alarm_center_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/devices/presentation/device_detail_screen.dart';
 import '../../features/known_persons/presentation/known_persons_screen.dart';
 import '../../features/live_stream/presentation/live_stream_screen.dart';
 import '../../features/live_stream/presentation/live_stream_fullscreen_screen.dart';
@@ -60,6 +61,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.profile,
         builder: (context, state) =>
             const Scaffold(body: ProfileScreen(showHeader: false)),
+      ),
+      GoRoute(
+        path: AppRoutes.deviceDetail,
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return DeviceDetailScreen(deviceId: id);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

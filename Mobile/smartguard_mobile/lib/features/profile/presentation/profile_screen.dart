@@ -29,6 +29,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _saveProfile(ProfileController controller) async {
+    await controller.saveProfile();
+    if (!mounted) return;
+    final latest = ref.read(profileControllerProvider);
+    if (latest.status == ProfileStatus.ready && latest.errorMessage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.profileUpdated)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(profileControllerProvider, (previous, next) {
@@ -115,7 +126,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               Expanded(
                                 child: FilledButton(
                                   onPressed: state.canSave
-                                      ? controller.saveProfile
+                                      ? () => _saveProfile(controller)
                                       : null,
                                   child: const Text(AppStrings.actionSave),
                                 ),
@@ -141,11 +152,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: AppDimens.spaceM),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: state.profile == null
-                                  ? null
-                                  : controller.startEditing,
-                              child: const Text(AppStrings.profileEdit),
+                            child: Tooltip(
+                              message: state.profile == null
+                                  ? AppStrings.disabledProfileLoading
+                                  : '',
+                              child: TextButton(
+                                onPressed: state.profile == null
+                                    ? null
+                                    : controller.startEditing,
+                                child: const Text(AppStrings.profileEdit),
+                              ),
                             ),
                           ),
                         ],

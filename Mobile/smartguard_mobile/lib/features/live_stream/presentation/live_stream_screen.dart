@@ -186,11 +186,16 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
             spacing: AppDimens.spaceM,
             runSpacing: AppDimens.spaceM,
             children: [
-              OutlinedButton(
-                onPressed: state.deviceId == null
-                    ? null
-                    : controller.disconnect,
-                child: const Text(AppStrings.actionDisconnect),
+              Tooltip(
+                message: state.deviceId == null
+                    ? AppStrings.disabledConnectFirst
+                    : '',
+                child: OutlinedButton(
+                  onPressed: state.deviceId == null
+                      ? null
+                      : controller.disconnect,
+                  child: const Text(AppStrings.actionDisconnect),
+                ),
               ),
               FilledButton(
                 onPressed: state.deviceId == null
@@ -206,7 +211,13 @@ class _LiveStreamScreenState extends ConsumerState<LiveStreamScreen>
           ),
           if (state.lastClipId != null) ...[
             const SizedBox(height: AppDimens.spaceM),
-            Text('${AppStrings.liveStreamClipSaved}: ${state.lastClipId}'),
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                const SizedBox(width: AppDimens.spaceS),
+                Text(AppStrings.liveStreamClipSaved),
+              ],
+            ),
           ],
         ],
       ),

@@ -12,8 +12,6 @@ import '../application/dashboard_state.dart';
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
-  static const String _deviceIdQueryKey = 'deviceId';
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardControllerProvider);
@@ -72,14 +70,8 @@ class DashboardScreen extends ConsumerWidget {
                     final item = state.devices[index];
                     return _QuickAccessCard(
                       title: item.name,
-                      onTap: () => context.go(
-                        Uri(
-                          path: AppRoutes.live,
-                          queryParameters: <String, String>{
-                            _deviceIdQueryKey: item.id.toString(),
-                          },
-                        ).toString(),
-                      ),
+                      onTap: () =>
+                          context.push(AppRoutes.deviceDetailPath(item.id)),
                     );
                   },
                 ),

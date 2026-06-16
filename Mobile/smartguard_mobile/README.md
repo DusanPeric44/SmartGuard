@@ -1,86 +1,83 @@
-# SmartGuardFlutter (skeleton)
+# SmartGuard Mobile
 
-Flutter skeleton aplikacija za SmartGuard: navigacija + placeholder ekrani + infrastruktura (API config, networking, auth/401, deep links) kao baza za timski razvoj.
+Klijentska (mobilna) Flutter aplikacija za SmartGuard — sistem za nadzor sigurnosnih kamera: live stream, arhiva snimaka, alarmi, poznate osobe, notifikacije i profil korisnika.
 
-## API base URL (API_BASE_URL)
+## Pokretanje aplikacije
 
-Podrazumijevani base URL je `http://localhost:8080`.
-
-Override kroz `--dart-define`:
+Aplikacija čita adresu API-ja iz `--dart-define=API_BASE_URL`. Podrazumijevana
+vrijednost je `http://10.0.2.2:5000` (standardna adresa za Android emulator AVD).
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5000
 ```
 
-Za testove (ako želite verifikovati override ponašanje):
+Vrijednost se u kodu čita preko `String.fromEnvironment('API_BASE_URL')`
+(`lib/core/config/app_config.dart`).
+
+### Korisnički podaci za prijavu
+
+| Uloga              | Korisničko ime | Lozinka |
+| ------------------ | -------------- | ------- |
+| Mobilni korisnik   | `mobile`       | `test`  |
+
+> Kredencijali moraju odgovarati seed podacima backend servisa.
+
+## Build (Android APK)
 
 ```bash
-flutter test --dart-define=API_BASE_URL=http://example.test
+flutter clean
+flutter build apk --release
+```
+
+Generisani APK se nalazi na putanji:
+
+```
+build/app/outputs/flutter-apk/app-release.apk
 ```
 
 ## Struktura projekta
 
-- `lib/app.dart`: `MaterialApp.router` + tema + start deep link handler-a
-- `lib/core/config`: konfiguracija (`AppConfig`)
+- `lib/app.dart`: `MaterialApp.router` + tema + start deep link / push handler-a
+- `lib/core/config`: konfiguracija (`AppConfig`) — sve adrese preko `String.fromEnvironment`
 - `lib/core/network`: Dio setup (`dio_provider.dart`) + interceptori (`AuthHeaderInterceptor`, `RefreshTokenInterceptor`, `ApiErrorInterceptor`) + `ApiError`
 - `lib/core/auth`: session state, token storage (secure storage), token refresh (`TokenRefresher`)
 - `lib/core/navigation`: `go_router`, shell (top bar + bottom nav), deep link handler/mapper
-- `lib/core/theme`: osnovni tokens (boje/tipografija) i `ThemeData`
+- `lib/core/realtime`: SignalR klijent (live stream + notifikacije)
+- `lib/core/push`: Firebase Cloud Messaging (push notifikacije)
+- `lib/core/theme`: boje, tipografija i `ThemeData`
 - `lib/features/<feature>`:
-  - `domain/`: modeli i repository interfejsi (+ stub implementacija)
+  - `domain/`: modeli i repository interfejsi (+ API implementacija)
   - `application/`: controller/state (Riverpod) i provider-i
-  - `presentation/`: ekran/widget (placeholder)
+  - `presentation/`: ekrani i widget-i
 
-## Dodavanje novog feature-a
+## Funkcionalnosti
 
-Kopi/pattern za novi feature se nalazi u:
-
-- `lib/features/feature_template/*`
-
-Tipični koraci:
-
-1. Dodaj `domain` repository interfejs (i stub).
-2. Dodaj `application` state + controller (Riverpod provider).
-3. Dodaj `presentation` screen koji koristi `ref.watch(...)` i zove `notifier.refresh()` ili slične akcije.
-4. Uključi novu rutu u `lib/core/navigation/app_router.dart` (ako je ekran navigabilan).
+- **Dashboard (master-detail)**: pregled sistema + lista uređaja; odabir uređaja otvara detalj uređaja sa pripadajućim alarmima i snimcima.
+- **Live stream**: real-time video preko SignalR-a, snimanje klipa, fullscreen.
+- **Arhiva snimaka**: paginirana lista, reprodukcija, preuzimanje (uz autorizaciju po ulozi).
+- **Alarmi**: potvrda/odbijanje sa razlogom i audit prikazom; state-machine Pending → Confirmed → Resolved.
+- **Poznate osobe**: lista i postavke notifikacija po osobi.
+- **Notifikacije**: auto-refresh preko SignalR-a (bez ručnog osvježavanja).
+- **Profil**: pregled i izmjena ličnih podataka, promjena lozinke.
 
 ## Networking i greške
 
 - Svi HTTP pozivi idu preko Dio (`lib/core/network/dio_provider.dart`).
-- `dioProvider` je “main” klijent za REST pozive (auth header + refresh-on-401 + error mapping).
-- `authDioProvider` je “auth-only” klijent za login/refresh pozive (bez refresh interceptora).
+- `dioProvider` je glavni klijent za REST pozive (auth header + refresh-on-401 + error mapping).
+- `authDioProvider` je auth-only klijent za login/refresh pozive (bez refresh interceptora).
 - Backend validacijske poruke se ne prikrivaju: `ApiError.fromHttpResponse(...)` parsira `message` i validation map-u, a UI mapping je u `UiErrorMapper`.
 
 ## Auth i 401
 
 - Tokeni su u secure storage (`lib/core/auth/secure_token_storage.dart`).
-- 401 handling je u `RefreshTokenInterceptor` i radi:
-  - attach access token preko `AuthHeaderInterceptor`
+- 401 handling je u `RefreshTokenInterceptor`:
+  - attach access tokena preko `AuthHeaderInterceptor`
   - single-flight refresh preko `SessionController.refreshTokensSingleFlight()`
-  - retry original request jednom sa novim tokenom
+  - retry originalnog zahtjeva jednom sa novim tokenom
   - logout + redirect na login (router guard) ako refresh ne uspije
 
-## Deep links
+## Deep links i push
 
 - Initial link + resumed scenario su podržani kroz `DeepLinkHandler`.
-- Mapiranje link → ruta je u `DeepLinkMapper` i trenutno je placeholder dok Plan PDF ne definiše finalne formate.
-
-## Performanse
-
-- Nezavisne async operacije paralelizuj preko `Future.wait()` (helper: `lib/core/utils/futures.dart`).
-- Base64 slike dekodiraj van `build()` i keširaj:
-  - `Base64BytesCache` (`lib/core/images/base64_bytes_cache.dart`)
-  - widget helper: `Base64Image` (`lib/core/images/base64_image.dart`)
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Push notifikacije (FCM) rutaju na odgovarajući ekran nakon prijave (`lib/core/push`).

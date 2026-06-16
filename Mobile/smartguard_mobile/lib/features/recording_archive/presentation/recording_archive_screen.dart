@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_dimens.dart';
+import '../../../core/constants/app_strings.dart';
 import '../application/recording_archive_controller.dart';
 import '../application/recording_archive_state.dart';
 import '../domain/recording.dart';
@@ -295,10 +296,13 @@ class _RecordingDetailsSheet extends ConsumerWidget {
                 : recording.typeName.trim(),
           ),
           const SizedBox(height: AppDimens.spaceL),
-          if (role != UserRole.viewer)
-            Row(
-              children: [
-                Expanded(
+          Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: role == UserRole.viewer
+                      ? AppStrings.disabledViewerDownload
+                      : (busy ? AppStrings.disabledActionInProgress : ''),
                   child: FilledButton.icon(
                     onPressed: role == UserRole.viewer || busy
                         ? null
@@ -326,8 +330,9 @@ class _RecordingDetailsSheet extends ConsumerWidget {
                     label: const Text('Download'),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );

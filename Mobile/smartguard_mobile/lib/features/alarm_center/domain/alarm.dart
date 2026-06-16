@@ -2,6 +2,17 @@ import '../../../core/extensions/local_date_parsing.dart';
 
 enum AlarmUiStatus { pending, confirmed, resolved, unknown }
 
+/// Backend status identifiers for alarms. Centralized here so the UI never
+/// branches on bare magic numbers (1, 2, 3, ...).
+class AlarmStatusId {
+  const AlarmStatusId._();
+
+  static const int pending = 1;
+  static const int confirmed = 2;
+  static const int resolved = 3;
+  static const int dismissed = 4;
+}
+
 class Alarm {
   const Alarm({
     required this.id,
@@ -11,6 +22,9 @@ class Alarm {
     required this.statusId,
     required this.createdAt,
     required this.linkedEventImagePath,
+    this.dismissalReason,
+    this.handledBy,
+    this.handledAt,
   });
 
   final int id;
@@ -20,6 +34,15 @@ class Alarm {
   final int? statusId;
   final DateTime? createdAt;
   final String? linkedEventImagePath;
+
+  /// Audit trail: reason supplied when an alarm was dismissed.
+  final String? dismissalReason;
+
+  /// Audit trail: who confirmed/dismissed the alarm.
+  final String? handledBy;
+
+  /// Audit trail: when the alarm was confirmed/dismissed.
+  final DateTime? handledAt;
 
   AlarmUiStatus get uiStatus {
     final byName = (statusName ?? '').trim().toLowerCase();
@@ -36,13 +59,13 @@ class Alarm {
     }
 
     switch (statusId) {
-      case 1:
+      case AlarmStatusId.pending:
         return AlarmUiStatus.pending;
-      case 2:
+      case AlarmStatusId.confirmed:
         return AlarmUiStatus.confirmed;
-      case 3:
+      case AlarmStatusId.resolved:
         return AlarmUiStatus.resolved;
-      case 4:
+      case AlarmStatusId.dismissed:
         return AlarmUiStatus.resolved;
     }
 
@@ -196,6 +219,41 @@ class Alarm {
     final linkedEventImagePath =
         parseLinkedEventImagePath(linkedEvent);
 
+    final dismissalReason = parseString(
+      pick(const [
+        'dismissalReason',
+        'DismissalReason',
+        'dismissReason',
+        'DismissReason',
+        'reason',
+        'Reason',
+      ]),
+    );
+    final handledBy = parseString(
+      pick(const [
+        'handledBy',
+        'HandledBy',
+        'handledByName',
+        'HandledByName',
+        'resolvedBy',
+        'ResolvedBy',
+        'confirmedBy',
+        'ConfirmedBy',
+      ]),
+    );
+    final handledAt = parseDate(
+      pick(const [
+        'handledAt',
+        'HandledAt',
+        'resolvedAt',
+        'ResolvedAt',
+        'confirmedAt',
+        'ConfirmedAt',
+        'updatedAt',
+        'UpdatedAt',
+      ]),
+    );
+
     return Alarm(
       id: id,
       title: title,
@@ -204,6 +262,9 @@ class Alarm {
       statusId: statusId,
       createdAt: createdAt,
       linkedEventImagePath: linkedEventImagePath,
+      dismissalReason: dismissalReason,
+      handledBy: handledBy,
+      handledAt: handledAt,
     );
   }
 }
