@@ -6,6 +6,8 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/ui/app_loading_overlay.dart';
 import '../application/profile_controller.dart';
 import '../application/profile_state.dart';
+import 'widgets/profile_error_banner.dart';
+import 'widgets/profile_section_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key, this.showHeader = true});
@@ -81,10 +83,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: AppDimens.spaceM),
               ],
               if (state.errorMessage != null) ...[
-                _ErrorBanner(message: state.errorMessage!),
+                ProfileErrorBanner(message: state.errorMessage!),
                 const SizedBox(height: AppDimens.spaceM),
               ],
-              _SectionCard(
+              ProfileSectionCard(
                 title: AppStrings.profileSectionAccount,
                 child: state.isEditing
                     ? Column(
@@ -168,7 +170,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
               ),
               const SizedBox(height: AppDimens.spaceM),
-              _SectionCard(
+              ProfileSectionCard(
                 title: AppStrings.profileSectionSecurity,
                 child: ListTile(
                   title: const Text(AppStrings.profileChangePassword),
@@ -177,7 +179,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppDimens.spaceM),
-              _SectionCard(
+              ProfileSectionCard(
                 title: AppStrings.profileSectionSession,
                 child: ListTile(
                   title: const Text(AppStrings.logout),
@@ -235,52 +237,4 @@ Future<void> _showChangePasswordDialog(
       );
     },
   );
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppDimens.cardRadius),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimens.spaceM),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppDimens.spaceS),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.errorContainer,
-      borderRadius: AppDimens.cardRadius,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimens.spaceM),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
-        ),
-      ),
-    );
-  }
 }

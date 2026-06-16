@@ -7,13 +7,15 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../alarm_center/application/alarm_center_controller.dart';
 import '../../alarm_center/application/alarm_center_state.dart';
-import '../../alarm_center/domain/alarm.dart';
 import '../../recording_archive/application/recording_archive_controller.dart';
 import '../../recording_archive/application/recording_archive_state.dart';
-import '../../recording_archive/domain/recording.dart';
 import '../application/devices_controller.dart';
 import '../application/devices_state.dart';
 import '../domain/device.dart';
+import 'widgets/device_alarm_row.dart';
+import 'widgets/device_empty_hint.dart';
+import 'widgets/device_header.dart';
+import 'widgets/device_recording_row.dart';
 
 /// Master-detail screen: a single device (master) shown together with its
 /// related alarms and recordings (details), reached from the dashboard.
@@ -98,7 +100,7 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
     return ListView(
       padding: AppDimens.pagePadding,
       children: [
-        _DeviceHeader(device: device),
+        DeviceHeader(device: device),
         const SizedBox(height: AppDimens.spaceM),
         FilledButton.icon(
           onPressed: () => context.push(
@@ -117,12 +119,12 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
         ),
         const SizedBox(height: AppDimens.spaceM),
         if (deviceAlarms.isEmpty)
-          _EmptyHint(message: AppStrings.deviceDetailNoAlarms)
+          DeviceEmptyHint(message: AppStrings.deviceDetailNoAlarms)
         else
           for (final alarm in deviceAlarms)
             Padding(
               padding: const EdgeInsets.only(bottom: AppDimens.spaceS),
-              child: _AlarmRow(alarm: alarm),
+              child: DeviceAlarmRow(alarm: alarm),
             ),
         const SizedBox(height: AppDimens.spaceL),
         Text(
@@ -131,12 +133,12 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
         ),
         const SizedBox(height: AppDimens.spaceM),
         if (deviceRecordings.isEmpty)
-          _EmptyHint(message: AppStrings.deviceDetailNoRecordings)
+          DeviceEmptyHint(message: AppStrings.deviceDetailNoRecordings)
         else
           for (final recording in deviceRecordings)
             Padding(
               padding: const EdgeInsets.only(bottom: AppDimens.spaceS),
-              child: _RecordingRow(recording: recording),
+              child: DeviceRecordingRow(recording: recording),
             ),
       ],
     );
@@ -157,169 +159,4 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
     return (name.isNotEmpty && v == name) ||
         (location.isNotEmpty && v == location);
   }
-}
-
-class _DeviceHeader extends StatelessWidget {
-  const _DeviceHeader({required this.device});
-
-  final Device device;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = <(String, String)>[
-      (AppStrings.deviceDetailStatusLabel, _statusLabel(device.status)),
-      if (device.location.trim().isNotEmpty)
-        (AppStrings.deviceDetailLocationLabel, device.location.trim()),
-      if ((device.lastSeenIso?.trim().isNotEmpty ?? false))
-        (AppStrings.deviceDetailLastSeenLabel, device.lastSeenIso!.trim()),
-    ];
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppDimens.cardRadius),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimens.spaceM),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _StatusDot(status: device.status),
-                const SizedBox(width: AppDimens.spaceM),
-                Expanded(
-                  child: Text(
-                    device.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimens.spaceM),
-            for (final (label, value) in rows)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppDimens.spaceS),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        value,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AlarmRow extends StatelessWidget {
-  const _AlarmRow({required this.alarm});
-
-  final Alarm alarm;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final icon = switch (alarm.uiStatus) {
-      AlarmUiStatus.pending => Icons.warning_amber_rounded,
-      AlarmUiStatus.confirmed => Icons.report_rounded,
-      AlarmUiStatus.resolved => Icons.check_circle_rounded,
-      AlarmUiStatus.unknown => Icons.notifications_outlined,
-    };
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppDimens.cardRadius),
-      child: ListTile(
-        leading: Icon(icon, color: scheme.onSurfaceVariant),
-        title: Text(alarm.title.trim().isEmpty ? 'Alarm' : alarm.title),
-        subtitle: alarm.message.trim().isEmpty ? null : Text(alarm.message),
-      ),
-    );
-  }
-}
-
-class _RecordingRow extends StatelessWidget {
-  const _RecordingRow({required this.recording});
-
-  final Recording recording;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppDimens.cardRadius),
-      child: ListTile(
-        leading: const Icon(Icons.movie_outlined),
-        title: Text(
-          recording.title.trim().isEmpty ? 'Recording' : recording.title,
-        ),
-        subtitle: Text(
-          recording.typeName.trim().isEmpty
-              ? recording.durationLabel
-              : '${recording.typeName.trim()} · ${recording.durationLabel}',
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyHint extends StatelessWidget {
-  const _EmptyHint({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppDimens.spaceS),
-      child: Text(
-        message,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.status});
-
-  final DeviceStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (status) {
-      DeviceStatus.online => Colors.green,
-      DeviceStatus.streaming => Colors.blue,
-      DeviceStatus.offline => Colors.grey,
-      DeviceStatus.unknown => Colors.orange,
-    };
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-String _statusLabel(DeviceStatus status) {
-  return switch (status) {
-    DeviceStatus.online => AppStrings.deviceStatusOnline,
-    DeviceStatus.streaming => AppStrings.deviceStatusStreaming,
-    DeviceStatus.offline => AppStrings.deviceStatusOffline,
-    DeviceStatus.unknown => AppStrings.deviceStatusUnknown,
-  };
 }
