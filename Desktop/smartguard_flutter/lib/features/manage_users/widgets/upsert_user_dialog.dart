@@ -103,19 +103,12 @@ class _UpsertUserDialogState extends State<UpsertUserDialog> {
                     labelText: 'Role',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: UserRole.admin,
-                      child: Text('Admin'),
-                    ),
-                    DropdownMenuItem(
-                      value: UserRole.homeowner,
-                      child: Text('Home Owner'),
-                    ),
-                    DropdownMenuItem(
-                      value: UserRole.viewer,
-                      child: Text('Viewer'),
-                    ),
+                  items: [
+                    for (final role in UserRole.values)
+                      DropdownMenuItem(
+                        value: role,
+                        child: Text(userRoleToWire(role)),
+                      ),
                   ],
                   onChanged: busy
                       ? null

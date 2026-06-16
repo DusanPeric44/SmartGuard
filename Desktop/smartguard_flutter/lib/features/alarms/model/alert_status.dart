@@ -1,5 +1,17 @@
 import 'dart:convert';
 
+/// Centralized alert status names (as returned by the API) so these
+/// "magic strings" live in one place instead of being scattered across
+/// filters, status chips and the details panel.
+class AlertStatusNames {
+  const AlertStatusNames._();
+
+  static const String pending = 'Pending';
+  static const String confirmed = 'Confirmed';
+  static const String resolved = 'Resolved';
+  static const String dismissed = 'Dismissed';
+}
+
 class AlertStatus {
   int? id;
   String? name;

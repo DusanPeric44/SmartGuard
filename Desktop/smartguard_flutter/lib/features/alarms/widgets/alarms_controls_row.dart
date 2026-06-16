@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smartguard_flutter/features/alarms/model/alert_status.dart';
 
 class AlarmsControlsRow extends StatelessWidget {
   const AlarmsControlsRow({
@@ -35,19 +36,19 @@ class AlarmsControlsRow extends StatelessWidget {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: Text('Pending'),
+                  child: Text(AlertStatusNames.pending),
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: Text('Confirmed'),
+                  child: Text(AlertStatusNames.confirmed),
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: Text('Resolved'),
+                  child: Text(AlertStatusNames.resolved),
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: Text('Dismissed'),
+                  child: Text(AlertStatusNames.dismissed),
                 ),
               ],
             ),
