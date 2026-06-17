@@ -110,25 +110,21 @@ class _ReferenceDataScreenState extends State<ReferenceDataScreen> {
       );
     }
 
-    final hasCountry = vm.entity.hasCountry;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            columns: [
-              const DataColumn(label: Text('Name')),
-              if (hasCountry) const DataColumn(label: Text('Country')),
-              const DataColumn(label: Text('Actions')),
+            columns: const [
+              DataColumn(label: Text('Name')),
+              DataColumn(label: Text('Actions')),
             ],
             rows: [
               for (final item in vm.items)
                 DataRow(
                   cells: [
                     DataCell(Text(item.name)),
-                    if (hasCountry) DataCell(Text(item.countryName ?? '-')),
                     DataCell(_actions(vm: vm, item: item, canEdit: canEdit)),
                   ],
                 ),

@@ -41,34 +41,19 @@ class ApiReferenceDataRepository implements ReferenceDataRepository {
   }
 
   @override
-  Future<void> create(
-    String path, {
-    required String name,
-    int? countryId,
-  }) async {
+  Future<void> create(String path, {required String name}) async {
     await _api.post<Object?>(
       path,
-      body: <String, Object?>{
-        'name': name,
-        'countryId': ?countryId,
-      },
+      body: <String, Object?>{'name': name},
     );
   }
 
   @override
-  Future<void> update(
-    String path,
-    int id, {
-    required String name,
-    int? countryId,
-  }) async {
+  Future<void> update(String path, int id, {required String name}) async {
     await _api.request<Object?>(
       method: 'PUT',
       path: '$path/$id',
-      body: <String, Object?>{
-        'name': name,
-        'countryId': ?countryId,
-      },
+      body: <String, Object?>{'name': name},
     );
   }
 

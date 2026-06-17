@@ -8,13 +8,12 @@ abstract interface class ReferenceDataRepository {
     int pageSize,
   });
 
-  Future<void> create(String path, {required String name, int? countryId});
+  Future<void> create(String path, {required String name});
 
   Future<void> update(
     String path,
     int id, {
     required String name,
-    int? countryId,
   });
 
   Future<void> delete(String path, int id);

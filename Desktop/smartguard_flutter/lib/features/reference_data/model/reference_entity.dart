@@ -9,7 +9,6 @@ class ReferenceEntity {
     required this.title,
     required this.singular,
     required this.path,
-    this.hasCountry = false,
   });
 
   /// Stable identifier used for selection.
@@ -21,27 +20,11 @@ class ReferenceEntity {
   /// Singular label used in success/confirmation messages.
   final String singular;
 
-  /// API path, e.g. `/Countries`.
+  /// API path, e.g. `/AlertTypes`.
   final String path;
-
-  /// Whether records reference a `Country` (true only for cities).
-  final bool hasCountry;
 }
 
 const List<ReferenceEntity> referenceEntities = <ReferenceEntity>[
-  ReferenceEntity(
-    id: 'countries',
-    title: 'Countries',
-    singular: 'Country',
-    path: '/Countries',
-  ),
-  ReferenceEntity(
-    id: 'cities',
-    title: 'Cities',
-    singular: 'City',
-    path: '/Cities',
-    hasCountry: true,
-  ),
   ReferenceEntity(
     id: 'alert-types',
     title: 'Alert Types',
