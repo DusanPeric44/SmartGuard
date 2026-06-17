@@ -31,17 +31,4 @@ namespace SmartGuard.Model.Requests
         [Required]
         public string Name { get; set; }
     }
-
-    public class CityUpsertRequest
-    {
-        [Required]
-        public string Name { get; set; }
-        public int CountryId { get; set; }
-    }
-
-    public class CountryUpsertRequest
-    {
-        [Required]
-        public string Name { get; set; }
-    }
 }

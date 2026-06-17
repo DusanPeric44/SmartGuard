@@ -41,8 +41,6 @@ namespace SmartGuard.Services
             services.AddScoped<IRecordingStatusesService, RecordingStatusesService>();
             services.AddScoped<IAlertTypesService, AlertTypesService>();
             services.AddScoped<IAlertStatusesService, AlertStatusesService>();
-            services.AddScoped<ICitiesService, CitiesService>();
-            services.AddScoped<ICountriesService, CountriesService>();
             
             // Helper Services
             services.AddScoped<ICosineSimilarityService, CosineSimilarityService>();

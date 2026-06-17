@@ -38,8 +38,6 @@ namespace SmartGuard.Services.Database
         public DbSet<ReportType> ReportTypes { get; set; }
         public DbSet<ReportStatus> ReportStatuses { get; set; }
         public DbSet<ScheduledRecording> ScheduledRecordings { get; set; }
-        public DbSet<City> Cities { get; set; }
-        public DbSet<Country> Countries { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)

@@ -36,20 +36,6 @@ namespace SmartGuard.Services.Database.Configurations
         }
     }
 
-    public sealed class CityConfiguration : IEntityTypeConfiguration<City>
-    {
-        public void Configure(EntityTypeBuilder<City> builder)
-        {
-        }
-    }
-
-    public sealed class CountryConfiguration : IEntityTypeConfiguration<Country>
-    {
-        public void Configure(EntityTypeBuilder<Country> builder)
-        {
-        }
-    }
-
     public sealed class DeviceStatusConfiguration : IEntityTypeConfiguration<DeviceStatus>
     {
         public void Configure(EntityTypeBuilder<DeviceStatus> builder)
