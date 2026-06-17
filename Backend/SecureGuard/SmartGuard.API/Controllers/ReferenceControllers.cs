@@ -30,14 +30,4 @@ namespace SmartGuard.API.Controllers
     {
         public AlertStatusesController(IAlertStatusesService service) : base(service) { }
     }
-
-    public class CitiesController : BaseCRUDController<City, BaseSearchObject, CityUpsertRequest, CityUpsertRequest>
-    {
-        public CitiesController(ICitiesService service) : base(service) { }
-    }
-
-    public class CountriesController : BaseCRUDController<Country, BaseSearchObject, CountryUpsertRequest, CountryUpsertRequest>
-    {
-        public CountriesController(ICountriesService service) : base(service) { }
-    }
 }

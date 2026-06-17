@@ -30,14 +30,4 @@ namespace SmartGuard.Services
     {
         public AlertStatusesService(SmartGuardContext context) : base(context) { }
     }
-
-    public class CitiesService : BaseCRUDService<Model.DTOs.City, Database.City, BaseSearchObject, CityUpsertRequest, CityUpsertRequest>, ICitiesService
-    {
-        public CitiesService(SmartGuardContext context) : base(context) { }
-    }
-
-    public class CountriesService : BaseCRUDService<Model.DTOs.Country, Database.Country, BaseSearchObject, CountryUpsertRequest, CountryUpsertRequest>, ICountriesService
-    {
-        public CountriesService(SmartGuardContext context) : base(context) { }
-    }
 }
