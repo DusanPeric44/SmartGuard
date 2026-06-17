@@ -1,30 +1,77 @@
-# smartguard_flutter
+# SmartGuard Desktop
 
-A new Flutter project.
+Administrativna (desktop) Flutter aplikacija za SmartGuard sigurnosni sistem
+(Windows / macOS / Linux). Sadrži upravljanje uređajima, korisnicima,
+snimcima, alarmima, poznatim osobama, PDF izvještajima, audit logovima i
+referentnim podacima (šifarnicima).
 
-## Konfiguracija API_BASE_URL
+## Pokretanje aplikacije
 
-API base URL se postavlja kroz `--dart-define`.
-
-Primjeri:
-
-```bash
-flutter run -d macos --dart-define=API_BASE_URL=https://api.example.com
-```
+Adresa API-ja se postavlja preko `--dart-define=API_BASE_URL`. Za lokalno
+pokretanje desktop aplikacije koristi se `localhost`:
 
 ```bash
-flutter build macos --release --dart-define=API_BASE_URL=https://api.example.com
+flutter pub get
+flutter run -d windows --dart-define=API_BASE_URL=http://localhost:5000
+# ili: flutter run -d macos / -d linux
 ```
 
-## Getting Started
+Vrijednost se u kodu čita preko `String.fromEnvironment('API_BASE_URL')`
+(`lib/core/config/app_config.dart`).
 
-This project is a starting point for a Flutter application.
+### Korisnički podaci za prijavu
 
-A few resources to get you started if this is your first Flutter project:
+Desktop dio je administrativni — prijava je dozvoljena samo `Admin` ulozi.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+| Uloga | Korisničko ime | Lozinka |
+| ----- | -------------- | ------- |
+| Admin | `desktop`      | `test`  |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> Kredencijali moraju odgovarati seed podacima backend servisa.
+
+## Build (Windows)
+
+```bash
+flutter clean
+flutter build windows --release
+```
+
+Generisani fajlovi se nalaze na putanji:
+
+```
+build/windows/x64/runner/Release/
+```
+
+## Arhitektura
+
+- `lib/core/`: konfiguracija (`AppConfig`), HTTP klijent (`ApiClient` sa 401
+  refresh logikom), auth (token store, `AuthController`), realtime (SignalR),
+  notifikacije, error mapping.
+- `lib/app/`: `AppScope` (InheritedWidget sa `auth` i `api`), `go_router`
+  ruter (admin-only redirecti), shell (NavigationRail + AppBar), navigacija,
+  tema.
+- `lib/features/<feature>/`: `data/` (repository + API implementacija),
+  `model/`, `viewmodel/` (ChangeNotifier), screen + `widgets/`.
+- `lib/shared/widgets/`: zajedničke komponente (`AsyncStatePanel`,
+  `CachedBase64Image`).
+
+## Funkcionalnosti
+
+- **Dashboard**: KPI pregled sa grafikonima (fl_chart).
+- **Uređaji**: lista + provisioning wizard + detalji.
+- **Korisnici**: CRUD (kreiranje, izmjena, brisanje, uloge).
+- **Snimci**: pretraga/filteri, reprodukcija, soft delete, download.
+- **Alarmi**: lista sa filterima i detaljima, potvrda/odbijanje/rješavanje.
+- **Poznate osobe**: lista, izmjena, brisanje, merge, detekcije.
+- **PDF izvještaji**: generisanje sa rasponom datuma i preuzimanje.
+- **Audit logovi**: pretraga i filteri po korisniku/akciji/resursu/statusu.
+- **Referentni podaci (šifarnici)**: CRUD za države, gradove (FK na državu),
+  tipove/statuse alarma, statuse uređaja, tipove/statuse snimaka.
+
+## Networking i greške
+
+- Svi HTTP pozivi idu preko `ApiClient` (`lib/core/network/api_client.dart`).
+- 401 → single-flight refresh tokena + retry; neuspjeh → logout + redirect na
+  login (router guard).
+- Backend validacijske poruke se ne prikrivaju: parsiraju se u `ApiClient` i
+  mapiraju u `UiErrorMapper`.

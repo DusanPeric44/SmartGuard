@@ -69,7 +69,7 @@ class ApiUsersRepository implements UsersRepository {
       body: <String, Object?>{
         'firstName': firstName,
         'lastName': lastName,
-        'role': role.name,
+        'role': userRoleToWire(role),
       },
       decode: (json) => ManagedUser.fromJson(json as Map<String, dynamic>),
     );

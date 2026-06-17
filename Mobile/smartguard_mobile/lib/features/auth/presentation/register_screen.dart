@@ -57,6 +57,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (previous, next) {
+      final justSucceeded =
+          previous?.status != AuthStatus.success &&
+          next.status == AuthStatus.success &&
+          next.mode == AuthMode.register;
+      if (justSucceeded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.registerSuccess)),
+        );
+      }
+    });
+
     final state = ref.watch(authControllerProvider);
     final controller = ref.read(authControllerProvider.notifier);
 

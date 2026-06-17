@@ -113,9 +113,11 @@ class SharedPrefsTokenStore implements TokenStore {
 
   @override
   Future<void> clear() async {
-    await _prefs.remove(_tokenKey);
-    await _prefs.remove(_refreshTokenKey);
-    await _prefs.remove(_roleKey);
-    await _prefs.remove(_registrationKey);
+    await Future.wait([
+      _prefs.remove(_tokenKey),
+      _prefs.remove(_refreshTokenKey),
+      _prefs.remove(_roleKey),
+      _prefs.remove(_registrationKey),
+    ]);
   }
 }

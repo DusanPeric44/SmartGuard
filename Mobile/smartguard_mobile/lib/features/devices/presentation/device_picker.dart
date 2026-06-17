@@ -75,10 +75,14 @@ class _DevicePickerSheetState extends ConsumerState<_DevicePickerSheet> {
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final device = state.devices[index];
+                    final subtitle = device.location.trim().isNotEmpty
+                        ? device.location.trim()
+                        : device.deviceStatus?.name ??
+                              _statusLabel(device.status);
                     return ListTile(
                       leading: _StatusDot(status: device.status),
                       title: Text(device.name),
-                      subtitle: Text(device.id),
+                      subtitle: Text(subtitle),
                       trailing: device.id == state.selectedDeviceId
                           ? const Icon(Icons.check)
                           : null,
@@ -95,6 +99,15 @@ class _DevicePickerSheetState extends ConsumerState<_DevicePickerSheet> {
       ),
     );
   }
+}
+
+String _statusLabel(DeviceStatus status) {
+  return switch (status) {
+    DeviceStatus.online => AppStrings.deviceStatusOnline,
+    DeviceStatus.streaming => AppStrings.deviceStatusStreaming,
+    DeviceStatus.offline => AppStrings.deviceStatusOffline,
+    DeviceStatus.unknown => AppStrings.deviceStatusUnknown,
+  };
 }
 
 class _StatusDot extends StatelessWidget {

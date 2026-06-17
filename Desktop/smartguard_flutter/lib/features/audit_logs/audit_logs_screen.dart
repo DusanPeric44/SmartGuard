@@ -6,6 +6,9 @@ import 'package:smartguard_flutter/features/audit_logs/data/api_audit_logs_repos
 import 'package:smartguard_flutter/features/audit_logs/data/audit_logs_repository.dart';
 import 'package:smartguard_flutter/features/audit_logs/model/audit_log_models.dart';
 import 'package:smartguard_flutter/features/audit_logs/viewmodel/audit_logs_view_model.dart';
+import 'package:smartguard_flutter/features/audit_logs/widgets/audit_logs_filters_card.dart';
+import 'package:smartguard_flutter/features/audit_logs/widgets/audit_logs_pager.dart';
+import 'package:smartguard_flutter/features/audit_logs/widgets/audit_logs_table.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
 class AuditLogsScreen extends StatefulWidget {
@@ -83,7 +86,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _FiltersCard(
+        AuditLogsFiltersCard(
           searchController: _searchController,
           selectedRange: _selectedRange,
           selectedUser: _selectedUser,
@@ -179,7 +182,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _AuditLogsTable(
+              child: AuditLogsTable(
                 rows: page.result,
                 rowBusy: vm.rowBusy,
                 onOpenDetails: (row) => _openDetails(vm, row),
@@ -188,7 +191,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _Pager(
+        AuditLogsPager(
           total: page.count,
           page: q.page,
           pageSize: q.pageSize,
@@ -328,343 +331,6 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   }
 }
 
-class _FiltersCard extends StatelessWidget {
-  const _FiltersCard({
-    required this.searchController,
-    required this.selectedRange,
-    required this.selectedUser,
-    required this.selectedAction,
-    required this.selectedResource,
-    required this.selectedStatus,
-    required this.userOptions,
-    required this.actionOptions,
-    required this.resourceOptions,
-    required this.statusOptions,
-    required this.onSearchChanged,
-    required this.onPickRange,
-    required this.onUserChanged,
-    required this.onActionChanged,
-    required this.onResourceChanged,
-    required this.onStatusChanged,
-    required this.onReset,
-  });
-
-  final TextEditingController searchController;
-  final DateTimeRange? selectedRange;
-
-  final String? selectedUser;
-  final String? selectedAction;
-  final String? selectedResource;
-  final String? selectedStatus;
-
-  final List<String> userOptions;
-  final List<String> actionOptions;
-  final List<String> resourceOptions;
-  final List<String> statusOptions;
-
-  final ValueChanged<String> onSearchChanged;
-  final VoidCallback onPickRange;
-  final ValueChanged<String?> onUserChanged;
-  final ValueChanged<String?> onActionChanged;
-  final ValueChanged<String?> onResourceChanged;
-  final ValueChanged<String?> onStatusChanged;
-  final VoidCallback onReset;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final users = _optionsWithSelected(userOptions, selectedUser);
-    final actions = _optionsWithSelected(actionOptions, selectedAction);
-    final resources = _optionsWithSelected(resourceOptions, selectedResource);
-    final statuses = _optionsWithSelected(statusOptions, selectedStatus);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 500,
-              child: TextField(
-                controller: searchController,
-                onChanged: onSearchChanged,
-                decoration: const InputDecoration(
-                  labelText: 'Search',
-                  hintText: 'Text...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 280,
-              child: DropdownButtonFormField<String?>(
-                initialValue: selectedUser,
-                isExpanded: true,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All users'),
-                  ),
-                  for (final u in users)
-                    DropdownMenuItem<String?>(
-                      value: u,
-                      child: Text(
-                        u,
-                        style: const TextStyle(overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                ],
-                onChanged: onUserChanged,
-                decoration: const InputDecoration(labelText: 'User'),
-              ),
-            ),
-            SizedBox(
-              width: 240,
-              child: DropdownButtonFormField<String?>(
-                initialValue: selectedAction,
-                isExpanded: true,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All actions'),
-                  ),
-                  for (final a in actions)
-                    DropdownMenuItem<String?>(
-                      value: a,
-                      child: Text(
-                        a,
-                        style: const TextStyle(overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                ],
-                onChanged: onActionChanged,
-                decoration: const InputDecoration(labelText: 'Action'),
-              ),
-            ),
-            SizedBox(
-              width: 260,
-              child: DropdownButtonFormField<String?>(
-                initialValue: selectedResource,
-                isExpanded: true,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All resources'),
-                  ),
-                  for (final r in resources)
-                    DropdownMenuItem<String?>(
-                      value: r,
-                      child: Text(
-                        r,
-                        style: const TextStyle(overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                ],
-                onChanged: onResourceChanged,
-                decoration: const InputDecoration(labelText: 'Resource'),
-              ),
-            ),
-            SizedBox(
-              width: 220,
-              child: DropdownButtonFormField<String?>(
-                initialValue: selectedStatus,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All statuses'),
-                  ),
-                  for (final s in statuses)
-                    DropdownMenuItem<String?>(
-                      value: s,
-                      child: Text(
-                        s,
-                        style: const TextStyle(overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                ],
-                onChanged: onStatusChanged,
-                decoration: const InputDecoration(labelText: 'Status'),
-              ),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: onPickRange,
-              icon: const Icon(Icons.date_range),
-              label: Text(_rangeLabel(selectedRange) ?? 'Date range'),
-            ),
-            TextButton.icon(
-              onPressed: onReset,
-              icon: const Icon(Icons.refresh),
-              label: Text('Reset', style: theme.textTheme.labelLarge),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AuditLogsTable extends StatelessWidget {
-  const _AuditLogsTable({
-    required this.rows,
-    required this.rowBusy,
-    required this.onOpenDetails,
-  });
-
-  final List<AuditLogRow> rows;
-  final Map<String, bool> rowBusy;
-  final ValueChanged<AuditLogRow> onOpenDetails;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Timestamp')),
-            DataColumn(label: Text('User')),
-            DataColumn(label: Text('Action')),
-            DataColumn(label: Text('Resource')),
-            DataColumn(label: Text('Details')),
-            DataColumn(label: Text('IP')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('')),
-          ],
-          rows: [for (final r in rows) _row(context, r)],
-        ),
-      ),
-    );
-  }
-
-  DataRow _row(BuildContext context, AuditLogRow r) {
-    final key = r.id.toString();
-    final busy = rowBusy[key] == true;
-    return DataRow(
-      cells: [
-        DataCell(Text(_timestampLabel(r.timestamp))),
-        DataCell(Text(r.user)),
-        DataCell(Text(r.action)),
-        DataCell(Text(r.resource)),
-        DataCell(
-          SizedBox(
-            width: 360,
-            child: Text(
-              r.details,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-        DataCell(Text(r.ipAddress)),
-        DataCell(Text(r.status)),
-        DataCell(
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Details',
-                onPressed: busy ? null : () => onOpenDetails(r),
-                icon: busy
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.open_in_new),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Pager extends StatelessWidget {
-  const _Pager({
-    required this.total,
-    required this.page,
-    required this.pageSize,
-    required this.isLoading,
-    required this.onPrev,
-    required this.onNext,
-    required this.onPageSizeChanged,
-  });
-
-  final int total;
-  final int page;
-  final int pageSize;
-  final bool isLoading;
-  final VoidCallback? onPrev;
-  final VoidCallback? onNext;
-  final ValueChanged<int> onPageSizeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = total == 0 ? 0 : ((page - 1) * pageSize) + 1;
-    final end = (page * pageSize).clamp(0, total);
-    return Row(
-      children: [
-        Text('Showing $start-$end of $total'),
-        const Spacer(),
-        SizedBox(
-          width: 140,
-          child: DropdownButtonFormField<int>(
-            initialValue: pageSize,
-            items: const [
-              DropdownMenuItem(value: 10, child: Text('10 / page')),
-              DropdownMenuItem(value: 25, child: Text('25 / page')),
-              DropdownMenuItem(value: 50, child: Text('50 / page')),
-              DropdownMenuItem(value: 100, child: Text('100 / page')),
-            ],
-            onChanged: isLoading
-                ? null
-                : (v) => v == null ? null : onPageSizeChanged(v),
-          ),
-        ),
-        const SizedBox(width: 12),
-        IconButton(
-          tooltip: 'Previous',
-          onPressed: isLoading ? null : onPrev,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Text('$page'),
-        IconButton(
-          tooltip: 'Next',
-          onPressed: isLoading ? null : onNext,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
-    );
-  }
-}
-
-String? _rangeLabel(DateTimeRange? range) {
-  if (range == null) return null;
-  final s = _yyyyMmDd(range.start);
-  final e = _yyyyMmDd(range.end);
-  return '$s → $e';
-}
-
-String _timestampLabel(DateTime? dt) {
-  if (dt == null) return '-';
-  return '${_yyyyMmDd(dt)} ${_hhMm(dt)}';
-}
-
-String _yyyyMmDd(DateTime dt) {
-  final y = dt.year.toString().padLeft(4, '0');
-  final m = dt.month.toString().padLeft(2, '0');
-  final d = dt.day.toString().padLeft(2, '0');
-  return '$y-$m-$d';
-}
-
-String _hhMm(DateTime dt) {
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
-}
-
 String _valueLabel(Object? value) {
   if (value == null) return '-';
   if (value is String) {
@@ -676,11 +342,4 @@ String _valueLabel(Object? value) {
     return const JsonEncoder.withIndent('  ').convert(value);
   }
   return value.toString();
-}
-
-List<String> _optionsWithSelected(List<String> options, String? selected) {
-  final s = selected?.trim();
-  if (s == null || s.isEmpty) return options;
-  if (options.contains(s)) return options;
-  return <String>[s, ...options];
 }

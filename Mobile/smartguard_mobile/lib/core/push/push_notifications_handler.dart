@@ -117,8 +117,8 @@ class PushNotificationsHandler {
   }
 
   Future<void> _ensureFirebaseInitialized() async {
-    if (Firebase.apps.isNotEmpty) return;
     try {
+      if (Firebase.apps.isNotEmpty) return;
       await Firebase.initializeApp();
     } catch (_) {}
   }

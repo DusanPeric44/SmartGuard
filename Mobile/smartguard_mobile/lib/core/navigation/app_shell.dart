@@ -208,7 +208,7 @@ class AppShell extends ConsumerWidget {
                           color: notifications.unreadCount == 0
                               ? Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.35)
+                                ).colorScheme.onSurface.withValues(alpha: 0.35)
                               : Theme.of(context).colorScheme.onSurface,
                         ),
                         const SizedBox(width: 10),
@@ -219,7 +219,7 @@ class AppShell extends ConsumerWidget {
                                 color: notifications.unreadCount == 0
                                     ? Theme.of(
                                         context,
-                                      ).colorScheme.onSurface.withOpacity(0.35)
+                                      ).colorScheme.onSurface.withValues(alpha: 0.35)
                                     : null,
                               ),
                         ),

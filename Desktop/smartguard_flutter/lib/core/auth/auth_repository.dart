@@ -37,9 +37,11 @@ class AuthRepository {
       throw StateError('Login odgovor ne sadrži refreshToken.');
     }
 
-    await _tokenStore.setToken(token);
-    await _tokenStore.setRefreshToken(refreshToken);
-    await _tokenStore.setRole(_extractRole(json) ?? UserRole.viewer);
+    await Future.wait([
+      _tokenStore.setToken(token),
+      _tokenStore.setRefreshToken(refreshToken),
+      _tokenStore.setRole(_extractRole(json) ?? UserRole.viewer),
+    ]);
   }
 
   Future<String?> fetchRegistrationKey() async {

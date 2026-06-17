@@ -7,6 +7,13 @@ class AppConfig {
   static const String defaultNotificationsBaseUrl =
       'https://notifications.smartguard.website';
   static const String appScheme = 'smartguard';
+
+  /// SoftAP endpoint exposed by a SmartGuard camera while in provisioning mode.
+  /// Configurable via `--dart-define=DEVICE_PROVISIONING_URL=...`.
+  static const String deviceProvisioningUrl = String.fromEnvironment(
+    'DEVICE_PROVISIONING_URL',
+    defaultValue: 'http://192.168.4.1/provision',
+  );
   static const bool enableStubAuth = bool.fromEnvironment(
     'USE_STUB_AUTH',
     defaultValue: false,

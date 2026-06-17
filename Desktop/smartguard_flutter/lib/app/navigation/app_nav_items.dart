@@ -63,4 +63,10 @@ const appNavItems = <AppNavItem>[
     icon: Icons.history_outlined,
     route: '/audit',
   ),
+  AppNavItem(
+    id: 'reference-data',
+    label: 'Reference Data',
+    icon: Icons.category_outlined,
+    route: '/reference-data',
+  ),
 ];

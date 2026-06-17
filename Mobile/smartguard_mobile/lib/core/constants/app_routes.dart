@@ -13,4 +13,7 @@ class AppRoutes {
   static const String profile = '/profile';
 
   static const String liveFullscreen = '/live/fullscreen';
+
+  static const String deviceDetail = '/devices/:id';
+  static String deviceDetailPath(Object id) => '/devices/$id';
 }

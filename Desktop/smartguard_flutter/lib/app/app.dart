@@ -148,7 +148,6 @@ String? mapDeepLinkToLocation(Uri? uri) {
   if (uri == null) return null;
 
   final normalized = _normalizeDeepLinkPath(uri);
-  // TODO(rs2): Prosiriti deep link mapping za dodatne feature rute iz plana.
 
   if (normalized == '/dashboard') {
     return normalized;

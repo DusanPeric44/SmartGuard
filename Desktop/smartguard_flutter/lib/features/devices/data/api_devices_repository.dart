@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:smartguard_flutter/core/config/app_config.dart';
 import 'package:smartguard_flutter/core/network/api_client.dart';
 import 'package:smartguard_flutter/features/devices/data/devices_repository.dart';
 import 'package:smartguard_flutter/features/devices/model/device_models.dart';
@@ -120,7 +121,7 @@ class ApiDevicesRepository implements DevicesRepository {
   }) async {
     final response = await http
         .post(
-          Uri.parse('http://192.168.4.1/provision'),
+          Uri.parse(AppConfig.deviceProvisioningUrl),
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
           body: {'ssid': ssid, 'password': password, 'apiKey': registrationKey},
         )
