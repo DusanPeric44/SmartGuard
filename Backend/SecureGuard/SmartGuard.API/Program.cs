@@ -172,17 +172,20 @@ builder.Services.AddMassTransit(x =>
 
         cfg.ReceiveEndpoint("api-recording-upload-events", e =>
         {
+            e.UseMessageRetry(r => r.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)));
             e.ConfigureConsumer<RecordingUploadStartedConsumer>(context);
             e.ConfigureConsumer<RecordingUploadCompletedConsumer>(context);
         });
 
         cfg.ReceiveEndpoint("api-device-status-events", e =>
         {
+            e.UseMessageRetry(r => r.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)));
             e.ConfigureConsumer<ChangeDeviceStatusConsumer>(context);
         });
 
         cfg.ReceiveEndpoint("api-vector-match-events", e =>
         {
+            e.UseMessageRetry(r => r.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5)));
             e.ConfigureConsumer<VectorMatchCompletedConsumer>(context);
         });
     });

@@ -65,14 +65,21 @@ Ovo omogućava da se prepoznavanje skalira i unapređuje bez promjena firmware-a
 
 ## Konfiguracija
 
-Konfiguracija je u `appsettings.json` fajlovima za svaki servis:
+Strukturna (ne-tajna) konfiguracija je u `appsettings.json` fajlovima za svaki servis:
 
 - REST API: `Backend/SecureGuard/SmartGuard.API/appsettings.json`
 - Archive: `Backend/SecureGuard/SmartGuard.Archive.Microservice/appsettings.json`
 - Notifications: `Backend/SecureGuard/SmartGuard.Notifications.Microservice/appsettings.json`
 
+**Tajne i okruženje (Docker):** kod pokretanja preko Docker Compose-a tajne i konekcijski podaci
+dolaze iz `.env` fajla i injektuju se kao environment varijable koje **override-uju** vrijednosti iz
+`appsettings.json` (.NET mapira `Sekcija__Ključ`, npr. `ConnectionStrings__DefaultConnection`,
+`Jwt__Secret`, `RabbitMQ__Password`, `Smtp__Password`). Template je u `.env.example`.
+
 Važno:
 
+- `JWT_SECRET` mora biti **identičan** za `SmartGuard.API` i `SmartGuard.Notifications.Microservice`
+  (zajednička validacija JWT tokena za SignalR).
 - `SmartGuard.Notifications.Microservice` očekuje `firebase-service-account.json` na putanji iz konfiguracije.
 
 ## Baza i seed
@@ -126,42 +133,81 @@ Podrazumijevani port: `http://localhost:5002`
 
 ## Pokretanje (Docker Compose)
 
-Docker Compose se nalazi na:
+Docker Compose se nalazi na `Backend/SecureGuard/docker-compose.yml` i definiše **7 servisa**:
 
-- `Backend/SecureGuard/docker-compose.yml`
+| Servis                                    | Tip   | Image / build                                | Host port             |
+| ----------------------------------------- | ----- | -------------------------------------------- | --------------------- |
+| `smartguard.api`                          | app   | build `SmartGuard.API/Dockerfile`            | `5000`, `5010` (gRPC) |
+| `smartguard.archive.microservice`         | app   | build `SmartGuard.Archive.Microservice/Dockerfile` | `5001`          |
+| `smartguard.notifications.microservice`   | app   | build `SmartGuard.Notifications.Microservice/Dockerfile` | `5002`     |
+| `smartguard.vectormatching.microservice`  | app   | build `SmartGuard.VectorMatching.Microservice/Dockerfile` | — (worker) |
+| `sqlserver`                               | infra | `mcr.microsoft.com/mssql/server:2022-latest` | `1433`                |
+| `rabbitmq`                                | infra | `rabbitmq:3-management`                      | `5672`, `15672`       |
+| `redis`                                   | infra | `redis:7-alpine`                             | `6379`                |
 
-Compose koristi `.env` varijable (nije verzionisan). Kreiraj ga kopiranjem template-a:
+Karakteristike compose setupa:
+
+- **Konfiguracija iz `.env`** — svi servisi čitaju tajne i konekcijske podatke iz `.env` (preko
+  `environment:` mapiranja na .NET config ključeve, npr. `ConnectionStrings__DefaultConnection`,
+  `Jwt__Secret`, `RabbitMQ__Username`). Nema hardkodiranih tajni u compose-u.
+- **Interni hostname-ovi** — servisi se međusobno povezuju preko Docker mreže
+  (`sqlserver`, `rabbitmq`, `redis`, `smartguard.api`), a ne preko `localhost`.
+- **`depends_on` + healthcheck** — aplikativni servisi startaju tek kad su `sqlserver`, `rabbitmq`
+  i `redis` u stanju `healthy`.
+- **Persistentni volume-i** — `sqlserver_data`, `rabbitmq_data`, `redis_data`.
+
+### 1) Kreiraj `.env`
+
+Compose koristi `.env` varijable (nije verzionisan). Bez `.env` infra servisi neće startati jer
+passwordi nemaju default vrijednosti. Kreiraj ga kopiranjem template-a:
 
 ```bash
 cd Backend/SecureGuard
 cp .env.example .env
 ```
 
-Zatim upali sve servise:
+`.env` (vidi `.env.example`) sadrži:
+
+```
+RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_MANAGEMENT_PORT
+REDIS_PASSWORD, REDIS_PORT, REDIS_MAX_MEMORY
+SQLSERVER_PORT, SQLSERVER_SA_PASSWORD, SQLSERVER_EDITION, SQLSERVER_DB
+```
+
+### 2) Pokreni servise
 
 ```bash
 docker compose --env-file .env up --build
 ```
 
-Napomena: `docker-compose.yml` trenutno ne mapira portove za `smartguard.api` i `smartguard.archive.microservice` na host. Ako želiš pristup sa host mašine, napravi `docker-compose.override.yml` u istom folderu:
+### 3) Dostupni portovi nakon pokretanja
 
-```yml
-services:
-  smartguard.api:
-    ports:
-      - "5000:8080"
+Aplikativni servisi:
 
-  smartguard.archive.microservice:
-    ports:
-      - "5001:8080"
-```
+- REST API + SignalR: `http://localhost:5000`
+- API gRPC (http2): `localhost:5010`
+- Archive microservice: `http://localhost:5001`
+- Notifications microservice: `http://localhost:5002`
 
-Infrastrukturni portovi (po defaultu):
+Infrastrukturni servisi:
 
 - SQL Server: `localhost:1433`
 - RabbitMQ: `localhost:5672`
 - RabbitMQ management UI: `http://localhost:15672`
 - Redis: `localhost:6379`
+
+## Korisnički podaci za pristup
+
+Pri prvom pokretanju `SmartGuard.API` seed-a sljedeće naloge (vidi `SmartGuard.Services/DatabaseSeedService.cs`):
+
+| Uloga       | Email                      | Lozinka         |
+| ----------- | -------------------------- | --------------- |
+| Admin       | `admin@smartguard.com`     | `Admin123!`     |
+| HomeOwner   | `homeowner@smartguard.com` | `HomeOwner123!` |
+| Viewer      | `viewer@smartguard.com`    | `Viewer123!`    |
+
+Desktop (admin) aplikacija koristi **Admin** nalog; mobilna (klijentska) aplikacija koristi
+**HomeOwner** / **Viewer** naloge.
 
 ## Povezivanje sa klijentima
 

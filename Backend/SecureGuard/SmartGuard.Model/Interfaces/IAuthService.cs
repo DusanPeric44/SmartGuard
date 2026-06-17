@@ -9,7 +9,6 @@ namespace SmartGuard.Model.Interfaces
         Task<AuthResponse> RegisterAsync(RegisterRequest request);
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task<AuthResponse> ExternalProviderCallbackAsync(ExternalProviderCallbackRequest request);
-        Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
         Task ForgotPasswordAsync(ForgotPasswordRequest request);
         Task ResetPasswordAsync(ResetPasswordRequest request);
         Task ChangePasswordAsync(string userId, ChangePasswordRequest request);

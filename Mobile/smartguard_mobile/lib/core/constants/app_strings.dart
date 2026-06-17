@@ -25,6 +25,21 @@ class AppStrings {
   static const String actionDisconnect = 'Disconnect';
   static const String actionReconnect = 'Reconnect';
   static const String actionContinueWithGoogle = 'Continue with Google';
+  static const String actionForgotPassword = 'Forgot password?';
+
+  static const String forgotPasswordTitle = 'Reset password';
+  static const String forgotPasswordInstructions =
+      'Enter your account email and we will send you a reset code.';
+  static const String forgotPasswordSubmit = 'Send reset code';
+  static const String forgotPasswordSent =
+      'If the email is registered, a reset code has been sent.';
+  static const String resetPasswordTitle = 'Set new password';
+  static const String resetPasswordInstructions =
+      'Enter the reset code from your email and choose a new password.';
+  static const String resetCodeLabel = 'Reset code';
+  static const String resetPasswordSubmit = 'Reset password';
+  static const String resetPasswordSuccess =
+      'Password reset successfully. Please log in.';
 
   static const String validationRequired = 'This field is required';
   static const String validationInvalidEmail =

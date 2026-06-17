@@ -6,8 +6,10 @@ import '../../core/auth/session_controller.dart';
 import '../../core/auth/session_state.dart';
 import '../../core/constants/app_routes.dart';
 import '../../features/alarm_center/presentation/alarm_center_screen.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/devices/presentation/device_detail_screen.dart';
 import '../../features/known_persons/presentation/known_persons_screen.dart';
@@ -27,6 +29,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isSplash = state.matchedLocation == AppRoutes.splash;
       final isLoggingIn = state.matchedLocation == AppRoutes.login;
       final isRegistering = state.matchedLocation == AppRoutes.register;
+      final isPasswordRecovery =
+          state.matchedLocation == AppRoutes.forgotPassword ||
+          state.matchedLocation == AppRoutes.resetPassword;
 
       if (session.status == SessionStatus.unknown) {
         return isSplash ? null : AppRoutes.splash;
@@ -36,7 +41,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (isSplash) {
         return isAuthed ? AppRoutes.dashboard : AppRoutes.login;
       }
-      if (!isAuthed && !isLoggingIn && !isRegistering) {
+      if (!isAuthed && !isLoggingIn && !isRegistering && !isPasswordRecovery) {
         return AppRoutes.login;
       }
       if (isAuthed && (isLoggingIn || isRegistering)) {
@@ -56,6 +61,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.register,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordScreen(initialEmail: email);
+        },
       ),
       GoRoute(
         path: AppRoutes.profile,

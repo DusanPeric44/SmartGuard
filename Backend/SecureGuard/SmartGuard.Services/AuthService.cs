@@ -227,11 +227,6 @@ namespace SmartGuard.Services
             return await GenerateAuthResponseAsync(user);
         }
 
-        public async Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request)
-        {
-            throw new NotImplementedException("External token login is not supported. Use the external provider callback flow.");
-        }
-
         public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);

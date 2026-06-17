@@ -4,26 +4,100 @@ services:
     build:
       context: .
       dockerfile: SmartGuard.API/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:5000"   # REST + SignalR
+      - "5010:5010"   # gRPC (http2)
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${SQLSERVER_DB};User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
+      Jwt__Secret: ${JWT_SECRET}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
+      Redis__Configuration: "redis:6379,password=${REDIS_PASSWORD}"
+      Archive__BaseUrl: "http://smartguard.archive.microservice:8080"
 
   smartguard.archive.microservice:
     image: ${DOCKER_REGISTRY-}smartguardarchivemicroservice
     build:
       context: .
       dockerfile: SmartGuard.Archive.Microservice/Dockerfile
-
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__ArchiveDatabase: "Server=sqlserver,1433;Database=SmartGuard_Archive;User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
+      SmartGuardApi__BaseUrl: "http://smartguard.api:5000"
 
   smartguard.notifications.microservice:
     image: ${DOCKER_REGISTRY-}smartguardnotificationsmicroservice
     build:
       context: .
       dockerfile: SmartGuard.Notifications.Microservice/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5002:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__NotificationsDatabase: "Server=sqlserver,1433;Database=SmartGuardNotificationsDb;User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
+      Jwt__Secret: ${JWT_SECRET}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
+      Redis__Configuration: "redis:6379,password=${REDIS_PASSWORD}"
+      Smtp__Host: ${SMTP_HOST}
+      Smtp__Port: ${SMTP_PORT}
+      Smtp__UseSsl: ${SMTP_USE_SSL}
+      Smtp__Username: ${SMTP_USERNAME}
+      Smtp__Password: ${SMTP_PASSWORD}
+      Smtp__FromAddress: ${SMTP_FROM_ADDRESS}
+      Smtp__FromName: ${SMTP_FROM_NAME}
 
   smartguard.vectormatching.microservice:
     image: ${DOCKER_REGISTRY-}smartguardvectormatchingmicroservice
     build:
       context: .
       dockerfile: SmartGuard.VectorMatching.Microservice/Dockerfile
-
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      smartguard.api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
+      Grpc__ApiAddress: "http://smartguard.api:5010"
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -77,14 +151,14 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${SQLSERVER_SA_PASSWORD}", "-Q", "SELECT 1"]
+      # mssql 2022 image ships sqlcmd v18 (needs -C to trust self-signed cert); fall back to v17 path if present
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQLSERVER_SA_PASSWORD}\" -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"${SQLSERVER_SA_PASSWORD}\" -Q 'SELECT 1'"]
       interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 40s
 
 volumes:
   rabbitmq_data:
   redis_data:
   sqlserver_data:
-

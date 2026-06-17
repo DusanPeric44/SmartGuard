@@ -28,15 +28,6 @@ namespace SmartGuard.Model.Requests
         public string LastName { get; set; } = string.Empty;
     }
 
-    public class ExternalLoginRequest
-    {
-        [Required]
-        public string IdToken { get; set; } = string.Empty;
-
-        [Required]
-        public string Provider { get; set; } = string.Empty; // "Google" or "Microsoft"
-    }
-
     public class ExternalProviderCallbackRequest
     {
         [Required]

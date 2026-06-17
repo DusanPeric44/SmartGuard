@@ -11,8 +11,8 @@
 
 [![Licenca](https://img.shields.io/badge/Licenca-Open%20Source-blue?style=for-the-badge)](LICENSE)
 [![Platforma](https://img.shields.io/badge/Platforma-.NET%20%7C%20Flutter%20%7C%20ESP32-purple?style=for-the-badge)](https://github.com/DusanPeric44/SmartGuard)
-[![Backend](https://img.shields.io/badge/Backend-.NET%2010.0-512BD4?style=for-the-badge&logo=dotnet)](Backend/README.md)
-[![Mobile](https://img.shields.io/badge/Mobilna-Flutter-02569B?style=for-the-badge&logo=flutter)](Mobile/README.md)
+[![Backend](https://img.shields.io/badge/Backend-.NET%2010.0-512BD4?style=for-the-badge&logo=dotnet)](../Backend/README.md)
+[![Mobile](https://img.shields.io/badge/Mobilna-Flutter-02569B?style=for-the-badge&logo=flutter)](../Mobile/README.md)
 
 ---
 
@@ -238,24 +238,42 @@ Backend/SecureGuard/docker-compose.yml
 
 Pokretanjem Compose-a pokreću se:
 
-| Servis                                  | Opis                     |
-| --------------------------------------- | ------------------------ |
-| `smartguard.api`                        | REST API + SignalR       |
-| `smartguard.archive.microservice`       | Archiving worker         |
-| `smartguard.notifications.microservice` | Notification worker      |
-| `sqlserver`                             | SQL Server 2022          |
-| `rabbitmq`                              | RabbitMQ + management UI |
-| `redis`                                 | Redis cache              |
+Docker Compose definiše **7 servisa** — 4 aplikativna i 3 infrastrukturna. Svi su povezani na
+zajedničku mrežu, konfigurisani iz `.env` (interni hostname-ovi `sqlserver`/`rabbitmq`/`redis`) i
+startaju tek nakon što su infrastrukturni servisi `healthy` (`depends_on` + healthcheck):
 
-> ⚠️ Potreban je `.env` fajl sa sljedećim varijablama: `SQLSERVER_SA_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `REDIS_PASSWORD`
+| Servis                                    | Tip   | Image / build                                | Host port        |
+| ----------------------------------------- | ----- | -------------------------------------------- | ---------------- |
+| `smartguard.api`                          | app   | build `SmartGuard.API/Dockerfile`            | `5000`, `5010` (gRPC) |
+| `smartguard.archive.microservice`         | app   | build                                        | `5001`           |
+| `smartguard.notifications.microservice`   | app   | build                                        | `5002`           |
+| `smartguard.vectormatching.microservice`  | app   | build (worker, bez HTTP porta)               | —                |
+| `sqlserver`                               | infra | `mcr.microsoft.com/mssql/server:2022-latest` | `1433`           |
+| `rabbitmq`                                | infra | `rabbitmq:3-management`                      | `5672`, `15672`  |
+| `redis`                                   | infra | `redis:7-alpine`                             | `6379`           |
 
-**Pokretanje sistema iz root-a repozitorija:**
+**Korak 1 — kreiraj `.env` iz template-a** (bez ovoga servisi ne startaju):
+
+```bash
+cp Backend/SecureGuard/.env.example Backend/SecureGuard/.env
+```
+
+`.env` sadrži sljedeće varijable (vidi `Backend/SecureGuard/.env.example`):
+
+```
+RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_MANAGEMENT_PORT
+REDIS_PASSWORD, REDIS_PORT, REDIS_MAX_MEMORY
+SQLSERVER_PORT, SQLSERVER_SA_PASSWORD, SQLSERVER_EDITION, SQLSERVER_DB
+```
+
+**Korak 2 — pokretanje iz root-a repozitorija:**
 
 ```bash
 docker compose -f Backend/SecureGuard/docker-compose.yml --env-file Backend/SecureGuard/.env up --build
 ```
 
-Za mapiranje portova (npr. `localhost:5000`, `localhost:5001`), pogledajte [Backend/README.md](Backend/README.md).
+Nakon pokretanja: API na `http://localhost:5000`, Archive na `http://localhost:5001`,
+Notifications na `http://localhost:5002`, RabbitMQ UI na `http://localhost:15672`. Detalji u [Backend/README.md](../Backend/README.md).
 
 ---
 
@@ -272,7 +290,7 @@ Za mapiranje portova (npr. `localhost:5000`, `localhost:5001`), pogledajte [Back
 # Pokreni Redis (opcionalno)
 ```
 
-**Korak 2 — Pokretanje .NET servisa** _(detalji u [Backend/README.md](Backend/README.md))_:
+**Korak 2 — Pokretanje .NET servisa** _(detalji u [Backend/README.md](../Backend/README.md))_:
 
 - REST API
 - Archiving Worker
@@ -280,10 +298,10 @@ Za mapiranje portova (npr. `localhost:5000`, `localhost:5001`), pogledajte [Back
 
 **Korak 3 — Pokretanje Flutter klijenata:**
 
-- 📱 Mobilna → [Mobile/README.md](Mobile/README.md)
-- 🖱️ Desktop → [Desktop/README.md](Desktop/README.md)
+- 📱 Mobilna → [Mobile/README.md](../Mobile/README.md)
+- 🖱️ Desktop → [Desktop/README.md](../Desktop/README.md)
 
-**Korak 4 — Flash i provisioning ESP32-a** → [ESP32/README.md](ESP32/README.md)
+**Korak 4 — Flash i provisioning ESP32-a** → [ESP32/README.md](../ESP32/README.md)
 
 ---
 

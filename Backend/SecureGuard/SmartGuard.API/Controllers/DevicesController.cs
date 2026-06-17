@@ -33,12 +33,6 @@ namespace SmartGuard.API.Controllers
             return Ok(result);
         }
 
-        [HttpPatch("{id}/status")]
-        public virtual Task<Device> UpdateStatus(int id, [FromBody] string status)
-        {
-            throw new NotImplementedException();
-        }
-
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<ActionResult<Device>> Register([FromBody] DeviceRegistrationRequest request)

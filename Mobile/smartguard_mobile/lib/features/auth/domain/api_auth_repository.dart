@@ -39,4 +39,28 @@ class ApiAuthRepository implements AuthRepository {
     );
     return AuthTokens.fromJson(response.data);
   }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    await _dio.post<Object?>(
+      ApiPaths.forgotPassword,
+      data: {'email': email},
+    );
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    await _dio.post<Object?>(
+      ApiPaths.resetPassword,
+      data: {
+        'email': email,
+        'token': token,
+        'newPassword': newPassword,
+      },
+    );
+  }
 }

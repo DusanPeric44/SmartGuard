@@ -20,12 +20,6 @@ namespace SmartGuard.API.Controllers
             _publishEndpoint = publishEndpoint;
         }
 
-        [HttpPost("{id}/request-clip")]
-        public virtual Task<Recording> RequestClip(int id)
-        {
-            throw new NotImplementedException();
-        }
-
         [HttpDelete("{id}")]
         public override async Task<bool> Delete(int id)
         {

@@ -8,6 +8,8 @@ class ApiPaths {
   static const String me = '/auth/me';
   static const String updateMe = '/users/me';
   static const String changePassword = '/auth/change-password';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
   static const String pushToken = '/users/push-token';
 
   static const String knownPersonsPreferencesSearch =

@@ -68,25 +68,6 @@ namespace SmartGuard.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("external-login")]
-        public async Task<ActionResult<AuthResponse>> ExternalLogin([FromBody] ExternalLoginRequest request)
-        {
-            try
-            {
-                var response = await _authService.ExternalLoginAsync(request);
-                return Ok(response);
-            }
-            catch (NotImplementedException ex)
-            {
-                return StatusCode(501, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {

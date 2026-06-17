@@ -122,7 +122,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppDimens.spaceL),
+                      const SizedBox(height: AppDimens.spaceS),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () =>
+                              context.push(AppRoutes.forgotPassword),
+                          child: const Text(AppStrings.actionForgotPassword),
+                        ),
+                      ),
+                      const SizedBox(height: AppDimens.spaceM),
                       FilledButton(
                         onPressed: state.canSubmit && !state.isSubmitting
                             ? controller.submit
