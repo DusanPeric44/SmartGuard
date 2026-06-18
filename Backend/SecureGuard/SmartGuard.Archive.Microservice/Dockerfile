@@ -30,4 +30,7 @@ RUN dotnet publish "./SmartGuard.Archive.Microservice.csproj" -c $BUILD_CONFIGUR
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+USER root
+RUN mkdir -p /app/ffmpeg && chmod 777 /app/ffmpeg && chmod 777 /app/ffmpeg/version.json
+USER $APP_UID
 ENTRYPOINT ["dotnet", "SmartGuard.Archive.Microservice.dll"]
