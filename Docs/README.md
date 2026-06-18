@@ -102,11 +102,6 @@ Podrška za više ESP32 uređaja uz asinhroničnu obradu putem message brokera.
 
 SmartGuard je dizajniran kao skup komponenti s jasnom podjelom između real-time streaminga, poslovne logike i zahtjevnih pozadinskih operacija.
 
-<!-- 📌 PLACEHOLDER ZA SLIKU: Zamijenite dijagramom arhitekture -->
-
-> **[ OVDJE UMETNUTI DIJAGRAM ARHITEKTURE ]**
-> _(npr. dijagram koji prikazuje ESP32 → REST API → SignalR → Flutter klijenti)_
-
 ### Pregled komponenti
 
 | Komponenta                        | Uloga                                                                                                  |
