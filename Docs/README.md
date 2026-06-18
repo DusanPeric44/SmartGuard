@@ -305,16 +305,6 @@ Notifications na `http://localhost:5002`, RabbitMQ UI na `http://localhost:15672
 
 ---
 
-## 📸 Screenshot-ovi
-
-<!-- 📌 PLACEHOLDER ZA SLIKE: Zamijenite stvarnim screenshot-ovima aplikacije -->
-
-|        Mobilna aplikacija         |           Desktop Admin            |           Live Stream prikaz           |
-| :-------------------------------: | :--------------------------------: | :------------------------------------: |
-| _[ UMETNUTI SCREENSHOT MOBILNE ]_ | _[ UMETNUTI SCREENSHOT DESKTOPA ]_ | _[ UMETNUTI SCREENSHOT LIVE PRIKAZA ]_ |
-
----
-
 ## 👥 Tim
 
 | Ime                       | ID       |
