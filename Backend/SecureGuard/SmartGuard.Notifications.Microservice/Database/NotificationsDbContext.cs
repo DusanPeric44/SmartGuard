@@ -11,6 +11,8 @@ namespace SmartGuard.Notifications.Microservice.Database
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.HasDefaultSchema("notifications");
+
             modelBuilder.Entity<NotificationEntity>(entity =>
             {
                 entity.ToTable("Notifications");

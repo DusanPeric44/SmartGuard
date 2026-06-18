@@ -12,6 +12,7 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["Directory.Packages.props", "."]
 COPY ["SmartGuard.Archive.Microservice/SmartGuard.Archive.Microservice.csproj", "SmartGuard.Archive.Microservice/"]
 COPY ["SmartGuard.Model/SmartGuard.Model.csproj", "SmartGuard.Model/"]
 COPY ["SmartGuard.Services/SmartGuard.Services.csproj", "SmartGuard.Services/"]

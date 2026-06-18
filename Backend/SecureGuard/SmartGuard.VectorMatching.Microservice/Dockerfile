@@ -5,6 +5,7 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["Directory.Packages.props", "."]
 COPY ["SmartGuard.VectorMatching.Microservice/SmartGuard.VectorMatching.Microservice.csproj", "SmartGuard.VectorMatching.Microservice/"]
 COPY ["SmartGuard.Model/SmartGuard.Model.csproj", "SmartGuard.Model/"]
 RUN dotnet restore "./SmartGuard.VectorMatching.Microservice/SmartGuard.VectorMatching.Microservice.csproj"

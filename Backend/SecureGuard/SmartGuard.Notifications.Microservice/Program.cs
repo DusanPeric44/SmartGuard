@@ -16,6 +16,7 @@ using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+const string DefaultJwtSecret = "DefaultSecretKeyForSmartGuardAPI1234567890";
 
 builder.Services.AddCors(options =>
 {
@@ -58,7 +59,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
+var jwtSecret = string.IsNullOrWhiteSpace(jwtSettings["Secret"])
+    ? DefaultJwtSecret
+    : jwtSettings["Secret"]!;
+var secretKey = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
 {

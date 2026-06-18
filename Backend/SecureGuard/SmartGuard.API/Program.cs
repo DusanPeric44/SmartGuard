@@ -25,6 +25,7 @@ using System.Text;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+const string DefaultJwtSecret = "DefaultSecretKeyForSmartGuardAPI1234567890";
 
 // Add services to the container.
 builder.Services.AddCors(options =>
@@ -65,7 +66,10 @@ builder.Services.AddHostedService<AuditLoggerBackgroundWriter>();
 
 // 3. Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
+var jwtSecret = string.IsNullOrWhiteSpace(jwtSettings["Secret"])
+    ? DefaultJwtSecret
+    : jwtSettings["Secret"]!;
+var secretKey = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
 {

@@ -13,12 +13,12 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "5000:5000"   # REST + SignalR
-      - "5010:5010"   # gRPC (http2)
+      - "5000:8080"   # REST + SignalR
+      - "5010:8081"   # gRPC (http2)
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${SQLSERVER_DB};User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
-      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Secret: ${JWT_SECRET:-DefaultSecretKeyForSmartGuardAPI1234567890}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
@@ -66,7 +66,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__NotificationsDatabase: "Server=sqlserver,1433;Database=SmartGuardNotificationsDb;User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
-      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Secret: ${JWT_SECRET:-DefaultSecretKeyForSmartGuardAPI1234567890}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}

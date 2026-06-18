@@ -337,7 +337,10 @@ namespace SmartGuard.Services
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
+            var jwtSecret = string.IsNullOrWhiteSpace(_configuration["Jwt:Secret"])
+                ? "DefaultSecretKeyForSmartGuardAPI1234567890"
+                : _configuration["Jwt:Secret"]!;
+            var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
@@ -398,7 +401,10 @@ namespace SmartGuard.Services
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"] ?? "DefaultSecretKeyForSmartGuardAPI1234567890");
+            var jwtSecret = string.IsNullOrWhiteSpace(_configuration["Jwt:Secret"])
+                ? "DefaultSecretKeyForSmartGuardAPI1234567890"
+                : _configuration["Jwt:Secret"]!;
+            var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             var tokenValidationParameters = new TokenValidationParameters
             {
