@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/config/app_config.dart';
 import '../../../../core/constants/app_dimens.dart';
+import '../../../../core/widgets/authenticated_network_image.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../domain/alarm.dart';
 import 'alarm_audit_details.dart';
@@ -93,24 +93,22 @@ class AlarmTile extends StatelessWidget {
         ),
         trailing: AlarmStatusChip(status: status, statusName: alarm.statusName),
         children: [
-          if (_resolveImageUrl(alarm.linkedEventImagePath) case final u?)
+          if (alarm.linkedEventImagePath?.trim().isNotEmpty ?? false)
             ClipRRect(
               borderRadius: AppDimens.cardRadius,
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  u,
+                child: AuthenticatedNetworkImage(
+                  url: alarm.linkedEventImagePath,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: scheme.surfaceContainerHighest,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    );
-                  },
+                  errorWidget: Container(
+                    color: scheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -145,16 +143,5 @@ class AlarmTile extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String? _resolveImageUrl(String? raw) {
-    final value = raw?.trim();
-    if (value == null || value.isEmpty) return null;
-
-    final uri = Uri.tryParse(value);
-    if (uri != null && uri.hasScheme) return value;
-
-    final base = Uri.parse(AppConfig.apiBaseUrl);
-    return base.resolve(value).toString();
   }
 }

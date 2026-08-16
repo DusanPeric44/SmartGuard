@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smart_guard_flutter/features/profile/application/profile_controller.dart';
 import 'package:smart_guard_flutter/features/profile/domain/profile_models.dart';
 
+import '../../../../core/auth/session_controller.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/constants/app_dimens.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -26,6 +27,11 @@ class RecordingDetailsSheet extends ConsumerWidget {
     final role = profileState.profile?.role ?? UserRole.viewer;
     final busy = state.downloadingIds.contains(recording.id);
     final resolvedVideo = _resolveRecordingVideoUrl(recording);
+    final accessToken = ref.watch(sessionControllerProvider).tokens?.accessToken;
+    final videoHeaders = <String, String>{
+      if (accessToken != null && accessToken.trim().isNotEmpty)
+        'Authorization': 'Bearer ${accessToken.trim()}',
+    };
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -56,7 +62,10 @@ class RecordingDetailsSheet extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: resolvedVideo.url != null
-                ? RecordingVideoPlayer(url: resolvedVideo.url!)
+                ? RecordingVideoPlayer(
+                    url: resolvedVideo.url!,
+                    headers: videoHeaders,
+                  )
                 : RecordingVideoUnavailable(message: resolvedVideo.message),
           ),
           const SizedBox(height: AppDimens.spaceL),

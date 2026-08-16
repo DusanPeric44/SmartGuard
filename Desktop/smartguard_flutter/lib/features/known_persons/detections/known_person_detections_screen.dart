@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
+import 'package:smartguard_flutter/core/widgets/authenticated_network_image.dart';
 import 'package:smartguard_flutter/features/known_persons/detections/data/api_known_person_detections_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/detections/data/known_person_detections_repository.dart';
 import 'package:smartguard_flutter/features/known_persons/detections/model/known_person_detection_image.dart';
@@ -176,8 +177,7 @@ class _KnownPersonDetectionsScreenState extends State<KnownPersonDetectionsScree
   }
 
   Future<void> _openPreview(KnownPersonDetectionImage item) async {
-    final api = AppScope.of(context).api;
-    final url = api.baseUri.toString() + item.image;
+    final url = item.image;
     final timestamp = item.timestamp?.toString() ?? '';
     final score = item.score?.toStringAsFixed(3) ?? '';
 
@@ -221,12 +221,10 @@ class _KnownPersonDetectionsScreenState extends State<KnownPersonDetectionsScree
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: InteractiveViewer(
-                        child: Image.network(
-                          url,
+                        child: AuthenticatedNetworkImage(
+                          url: url,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(child: Text('Failed to load.'));
-                          },
+                          errorWidget: const Center(child: Text('Failed to load.')),
                         ),
                       ),
                     ),
@@ -249,8 +247,6 @@ class _DetectionImageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final api = AppScope.of(context).api;
-    final url = api.baseUri.toString() + image.image;
     final ts = image.timestamp?.toString() ?? '';
 
     return Card(
@@ -260,22 +256,10 @@ class _DetectionImageTile extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: Image.network(
-                url,
+              child: AuthenticatedNetworkImage(
+                url: image.image,
                 fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(
-                    child: SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return const Center(child: Text('No image'));
-                },
+                errorWidget: const Center(child: Text('No image')),
               ),
             ),
             if (ts.isNotEmpty)

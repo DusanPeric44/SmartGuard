@@ -4,9 +4,10 @@ import 'package:video_player/video_player.dart';
 import '../../../../core/constants/app_dimens.dart';
 
 class RecordingVideoPlayer extends StatefulWidget {
-  const RecordingVideoPlayer({super.key, required this.url});
+  const RecordingVideoPlayer({super.key, required this.url, this.headers});
 
   final Uri url;
+  final Map<String, String>? headers;
 
   @override
   State<RecordingVideoPlayer> createState() => _RecordingVideoPlayerState();
@@ -33,7 +34,10 @@ class _RecordingVideoPlayerState extends State<RecordingVideoPlayer> {
   }
 
   void _initController() {
-    final controller = VideoPlayerController.networkUrl(widget.url);
+    final controller = VideoPlayerController.networkUrl(
+      widget.url,
+      httpHeaders: widget.headers ?? const {},
+    );
     controller.addListener(_onControllerChanged);
     final future = controller.initialize();
     setState(() {

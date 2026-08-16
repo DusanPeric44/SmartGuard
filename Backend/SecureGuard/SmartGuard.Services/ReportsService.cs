@@ -17,13 +17,15 @@ namespace SmartGuard.Services
     public class ReportsService : BaseCRUDService<Model.DTOs.Report, Database.Report, ReportSearchObject, ReportInsertRequest, ReportUpdateRequest>, IReportsService
     {
         private readonly IFileStorageService _fileStorage;
+        private readonly IUserContext _userContext;
         private readonly ILogger<ReportsService> _logger;
         private static bool _licenseConfigured;
         private static readonly object _licenseLock = new();
 
-        public ReportsService(SmartGuardContext context, IFileStorageService fileStorage, ILogger<ReportsService> logger) : base(context)
+        public ReportsService(SmartGuardContext context, IFileStorageService fileStorage, IUserContext userContext, ILogger<ReportsService> logger) : base(context)
         {
             _fileStorage = fileStorage;
+            _userContext = userContext;
             _logger = logger;
 
             if (!_licenseConfigured)
@@ -166,6 +168,11 @@ namespace SmartGuard.Services
                 throw new UserException("Report not found");
             }
 
+            if (!_userContext.IsAdmin && report.GeneratedByUserId != _userContext.UserId)
+            {
+                throw new UnauthorizedAccessException("You don't have access to this report");
+            }
+
             if (string.IsNullOrWhiteSpace(report.FileUrl))
             {
                 throw new UserException("Report file is not available");
@@ -234,19 +241,27 @@ namespace SmartGuard.Services
 
                 var fileUrl = await _fileStorage.SaveFileAsync(pdfBytes, ".pdf", Path.Combine("reports", reportTypeName));
 
-                report.FileUrl = fileUrl;
-                report.GeneratedAtUtc = DateTime.UtcNow;
-                report.StatusId = generatedStatusId;
-                report.Error = null;
-                await _context.SaveChangesAsync();
+                await using (var tx = await _context.Database.BeginTransactionAsync())
+                {
+                    report.FileUrl = fileUrl;
+                    report.GeneratedAtUtc = DateTime.UtcNow;
+                    report.StatusId = generatedStatusId;
+                    report.Error = null;
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
 
                 _logger.LogAuditSuccess("ReportGenerationSucceeded", $"Report:{report.Id}", $"Type={reportTypeName}; TypeId={reportType.Id}; PeriodStartUtc={periodStartUtc:O}; PeriodEndUtc={periodEndUtc:O}; FileUrl={fileUrl}");
             }
             catch (Exception ex)
             {
-                report.StatusId = failedStatusId;
-                report.Error = ex.Message;
-                await _context.SaveChangesAsync();
+                await using (var tx = await _context.Database.BeginTransactionAsync())
+                {
+                    report.StatusId = failedStatusId;
+                    report.Error = ex.Message;
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
 
                 _logger.LogAuditFailed("ReportGenerationFailed", $"Report:{report.Id}", $"Type={reportTypeName}; TypeId={reportType.Id}; PeriodStartUtc={periodStartUtc:O}; PeriodEndUtc={periodEndUtc:O}; Error={ex.Message}", ex);
             }

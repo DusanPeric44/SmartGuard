@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartGuard.Archive.Microservice.Database;
+using SmartGuard.Model.Interfaces;
 using SmartGuard.Services.Database;
 
 namespace SmartGuard.Archive.Microservice.Controllers
@@ -10,12 +12,21 @@ namespace SmartGuard.Archive.Microservice.Controllers
     {
         private readonly ArchiveDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly IUserContext _userContext;
+        private readonly IDeviceAccessService _deviceAccessService;
         private readonly ILogger<VideoArchiveController> _logger;
 
-        public VideoArchiveController(ArchiveDbContext context, IWebHostEnvironment environment, ILogger<VideoArchiveController> logger)
+        public VideoArchiveController(
+            ArchiveDbContext context,
+            IWebHostEnvironment environment,
+            IUserContext userContext,
+            IDeviceAccessService deviceAccessService,
+            ILogger<VideoArchiveController> logger)
         {
             _context = context;
             _environment = environment;
+            _userContext = userContext;
+            _deviceAccessService = deviceAccessService;
             _logger = logger;
         }
 
@@ -44,12 +55,26 @@ namespace SmartGuard.Archive.Microservice.Controllers
         }
 
         [HttpGet("download/{fileName}")]
-        public IActionResult Download(string fileName)
+        public async Task<IActionResult> Download(string fileName)
         {
             var safeFileName = Path.GetFileName(fileName ?? string.Empty);
             if (string.IsNullOrWhiteSpace(safeFileName) || !string.Equals(safeFileName, fileName, StringComparison.Ordinal))
             {
                 return BadRequest("Invalid file name.");
+            }
+
+            var recording = await _context.Recordings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.FilePath != null && r.FilePath.EndsWith(safeFileName));
+
+            if (recording?.DeviceId == null)
+            {
+                return NotFound();
+            }
+
+            if (!await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, recording.DeviceId.Value, DeviceAccessPermission.Download, _userContext.IsAdmin))
+            {
+                return Forbid();
             }
 
             var physicalPath = Path.Combine(_environment.ContentRootPath, "uploads", "videos", safeFileName);

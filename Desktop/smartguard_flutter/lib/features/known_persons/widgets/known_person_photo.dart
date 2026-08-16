@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smartguard_flutter/core/widgets/authenticated_network_image.dart';
 
 class KnownPersonPhoto extends StatelessWidget {
   const KnownPersonPhoto({
@@ -16,35 +17,12 @@ class KnownPersonPhoto extends StatelessWidget {
   Widget build(BuildContext context) {
     final image = photoUrl.trim().isEmpty
         ? CircleAvatar()
-        : Image.network(
-            photoUrl,
+        : AuthenticatedNetworkImage(
+            url: photoUrl,
             fit: BoxFit.cover,
             width: double.infinity,
             height: 160,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return SizedBox(
-                width: double.infinity,
-                height: 160,
-                child: Center(
-                  child: SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: progress.expectedTotalBytes == null
-                          ? null
-                          : (progress.cumulativeBytesLoaded /
-                                    (progress.expectedTotalBytes ?? 1))
-                                .clamp(0.0, 1.0),
-                    ),
-                  ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset('assets/images/empty-avatar.png');
-            },
+            errorWidget: Image.asset('assets/images/empty-avatar.png'),
           );
 
     return ClipRRect(
