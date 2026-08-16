@@ -8,7 +8,7 @@ class AppConfig {
 
   static bool get apiBaseUrlIsOverridden => apiBaseUrl != defaultApiBaseUrl;
 
-  static const String defaultArchiveBaseUrl = apiBaseUrl;
+  static const String defaultArchiveBaseUrl = 'http://10.0.2.2:5001';
   static const String archiveBaseUrl = String.fromEnvironment(
     'ARCHIVE_BASE_URL',
     defaultValue: defaultArchiveBaseUrl,
