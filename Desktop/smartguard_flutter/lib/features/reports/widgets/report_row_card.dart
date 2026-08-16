@@ -8,11 +8,13 @@ class ReportRowCard extends StatelessWidget {
     required this.row,
     required this.isBusy,
     required this.onDownload,
+    required this.onPrint,
   });
 
   final ReportRow row;
   final bool isBusy;
   final VoidCallback onDownload;
+  final VoidCallback onPrint;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,12 @@ class ReportRowCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            IconButton.filledTonal(
+              onPressed: isBusy ? null : onPrint,
+              tooltip: 'Print',
+              icon: const Icon(Icons.print_outlined),
+            ),
+            const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: isBusy ? null : onDownload,
               icon: isBusy

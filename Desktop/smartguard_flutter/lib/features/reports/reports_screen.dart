@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 import 'package:smartguard_flutter/app/app_scope.dart';
 import 'package:smartguard_flutter/features/reports/data/api_reports_repository.dart';
 import 'package:smartguard_flutter/features/reports/data/reports_repository.dart';
@@ -179,6 +180,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           row: r,
           isBusy: busy,
           onDownload: () => _download(vm, r),
+          onPrint: () => _print(vm, r),
         );
       },
     );
@@ -259,6 +261,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Saved: $filePath')));
+  }
+
+  Future<void> _print(ReportsViewModel vm, ReportRow row) async {
+    if (row.fileUrl.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report has no download path.')),
+      );
+      return;
+    }
+
+    final bytes = await vm.download(row);
+    if (!mounted) return;
+
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(vm.errorMessage ?? 'Failed to load report for printing.')),
+      );
+      return;
+    }
+
+    await Printing.layoutPdf(onLayout: (format) async => bytes);
   }
 
   Future<String?> _saveAs(String fileName, Uint8List bytes) async {
