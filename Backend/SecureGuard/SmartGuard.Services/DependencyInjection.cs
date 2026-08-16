@@ -34,6 +34,7 @@ namespace SmartGuard.Services
             services.AddScoped<IDatabaseSeedService, DatabaseSeedService>();
             services.AddScoped<IUserContext, UserContext>();
             services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddScoped<IDeviceAccessService, DeviceAccessService>();
             
             // Reference Services
             services.AddScoped<IDeviceStatusesService, DeviceStatusesService>();
@@ -41,6 +42,8 @@ namespace SmartGuard.Services
             services.AddScoped<IRecordingStatusesService, RecordingStatusesService>();
             services.AddScoped<IAlertTypesService, AlertTypesService>();
             services.AddScoped<IAlertStatusesService, AlertStatusesService>();
+            services.AddScoped<IReportTypesService, ReportTypesService>();
+            services.AddScoped<IReportStatusesService, ReportStatusesService>();
             
             // Helper Services
             services.AddScoped<ICosineSimilarityService, CosineSimilarityService>();

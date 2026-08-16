@@ -9,6 +9,8 @@ namespace SmartGuard.Notifications.Microservice.Services
         public string Email => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
         public string UserId => httpContextAccessor.HttpContext?.User?.FindFirstValue("UserId") ?? string.Empty;
+
+        public bool IsAdmin => httpContextAccessor.HttpContext?.User?.IsInRole("Admin") ?? false;
     }
 }
 

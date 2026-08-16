@@ -4,5 +4,6 @@ namespace SmartGuard.Model.Interfaces
     {
         string Email { get; }
         string UserId { get; }
+        bool IsAdmin { get; }
     }
 }
