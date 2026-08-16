@@ -64,7 +64,7 @@ void handleProvision() {
     provisioned = true;
     flashOn();
     Serial.println("Received SSID: " + ssid_to_connect);
-    Serial.println("Received Registration Key: " + registration_key);
+    Serial.println("Received Registration Key: ****");
   } else {
     server.send(400, "text/plain", "SSID, Password and apiKey required");
   }
@@ -74,11 +74,24 @@ String getRegistrationKey() {
   return registration_key;
 }
 
+// Derives a per-device provisioning AP password from the chip's unique efuse MAC, so devices
+// don't all share the same guessable "password123" during the (brief, physically-local) setup
+// window. Printed to Serial once so whoever is provisioning the device (with physical/USB access)
+// can read it off.
+String getDeviceApPassword() {
+  uint64_t chipId = ESP.getEfuseMac();
+  char buf[13];
+  snprintf(buf, sizeof(buf), "sg%010llx", (unsigned long long)(chipId & 0xFFFFFFFFFFULL));
+  return String(buf);
+}
+
 void setupWifiProvisioning() {
   while (true) {
     Serial.println("Starting WiFi Provisioning...");
-    
-    WiFi.softAP("ESP32-SmartCam-AP", "password123"); 
+
+    String apPassword = getDeviceApPassword();
+    WiFi.softAP("ESP32-SmartCam-AP", apPassword.c_str());
+    Serial.println("Provisioning AP password: " + apPassword);
     IPAddress IP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(IP);

@@ -149,6 +149,13 @@ Mobile/android/.idea/
 Mobile/android/*.iml
 
 ############################################
+# ESP32
+############################################
+
+# Device-specific backend URLs (copy config.h.example -> config.h and fill in)
+ESP32/SmartGuard/config.h
+
+############################################
 # TEST / COVERAGE
 ############################################
 

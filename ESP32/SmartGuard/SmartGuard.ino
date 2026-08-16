@@ -10,13 +10,12 @@
 #include "StorageManager.h"
 #include "SecurityManager.h"
 #include "FlashManager.h"
+#include "config.h"
 
 // Configuration
 #define PIR_PIN 3
-#define SIGNALR_HOST "api.smartguard.website"
-#define SIGNALR_PORT 80
-#define BACKEND_SYNC_URL "http://archive.smartguard.website/upload"
-#define BACKEND_BASE_URL "http://api.smartguard.website"
+// SIGNALR_HOST, SIGNALR_PORT, BACKEND_SYNC_URL, BACKEND_BASE_URL come from config.h
+// (gitignored - copy config.h.example to config.h and fill in your deployment's hosts).
 
 static const int JPEG_QUALITY_STREAM = 20;
 
@@ -187,7 +186,7 @@ void setup() {
     Serial.println("Device not registered (or missing ID). Attempting registration...");
     String registrationKey = getRegistrationKey();
     if (registrationKey != "") {
-      Serial.println("Attempting to connect with registration key: " + registrationKey);
+      Serial.println("Attempting to connect with registration key: ****");
       if (registerDevice(BACKEND_BASE_URL, registrationKey.c_str())) {
         Serial.println("Device registered successfully!");
         deviceId = getDeviceId();
@@ -202,12 +201,12 @@ void setup() {
       Serial.println("No registration key found. Skipping registration.");
     }
   } else {
-    Serial.println("Device already registered with token: " + deviceToken);
+    Serial.println("Device already registered (token: ****)");
   }
 
   if (deviceId > 0) {
-    webSocketPath = String("/api/esp32/ws?deviceId=") + String(deviceId);
-    Serial.println("Initializing Stream Manager with path: " + webSocketPath);
+    webSocketPath = String("/api/esp32/ws?deviceId=") + String(deviceId) + "&token=" + getDeviceToken();
+    Serial.println("Initializing Stream Manager with path: /api/esp32/ws?deviceId=" + String(deviceId) + "&token=****");
     setupStreamManager(SIGNALR_HOST, SIGNALR_PORT, webSocketPath.c_str());
   } else {
     Serial.println("Device ID not available. Stream Manager not started.");

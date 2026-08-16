@@ -1,0 +1,13 @@
+#ifndef SMARTGUARD_CONFIG_H
+#define SMARTGUARD_CONFIG_H
+
+// Copy this file to config.h (gitignored) and fill in your deployment's actual hosts.
+// Use HTTPS/wss here before pointing a device at anything beyond a local dev network -
+// these defaults are plain HTTP for local development only.
+
+#define SIGNALR_HOST "192.168.1.100"
+#define SIGNALR_PORT 5000
+#define BACKEND_SYNC_URL "http://192.168.1.100:5001/upload"
+#define BACKEND_BASE_URL "http://192.168.1.100:5000"
+
+#endif
