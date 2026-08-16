@@ -37,12 +37,8 @@ namespace SmartGuard.Services
 
             int count = await query.CountAsync();
 
-            if (search?.Page.HasValue == true && search?.PageSize.HasValue == true)
-            {
-                // Max PageSize = 100
-                int pageSize = search.PageSize.Value > 100 ? 100 : search.PageSize.Value;
-                query = query.Skip((search.Page.Value - 1) * pageSize).Take(pageSize);
-            }
+            var (page, pageSize) = PaginationHelper.Normalize(search?.Page, search?.PageSize);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
             var list = await query.ToListAsync();
 
