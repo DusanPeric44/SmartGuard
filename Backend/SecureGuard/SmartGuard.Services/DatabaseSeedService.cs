@@ -56,7 +56,7 @@ namespace SmartGuard.Services
             }
 
             // 5. Seed Alert Types
-            string[] alertTypes = { "IntruderDetected" };
+            string[] alertTypes = { "IntruderDetected", "KnownPersonDetected" };
             foreach (var type in alertTypes)
             {
                 if (!await _context.AlertTypes.AnyAsync(x => x.Name == type))

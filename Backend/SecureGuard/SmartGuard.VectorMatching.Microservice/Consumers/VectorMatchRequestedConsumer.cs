@@ -1,9 +1,11 @@
 using MassTransit;
 using Grpc.Core;
+using Microsoft.Extensions.Options;
 using SmartGuard.Model;
 using SmartGuard.Model.Events;
 using SmartGuard.Grpc.VectorMatching;
 using SmartGuard.Model.Interfaces;
+using SmartGuard.VectorMatching.Microservice.Services;
 
 namespace SmartGuard.VectorMatching.Microservice.Consumers
 {
@@ -11,11 +13,16 @@ namespace SmartGuard.VectorMatching.Microservice.Consumers
     {
         private readonly ICosineSimilarityService _cosineSimilarity;
         private readonly VectorMatchingDataService.VectorMatchingDataServiceClient _client;
+        private readonly FaceMatchingOptions _faceMatchingOptions;
 
-        public VectorMatchRequestedConsumer(ICosineSimilarityService cosineSimilarity, VectorMatchingDataService.VectorMatchingDataServiceClient client)
+        public VectorMatchRequestedConsumer(
+            ICosineSimilarityService cosineSimilarity,
+            VectorMatchingDataService.VectorMatchingDataServiceClient client,
+            IOptions<FaceMatchingOptions> faceMatchingOptions)
         {
             _cosineSimilarity = cosineSimilarity;
             _client = client;
+            _faceMatchingOptions = faceMatchingOptions.Value;
         }
 
         public async Task Consume(ConsumeContext<IVectorMatchRequestedEvent> context)
@@ -57,6 +64,7 @@ namespace SmartGuard.VectorMatching.Microservice.Consumers
 
             var bestScore = 0d;
             int? bestPersonId = null;
+            float[]? bestEmbedding = null;
 
             using var call = _client.StreamKnownPersonEmbeddings(new StreamKnownPersonEmbeddingsRequest
             {
@@ -76,6 +84,7 @@ namespace SmartGuard.VectorMatching.Microservice.Consumers
                     {
                         bestScore = score;
                         bestPersonId = candidate.PersonId;
+                        bestEmbedding = candidateVector;
                     }
                 }
             }
@@ -92,7 +101,8 @@ namespace SmartGuard.VectorMatching.Microservice.Consumers
                 return;
             }
 
-            var isMatched = bestPersonId.HasValue && bestScore >= 0.70d;
+            var isMatched = bestPersonId.HasValue && bestEmbedding != null &&
+                _cosineSimilarity.IsMatch(queryEmbedding, bestEmbedding, _faceMatchingOptions.Threshold);
 
             await context.Publish<IVectorMatchCompletedEvent>(new
             {

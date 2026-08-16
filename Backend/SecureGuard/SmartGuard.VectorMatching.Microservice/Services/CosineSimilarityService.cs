@@ -25,7 +25,7 @@ namespace SmartGuard.VectorMatching.Microservice.Services
             return dotProduct / (Math.Sqrt(normA) * Math.Sqrt(normB));
         }
 
-        public bool IsMatch(float[] vector1, float[] vector2, double threshold = 0.70)
+        public bool IsMatch(float[] vector1, float[] vector2, double threshold = 0.75)
         {
             return CalculateSimilarity(vector1, vector2) >= threshold;
         }
