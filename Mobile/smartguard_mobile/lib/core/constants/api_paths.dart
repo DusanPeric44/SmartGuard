@@ -17,8 +17,13 @@ class ApiPaths {
   static String userNotificationPreferences(String personId) =>
       '/UserNotificationPreferences/$personId';
 
+  static const String knownPersons = '/KnownPersons';
+  static String knownPersonById(String id) => '/KnownPersons/$id';
+
+  static const String filesUploadImage = '/Files/images';
+
   static const String devices = '/devices/my';
-  static String deviceById(String id) => '/devices/$id';
+  static String deviceById(String id) => '/Devices/details/$id';
 
   static const String dashboardMobile = '/dashboard/mobile';
 

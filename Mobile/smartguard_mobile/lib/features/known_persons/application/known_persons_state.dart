@@ -11,6 +11,8 @@ class KnownPersonsState {
     required this.items,
     required this.count,
     required this.updatingPersonIds,
+    required this.deletingPersonIds,
+    required this.isSubmitting,
     required this.errorMessage,
   });
 
@@ -19,12 +21,16 @@ class KnownPersonsState {
       items = const [],
       count = 0,
       updatingPersonIds = const {},
+      deletingPersonIds = const {},
+      isSubmitting = false,
       errorMessage = null;
 
   final KnownPersonsStatus status;
   final List<UserNotificationPreference> items;
   final int count;
   final Set<String> updatingPersonIds;
+  final Set<String> deletingPersonIds;
+  final bool isSubmitting;
   final String? errorMessage;
 
   KnownPersonsState copyWith({
@@ -32,6 +38,8 @@ class KnownPersonsState {
     List<UserNotificationPreference>? items,
     int? count,
     Set<String>? updatingPersonIds,
+    Set<String>? deletingPersonIds,
+    bool? isSubmitting,
     String? errorMessage,
   }) {
     return KnownPersonsState(
@@ -39,6 +47,8 @@ class KnownPersonsState {
       items: items ?? this.items,
       count: count ?? this.count,
       updatingPersonIds: updatingPersonIds ?? this.updatingPersonIds,
+      deletingPersonIds: deletingPersonIds ?? this.deletingPersonIds,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
     );
   }

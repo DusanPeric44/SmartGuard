@@ -95,6 +95,72 @@ class KnownPersonsController extends Notifier<KnownPersonsState> {
     }
   }
 
+  Future<bool> addPerson({
+    required String firstName,
+    required String lastName,
+    List<int>? photoBytes,
+    String? photoFileName,
+  }) async {
+    if (state.isSubmitting) return false;
+
+    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    try {
+      final repository = ref.read(knownPersonsRepositoryProvider);
+
+      String? pictureUrl;
+      if (photoBytes != null && photoBytes.isNotEmpty) {
+        pictureUrl = await repository.uploadImage(
+          bytes: photoBytes,
+          fileName: photoFileName ?? 'photo.jpg',
+        );
+      }
+
+      await repository.create(
+        firstName: firstName,
+        lastName: lastName,
+        pictureUrl: pictureUrl,
+      );
+
+      state = state.copyWith(isSubmitting: false);
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSubmitting: false, errorMessage: _mapMessage(e));
+      return false;
+    }
+  }
+
+  Future<bool> deletePerson(String personId) async {
+    if (state.deletingPersonIds.contains(personId)) return false;
+
+    state = state.copyWith(
+      deletingPersonIds: {...state.deletingPersonIds, personId},
+      errorMessage: null,
+    );
+
+    try {
+      await ref.read(knownPersonsRepositoryProvider).delete(personId);
+
+      final items = state.items
+          .where((item) => item.personId != personId)
+          .toList();
+      final cleared = <String>{...state.deletingPersonIds}..remove(personId);
+      state = state.copyWith(
+        items: items,
+        count: items.length,
+        deletingPersonIds: cleared,
+      );
+      return true;
+    } catch (e) {
+      final cleared = <String>{...state.deletingPersonIds}..remove(personId);
+      state = state.copyWith(
+        deletingPersonIds: cleared,
+        errorMessage: _mapMessage(e),
+      );
+      return false;
+    }
+  }
+
   List<UserNotificationPreference> _replaceEnabled({
     required List<UserNotificationPreference> items,
     required String personId,
