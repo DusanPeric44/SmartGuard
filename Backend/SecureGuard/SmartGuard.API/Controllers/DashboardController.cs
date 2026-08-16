@@ -24,7 +24,7 @@ namespace SmartGuard.API.Controllers
             return _dashboardService.GetDesktopAsync();
         }
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet("mobile")]
         public Task<DashboardMobile> GetMobile()
         {

@@ -15,7 +15,6 @@ namespace SmartGuard.Services
     public class DashboardService : IDashboardService
     {
         private const string DesktopCacheKey = "dashboard:desktop:v1";
-        private const string MobileCacheKey = "dashboard:mobile:v1";
         private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(30);
 
         private readonly Database.SmartGuardContext _context;
@@ -38,7 +37,8 @@ namespace SmartGuard.Services
 
         public Task<DashboardMobile> GetMobileAsync()
         {
-            return GetOrCreateAsync(MobileCacheKey, BuildMobileAsync);
+            var cacheKey = $"dashboard:mobile:{_userContext.UserId}:v1";
+            return GetOrCreateAsync(cacheKey, BuildMobileAsync);
         }
 
         private async Task<DashboardDesktop> BuildDesktopAsync()
