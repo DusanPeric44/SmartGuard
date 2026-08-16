@@ -9,4 +9,6 @@ namespace SmartGuard.Model.Interfaces
     public interface IRecordingStatusesService : IBaseCRUDService<RecordingStatus, BaseSearchObject, RecordingStatusUpsertRequest, RecordingStatusUpsertRequest> { }
     public interface IAlertTypesService : IBaseCRUDService<AlertType, BaseSearchObject, AlertTypeUpsertRequest, AlertTypeUpsertRequest> { }
     public interface IAlertStatusesService : IBaseCRUDService<AlertStatus, BaseSearchObject, AlertStatusUpsertRequest, AlertStatusUpsertRequest> { }
+    public interface IReportTypesService : IBaseCRUDService<ReportType, BaseSearchObject, ReportTypeUpsertRequest, ReportTypeUpsertRequest> { }
+    public interface IReportStatusesService : IBaseCRUDService<ReportStatus, BaseSearchObject, ReportStatusUpsertRequest, ReportStatusUpsertRequest> { }
 }

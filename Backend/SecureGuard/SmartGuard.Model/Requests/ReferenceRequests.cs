@@ -31,4 +31,16 @@ namespace SmartGuard.Model.Requests
         [Required]
         public string Name { get; set; }
     }
+
+    public class ReportTypeUpsertRequest
+    {
+        [Required]
+        public string Name { get; set; }
+    }
+
+    public class ReportStatusUpsertRequest
+    {
+        [Required]
+        public string Name { get; set; }
+    }
 }

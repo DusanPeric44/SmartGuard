@@ -30,4 +30,14 @@ namespace SmartGuard.Services
     {
         public AlertStatusesService(SmartGuardContext context) : base(context) { }
     }
+
+    public class ReportTypesService : BaseCRUDService<Model.DTOs.ReportType, Database.ReportType, BaseSearchObject, ReportTypeUpsertRequest, ReportTypeUpsertRequest>, IReportTypesService
+    {
+        public ReportTypesService(SmartGuardContext context) : base(context) { }
+    }
+
+    public class ReportStatusesService : BaseCRUDService<Model.DTOs.ReportStatus, Database.ReportStatus, BaseSearchObject, ReportStatusUpsertRequest, ReportStatusUpsertRequest>, IReportStatusesService
+    {
+        public ReportStatusesService(SmartGuardContext context) : base(context) { }
+    }
 }

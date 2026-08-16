@@ -55,4 +55,16 @@ const List<ReferenceEntity> referenceEntities = <ReferenceEntity>[
     singular: 'Recording Status',
     path: '/RecordingStatuses',
   ),
+  ReferenceEntity(
+    id: 'report-types',
+    title: 'Report Types',
+    singular: 'Report Type',
+    path: '/ReportTypes',
+  ),
+  ReferenceEntity(
+    id: 'report-statuses',
+    title: 'Report Statuses',
+    singular: 'Report Status',
+    path: '/ReportStatuses',
+  ),
 ];
