@@ -12,23 +12,32 @@ namespace SmartGuard.API.Controllers
     {
         private readonly IWebSocketBridgeManager _bridgeManager;
         private readonly IStreamRecordingManager _recordingManager;
+        private readonly IDevicesService _devicesService;
         private readonly ILogger<Esp32WebSocketController> _logger;
 
-        public Esp32WebSocketController(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager, ILogger<Esp32WebSocketController> logger)
+        public Esp32WebSocketController(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager, IDevicesService devicesService, ILogger<Esp32WebSocketController> logger)
         {
             _bridgeManager = bridgeManager;
             _recordingManager = recordingManager;
+            _devicesService = devicesService;
             _logger = logger;
         }
 
         [AllowAnonymous]
         [HttpGet("ws")]
-        public async Task Get([FromQuery] string deviceId)
+        public async Task Get([FromQuery] string deviceId, [FromQuery] string token)
         {
             if (string.IsNullOrEmpty(deviceId))
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await HttpContext.Response.WriteAsync("deviceId is required");
+                return;
+            }
+
+            if (!int.TryParse(deviceId, out var parsedDeviceId) || !await _devicesService.ValidateAsync(parsedDeviceId, token))
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await HttpContext.Response.WriteAsync("Invalid device credentials");
                 return;
             }
 

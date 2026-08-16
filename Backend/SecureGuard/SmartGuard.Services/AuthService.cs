@@ -289,7 +289,6 @@ namespace SmartGuard.Services
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                RegistrationKey = user.RegistrationKey,
                 Role = roles.FirstOrDefault() ?? string.Empty
             };
         }
@@ -334,12 +333,21 @@ namespace SmartGuard.Services
             await _context.SaveChangesAsync(cancellationToken);
         }
 
+        private string GetJwtSecret()
+        {
+            var secret = _configuration["Jwt:Secret"];
+            if (string.IsNullOrWhiteSpace(secret) || secret.Length < 32)
+            {
+                throw new InvalidOperationException(
+                    "Jwt:Secret is not configured or is too short (minimum 32 characters).");
+            }
+            return secret;
+        }
+
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtSecret = string.IsNullOrWhiteSpace(_configuration["Jwt:Secret"])
-                ? "DefaultSecretKeyForSmartGuardAPI1234567890"
-                : _configuration["Jwt:Secret"]!;
+            var jwtSecret = GetJwtSecret();
             var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -392,7 +400,6 @@ namespace SmartGuard.Services
                     Email = user.Email!,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    RegistrationKey = user.RegistrationKey,
                     Role = roles.FirstOrDefault() ?? string.Empty
                 }
             };
@@ -401,9 +408,7 @@ namespace SmartGuard.Services
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtSecret = string.IsNullOrWhiteSpace(_configuration["Jwt:Secret"])
-                ? "DefaultSecretKeyForSmartGuardAPI1234567890"
-                : _configuration["Jwt:Secret"]!;
+            var jwtSecret = GetJwtSecret();
             var key = Encoding.ASCII.GetBytes(jwtSecret);
 
             var tokenValidationParameters = new TokenValidationParameters

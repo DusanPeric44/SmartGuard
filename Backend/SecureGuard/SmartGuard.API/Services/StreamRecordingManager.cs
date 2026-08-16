@@ -18,6 +18,7 @@ namespace SmartGuard.API.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IOptionsMonitor<ArchiveOptions> _archiveOptionsMonitor;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<StreamRecordingManager> _logger;
         private readonly string _tempRecordingsPath;
 
@@ -25,12 +26,14 @@ namespace SmartGuard.API.Services
             IServiceScopeFactory scopeFactory,
             IHttpClientFactory httpClientFactory,
             IOptionsMonitor<ArchiveOptions> archiveOptionsMonitor,
+            IConfiguration configuration,
             IWebHostEnvironment environment,
             ILogger<StreamRecordingManager> logger)
         {
             _scopeFactory = scopeFactory;
             _httpClientFactory = httpClientFactory;
             _archiveOptionsMonitor = archiveOptionsMonitor;
+            _configuration = configuration;
             _logger = logger;
 
             var uploadsPath = Path.Combine(environment.ContentRootPath, "uploads");
@@ -76,7 +79,6 @@ namespace SmartGuard.API.Services
                 var session = new RecordingSession(
                     deviceKey: deviceKey,
                     deviceId: device.Id,
-                    deviceToken: device.ApiKey,
                     connectionId: connectionId,
                     userId: userId,
                     startedUtc: DateTime.UtcNow,
@@ -229,8 +231,14 @@ namespace SmartGuard.API.Services
             await using var fileStream = new FileStream(session.TempFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 64, useAsync: true);
             using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(baseUri, uploadPath));
 
+            var internalToken = _configuration["Internal:ServiceToken"];
+            if (string.IsNullOrWhiteSpace(internalToken))
+            {
+                throw new InvalidOperationException("Internal:ServiceToken is not configured.");
+            }
+
             request.Headers.Add("X-Device-Id", session.DeviceId.ToString(CultureInfo.InvariantCulture));
-            request.Headers.Add("X-Device-Token", session.DeviceToken);
+            request.Headers.Add("X-Internal-Token", internalToken);
             request.Headers.Add("X-Recording-Type", "Manual");
 
             request.Content = new StreamContent(fileStream);
@@ -278,7 +286,6 @@ namespace SmartGuard.API.Services
         {
             public string DeviceKey { get; }
             public int DeviceId { get; }
-            public string DeviceToken { get; }
             public string ConnectionId { get; }
             public string UserId { get; }
             public DateTime StartedUtc { get; }
@@ -292,7 +299,6 @@ namespace SmartGuard.API.Services
             public RecordingSession(
                 string deviceKey,
                 int deviceId,
-                string deviceToken,
                 string connectionId,
                 string userId,
                 DateTime startedUtc,
@@ -302,7 +308,6 @@ namespace SmartGuard.API.Services
             {
                 DeviceKey = deviceKey;
                 DeviceId = deviceId;
-                DeviceToken = deviceToken;
                 ConnectionId = connectionId;
                 UserId = userId;
                 StartedUtc = startedUtc;

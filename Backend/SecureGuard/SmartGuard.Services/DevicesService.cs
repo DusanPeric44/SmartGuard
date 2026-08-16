@@ -7,6 +7,7 @@ using SmartGuard.Model.SearchObjects;
 using SmartGuard.Services.Database;
 using Mapster;
 using SmartGuard.Services.Audit;
+using SmartGuard.Services.Security;
 using Microsoft.Extensions.Logging;
 
 namespace SmartGuard.Services
@@ -14,11 +15,13 @@ namespace SmartGuard.Services
     public class DevicesService : BaseCRUDService<Model.DTOs.Device, Database.Device, DeviceSearchObject, DeviceInsertRequest, DeviceUpdateRequest>, IDevicesService
     {
         private readonly IUserContext _userContext;
+        private readonly IDeviceAccessService _deviceAccessService;
         private readonly ILogger<DevicesService> _logger;
 
-        public DevicesService(SmartGuardContext context, IUserContext userContext, ILogger<DevicesService> logger) : base(context)
+        public DevicesService(SmartGuardContext context, IUserContext userContext, IDeviceAccessService deviceAccessService, ILogger<DevicesService> logger) : base(context)
         {
             _userContext = userContext;
+            _deviceAccessService = deviceAccessService;
             _logger = logger;
         }
 
@@ -54,7 +57,17 @@ namespace SmartGuard.Services
         {
             try
             {
-                var created = await base.InsertAsync(insert);
+                var entity = insert.Adapt<Database.Device>();
+                if (!string.IsNullOrWhiteSpace(insert.ApiKey))
+                {
+                    entity.ApiKeyHash = ApiKeyHasher.Hash(insert.ApiKey);
+                }
+                _context.Devices.Add(entity);
+                await _context.SaveChangesAsync();
+
+                var created = entity.Adapt<Model.DTOs.Device>();
+                created.ApiKey = insert.ApiKey ?? string.Empty;
+
                 _logger.LogAuditSuccess("DeviceCreated", $"Device:{created.Id}", $"Name={insert.Name}; Location={insert.Location}; StatusId={insert.StatusId}");
                 return created;
             }
@@ -106,27 +119,12 @@ namespace SmartGuard.Services
             var entity = await _context.Devices.FindAsync(id);
             if (entity == null) return false;
 
-            // 1 - Online, 2 - Offline, 3 - Maintenance
-            if (statusId < 1 || statusId > 3) throw new ArgumentException("Invalid status ID");
+            var statusExists = await _context.DeviceStatuses.AnyAsync(s => s.Id == statusId);
+            if (!statusExists) throw new ArgumentException("Invalid status ID");
 
             entity.StatusId = statusId;
             await _context.SaveChangesAsync();
             return true;
-        }
-
-        public async Task<bool> HasAccessAsync(string userId, int deviceId, string permission)
-        {
-            var access = await _context.UserDeviceAccesses
-                .FirstOrDefaultAsync(x => x.UserId == userId && x.DeviceId == deviceId);
-
-            if (access == null) return false;
-
-            return permission.ToLower() switch
-            {
-                "stream" => access.CanStream,
-                "download" => access.CanDownload,
-                _ => false
-            };
         }
 
         public async Task<Model.DTOs.Device> RegisterDeviceAsync(DeviceRegistrationRequest request)
@@ -138,6 +136,10 @@ namespace SmartGuard.Services
             var device = await _context.Devices
                 .FirstOrDefaultAsync(d => d.MacAddress == request.MacAddress);
 
+            var rawApiKey = Guid.NewGuid().ToString();
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
             if (device == null)
             {
                 device = new Database.Device
@@ -146,14 +148,14 @@ namespace SmartGuard.Services
                     Name = $"ESP32-Cam-{request.MacAddress}",
                     Location = "Default",
                     StatusId = 1, // Online
-                    ApiKey = Guid.NewGuid().ToString() // This will be the Device Token
+                    ApiKeyHash = ApiKeyHasher.Hash(rawApiKey) // This will be the Device Token
                 };
                 _context.Devices.Add(device);
             }
             else
             {
-                // If device exists, update its token just in case or keep it
-                device.ApiKey = Guid.NewGuid().ToString();
+                // If device exists, rotate its token
+                device.ApiKeyHash = ApiKeyHasher.Hash(rawApiKey);
             }
 
             await _context.SaveChangesAsync();
@@ -175,6 +177,8 @@ namespace SmartGuard.Services
                 await _context.SaveChangesAsync();
             }
 
+            await tx.CommitAsync();
+
             // Map to DTO
             _logger.LogAuditSuccess("DeviceRegistered", $"Device:{device.Id}", $"MacAddress={request.MacAddress}");
             return new Model.DTOs.Device
@@ -182,12 +186,17 @@ namespace SmartGuard.Services
                 Id = device.Id,
                 Name = device.Name,
                 Location = device.Location,
-                ApiKey = device.ApiKey
+                ApiKey = rawApiKey
             };
         }
 
         public async Task<DeviceDetails> GetDetailsAsync(int id)
         {
+            if (!await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, id, DeviceAccessPermission.View, _userContext.IsAdmin))
+            {
+                return null;
+            }
+
             var entity = await _context.Devices
                 .Include(d => d.DeviceStatus)
                 .Include(d => d.UserDeviceAccesses)
@@ -220,7 +229,7 @@ namespace SmartGuard.Services
 
             if (device == null) return false;
 
-            return device.ApiKey == deviceToken;
+            return ApiKeyHasher.Verify(deviceToken, device.ApiKeyHash);
         }
 
         protected override IQueryable<Database.Device> AddInclude(IQueryable<Database.Device> query, DeviceSearchObject search = null)

@@ -173,7 +173,6 @@ namespace SmartGuard.Services
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                RegistrationKey = user.RegistrationKey,
                 Role = roles.FirstOrDefault() ?? string.Empty
             };
             _logger.LogAuditSuccess("UserUpdated", $"User:{id}", $"FirstName={firstName}; LastName={lastName}; Role={result.Role}");
@@ -249,7 +248,6 @@ namespace SmartGuard.Services
                 Email = user.Email!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                RegistrationKey = user.RegistrationKey,
                 Role = roles.FirstOrDefault() ?? string.Empty
             };
 

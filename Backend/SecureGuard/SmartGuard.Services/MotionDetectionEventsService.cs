@@ -6,6 +6,7 @@ using SmartGuard.Model.Events;
 using SmartGuard.Model.Interfaces;
 using SmartGuard.Services.Database;
 using SmartGuard.Services.Notifications;
+using SmartGuard.Services.Security;
 
 namespace SmartGuard.Services
 {
@@ -41,7 +42,7 @@ namespace SmartGuard.Services
                 .AsNoTracking()
                 .SingleOrDefaultAsync(d => d.Id == deviceId);
 
-            if (device == null || device.ApiKey != deviceToken)
+            if (device == null || !ApiKeyHasher.Verify(deviceToken, device.ApiKeyHash))
             {
                 throw new UnauthorizedAccessException();
             }

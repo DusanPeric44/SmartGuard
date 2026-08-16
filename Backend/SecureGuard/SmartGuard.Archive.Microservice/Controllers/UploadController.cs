@@ -38,21 +38,32 @@ namespace SmartGuard.Archive.Microservice.Controllers
                 return BadRequest(new { message = "X-Device-Id header is required" });
             }
 
-            var deviceToken = Request.Headers["X-Device-Token"].ToString();
-            if (string.IsNullOrWhiteSpace(deviceToken))
-            {
-                return BadRequest(new { message = "X-Device-Token header is required" });
-            }
+            var internalToken = Request.Headers["X-Internal-Token"].ToString();
+            var expectedInternalToken = _configuration["Internal:ServiceToken"];
+            var isTrustedInternalCaller = !string.IsNullOrWhiteSpace(internalToken)
+                && !string.IsNullOrWhiteSpace(expectedInternalToken)
+                && internalToken == expectedInternalToken;
 
-            var apiBaseUrl = _configuration["SmartGuardApi:BaseUrl"];
-            if (string.IsNullOrWhiteSpace(apiBaseUrl))
+            if (!isTrustedInternalCaller)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "SmartGuardApi:BaseUrl is not configured" });
-            }
+                // Not a call from our own API server on a user's behalf - must be the device itself,
+                // authenticating with its own device token.
+                var deviceToken = Request.Headers["X-Device-Token"].ToString();
+                if (string.IsNullOrWhiteSpace(deviceToken))
+                {
+                    return BadRequest(new { message = "X-Device-Token header is required" });
+                }
 
-            if (!await ValidateDeviceAsync(apiBaseUrl, deviceId, deviceToken, cancellationToken))
-            {
-                return Unauthorized();
+                var apiBaseUrl = _configuration["SmartGuardApi:BaseUrl"];
+                if (string.IsNullOrWhiteSpace(apiBaseUrl))
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new { message = "SmartGuardApi:BaseUrl is not configured" });
+                }
+
+                if (!await ValidateDeviceAsync(apiBaseUrl, deviceId, deviceToken, cancellationToken))
+                {
+                    return Unauthorized();
+                }
             }
 
             var recordingTypeRaw = Request.Headers["X-Recording-Type"].ToString();
