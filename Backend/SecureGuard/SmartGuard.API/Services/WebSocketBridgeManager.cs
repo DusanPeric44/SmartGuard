@@ -118,9 +118,9 @@ namespace SmartGuard.API.Services
         {
             try
             {
-                // Forward the frame to SignalR clients (mobile app, web app)
+                // Forward the frame only to SignalR clients that joined this device's group (mobile app, web app)
                 // Mobile app expects: MjpegFrame(deviceId, base64Frame)
-                await _hubContext.Clients.All.SendAsync("MjpegFrame", deviceId, base64Frame);
+                await _hubContext.Clients.Group($"device-{deviceId}").SendAsync("MjpegFrame", deviceId, base64Frame);
             }
             catch (Exception ex)
             {

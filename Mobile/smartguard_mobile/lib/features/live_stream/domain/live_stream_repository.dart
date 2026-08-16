@@ -55,6 +55,10 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
     _wireHandlersIfNeeded();
     await _client.start();
     await _client.invoke(
+      LiveStreamHub.methodJoinDeviceGroup,
+      args: <Object>[deviceId],
+    );
+    await _client.invoke(
       LiveStreamHub.methodStartStream,
       args: <Object>[deviceId],
     );
@@ -67,6 +71,10 @@ class SignalRLiveStreamRepository implements LiveStreamRepository {
     if (deviceId != null) {
       await _client.invoke(
         LiveStreamHub.methodStopStream,
+        args: <Object>[deviceId],
+      );
+      await _client.invoke(
+        LiveStreamHub.methodLeaveDeviceGroup,
         args: <Object>[deviceId],
       );
     }

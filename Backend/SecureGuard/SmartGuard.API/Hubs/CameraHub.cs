@@ -10,11 +10,49 @@ namespace SmartGuard.API.Hubs
     {
         private readonly IWebSocketBridgeManager _bridgeManager;
         private readonly IStreamRecordingManager _recordingManager;
+        private readonly IDeviceAccessService _deviceAccessService;
 
-        public CameraHub(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager)
+        public CameraHub(IWebSocketBridgeManager bridgeManager, IStreamRecordingManager recordingManager, IDeviceAccessService deviceAccessService)
         {
             _bridgeManager = bridgeManager;
             _recordingManager = recordingManager;
+            _deviceAccessService = deviceAccessService;
+        }
+
+        private static string GroupName(string deviceId) => $"device-{deviceId}";
+
+        private async Task EnsureCanAccessDeviceAsync(string deviceId, DeviceAccessPermission permission)
+        {
+            if (string.IsNullOrWhiteSpace(deviceId) || !int.TryParse(deviceId, out var parsedDeviceId))
+            {
+                throw new HubException("Invalid deviceId");
+            }
+
+            var userId = Context.User?.FindFirstValue("UserId") ?? string.Empty;
+            var isAdmin = Context.User?.IsInRole("Admin") ?? false;
+
+            if (!await _deviceAccessService.CanAccessDeviceAsync(userId, parsedDeviceId, permission, isAdmin))
+            {
+                throw new HubException("Forbidden");
+            }
+        }
+
+        /// <summary>
+        /// Joins the caller to the SignalR group for a device so it can receive that device's frames/events.
+        /// Must be called before UploadFrame/StartStream/etc. will reach this connection.
+        /// </summary>
+        public async Task JoinDeviceGroup(string deviceId)
+        {
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.View);
+            await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(deviceId));
+        }
+
+        public async Task LeaveDeviceGroup(string deviceId)
+        {
+            if (!string.IsNullOrWhiteSpace(deviceId))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupName(deviceId));
+            }
         }
 
         /// <summary>
@@ -24,7 +62,9 @@ namespace SmartGuard.API.Hubs
         /// <param name="base64Frame">The base64 encoded image data.</param>
         public async Task UploadFrame(string deviceId, string base64Frame)
         {
-            if (!string.IsNullOrWhiteSpace(deviceId) && !string.IsNullOrWhiteSpace(base64Frame))
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
+            if (!string.IsNullOrWhiteSpace(base64Frame))
             {
                 try
                 {
@@ -36,9 +76,9 @@ namespace SmartGuard.API.Hubs
                 }
             }
 
-            // Broadcast the frame to all other connected clients (e.g., Mobile App)
+            // Broadcast the frame to other clients in this device's group (e.g., Mobile App)
             // The Mobile app expects the event name "MjpegFrame"
-            await Clients.Others.SendAsync("MjpegFrame", deviceId, base64Frame);
+            await Clients.OthersInGroup(GroupName(deviceId)).SendAsync("MjpegFrame", deviceId, base64Frame);
         }
 
         /// <summary>
@@ -46,7 +86,9 @@ namespace SmartGuard.API.Hubs
         /// </summary>
         public async Task StartStream(string deviceId)
         {
-            await Clients.All.SendAsync("StartStream", deviceId);
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
+            await Clients.Group(GroupName(deviceId)).SendAsync("StartStream", deviceId);
             // Also send to raw WebSocket devices
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StartStream\"}");
         }
@@ -56,7 +98,9 @@ namespace SmartGuard.API.Hubs
         /// </summary>
         public async Task StopStream(string deviceId)
         {
-            await Clients.All.SendAsync("StopStream", deviceId);
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
+            await Clients.Group(GroupName(deviceId)).SendAsync("StopStream", deviceId);
             // Also send to raw WebSocket devices
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StopStream\"}");
         }
@@ -68,7 +112,9 @@ namespace SmartGuard.API.Hubs
         /// <param name="faceId">The ID of the face to whitelist.</param>
         public async Task MarkSafe(string deviceId, int faceId)
         {
-            await Clients.All.SendAsync("MarkSafe", deviceId, faceId);
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
+            await Clients.Group(GroupName(deviceId)).SendAsync("MarkSafe", deviceId, faceId);
             // Also send to raw WebSocket devices
             await _bridgeManager.SendToDeviceAsync(deviceId, $"{{\"target\":\"MarkSafe\",\"arguments\":[{faceId}]}}");
         }
@@ -76,6 +122,8 @@ namespace SmartGuard.API.Hubs
         [Authorize(Roles = "HomeOwner")]
         public async Task StartRecording(string deviceId)
         {
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
             var userId = Context.User?.FindFirstValue("UserId") ?? string.Empty;
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -83,15 +131,17 @@ namespace SmartGuard.API.Hubs
             }
 
             await _recordingManager.StartAsync(deviceId, userId, Context.ConnectionId, Context.ConnectionAborted);
-            await Clients.All.SendAsync("StartRecording", deviceId);
+            await Clients.Group(GroupName(deviceId)).SendAsync("StartRecording", deviceId);
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StartRecording\"}");
         }
 
         [Authorize(Roles = "HomeOwner")]
         public async Task StopRecording(string deviceId)
         {
+            await EnsureCanAccessDeviceAsync(deviceId, DeviceAccessPermission.Stream);
+
             await _recordingManager.StopAsync(deviceId, "UserStop", Context.ConnectionAborted);
-            await Clients.All.SendAsync("StopRecording", deviceId);
+            await Clients.Group(GroupName(deviceId)).SendAsync("StopRecording", deviceId);
             await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StopRecording\"}");
         }
 
@@ -113,7 +163,7 @@ namespace SmartGuard.API.Hubs
 
             foreach (var deviceId in stoppedDeviceIds)
             {
-                await Clients.All.SendAsync("StopRecording", deviceId);
+                await Clients.Group(GroupName(deviceId)).SendAsync("StopRecording", deviceId);
                 await _bridgeManager.SendToDeviceAsync(deviceId, "{\"target\":\"StopRecording\"}");
             }
 

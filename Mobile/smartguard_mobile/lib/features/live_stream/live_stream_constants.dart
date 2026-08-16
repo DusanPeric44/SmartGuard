@@ -3,6 +3,8 @@ class LiveStreamHub {
 
   static const String hubPath = '/hub/camera';
 
+  static const String methodJoinDeviceGroup = 'JoinDeviceGroup';
+  static const String methodLeaveDeviceGroup = 'LeaveDeviceGroup';
   static const String methodStartStream = 'StartStream';
   static const String methodStopStream = 'StopStream';
 
