@@ -7,12 +7,15 @@ using SmartGuard.VectorMatching.Microservice.Services;
 var builder = Host.CreateApplicationBuilder(args);
 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
+builder.Services.AddSingleton<InternalTokenClientInterceptor>();
 builder.Services.AddGrpcClient<VectorMatchingDataService.VectorMatchingDataServiceClient>(o =>
 {
     var address = builder.Configuration["Grpc:ApiAddress"];
     o.Address = new Uri(address ?? "http://localhost:5010");
-});
+})
+.AddInterceptor<InternalTokenClientInterceptor>();
 builder.Services.AddScoped<ICosineSimilarityService, CosineSimilarityService>();
+builder.Services.Configure<FaceMatchingOptions>(builder.Configuration.GetSection("FaceMatching"));
 
 var rabbitMqVHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
 
