@@ -3,9 +3,7 @@ using MassTransit;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SmartGuard.API.Consumers;
@@ -25,7 +23,6 @@ using System.Text;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
-const string DefaultJwtSecret = "DefaultSecretKeyForSmartGuardAPI1234567890";
 
 // Add services to the container.
 builder.Services.AddCors(options =>
@@ -66,9 +63,13 @@ builder.Services.AddHostedService<AuditLoggerBackgroundWriter>();
 
 // 3. Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtSecret = string.IsNullOrWhiteSpace(jwtSettings["Secret"])
-    ? DefaultJwtSecret
-    : jwtSettings["Secret"]!;
+var jwtSecret = jwtSettings["Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Secret is not configured or is too short (minimum 32 characters). " +
+        "Set the JWT_SECRET environment variable or Jwt:Secret in configuration before starting the API.");
+}
 var secretKey = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
@@ -225,7 +226,7 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(o => o.Interceptors.Add<InternalTokenInterceptor>());
 builder.Services.AddHttpClient();
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
@@ -319,16 +320,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var uploadsStaticFileContentTypes = new FileExtensionContentTypeProvider();
-uploadsStaticFileContentTypes.Mappings[".webp"] = "image/webp";
-uploadsStaticFileContentTypes.Mappings[".pdf"] = "application/pdf";
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsRootPath),
-    RequestPath = "/uploads",
-    ContentTypeProvider = uploadsStaticFileContentTypes,
-});
+// /uploads is intentionally NOT served via UseStaticFiles: it contains face images, video
+// recordings and PDF reports, which must go through an authorized endpoint (FilesController.View,
+// ReportsController.Download) rather than being publicly servable by URL.
 
 app.UseWebSockets();
 

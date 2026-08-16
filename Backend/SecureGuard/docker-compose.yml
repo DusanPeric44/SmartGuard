@@ -14,17 +14,20 @@ services:
         condition: service_healthy
     ports:
       - "5000:8080"   # REST + SignalR
-      - "5010:8081"   # gRPC (http2)
+      # gRPC (5010) is intentionally NOT published to the host - it carries face embedding data
+      # and is only reachable internally by smartguard.vectormatching.microservice via the
+      # Docker network (see Grpc__ApiAddress below), gated by Internal__ServiceToken.
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${SQLSERVER_DB};User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
-      Jwt__Secret: ${JWT_SECRET:-DefaultSecretKeyForSmartGuardAPI1234567890}
+      Jwt__Secret: ${JWT_SECRET:?JWT_SECRET must be set}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
       RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
       Redis__Configuration: "redis:6379,password=${REDIS_PASSWORD}"
       Archive__BaseUrl: "http://smartguard.archive.microservice:8080"
+      Internal__ServiceToken: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set}
 
   smartguard.archive.microservice:
     image: ${DOCKER_REGISTRY-}smartguardarchivemicroservice
@@ -42,11 +45,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__ArchiveDatabase: "Server=sqlserver,1433;Database=SmartGuard_Archive;User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
+      ConnectionStrings__MainDatabase: "Server=sqlserver,1433;Database=${SQLSERVER_DB};User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
+      Jwt__Secret: ${JWT_SECRET:?JWT_SECRET must be set}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
       RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
       SmartGuardApi__BaseUrl: "http://smartguard.api:5000"
+      Internal__ServiceToken: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set}
 
   smartguard.notifications.microservice:
     image: ${DOCKER_REGISTRY-}smartguardnotificationsmicroservice
@@ -66,7 +72,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__NotificationsDatabase: "Server=sqlserver,1433;Database=SmartGuardNotificationsDb;User Id=sa;Password=${SQLSERVER_SA_PASSWORD};MultipleActiveResultSets=true;TrustServerCertificate=True"
-      Jwt__Secret: ${JWT_SECRET:-DefaultSecretKeyForSmartGuardAPI1234567890}
+      Jwt__Secret: ${JWT_SECRET:?JWT_SECRET must be set}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
@@ -98,6 +104,7 @@ services:
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
       RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
       Grpc__ApiAddress: "http://smartguard.api:5010"
+      Internal__ServiceToken: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set}
 
   rabbitmq:
     image: rabbitmq:3-management

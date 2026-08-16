@@ -16,7 +16,6 @@ using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-const string DefaultJwtSecret = "DefaultSecretKeyForSmartGuardAPI1234567890";
 
 builder.Services.AddCors(options =>
 {
@@ -59,9 +58,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtSecret = string.IsNullOrWhiteSpace(jwtSettings["Secret"])
-    ? DefaultJwtSecret
-    : jwtSettings["Secret"]!;
+var jwtSecret = jwtSettings["Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Secret is not configured or is too short (minimum 32 characters). " +
+        "Set the JWT_SECRET environment variable or Jwt:Secret in configuration before starting the Notifications microservice.");
+}
 var secretKey = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
