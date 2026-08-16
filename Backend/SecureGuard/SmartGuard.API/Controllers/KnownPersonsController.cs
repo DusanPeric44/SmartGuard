@@ -19,6 +19,13 @@ namespace SmartGuard.API.Controllers
             _knownPersonsService = service;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public override async Task<KnownPerson> Insert([FromBody] KnownPersonInsertRequest insert)
+        {
+            return await base.Insert(insert);
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public override async Task<KnownPerson> Update(int id, [FromBody] KnownPersonUpdateRequest update)

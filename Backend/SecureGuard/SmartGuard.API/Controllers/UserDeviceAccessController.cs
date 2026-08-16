@@ -22,5 +22,19 @@ namespace SmartGuard.API.Controllers
         {
             return _userDeviceAccessService.InsertAsync(insert);
         }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public override Task<UserDeviceAccess> Update(int id, [FromBody] UserDeviceAccessUpdateRequest update)
+        {
+            return base.Update(id, update);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public override Task<bool> Delete(int id)
+        {
+            return base.Delete(id);
+        }
     }
 }

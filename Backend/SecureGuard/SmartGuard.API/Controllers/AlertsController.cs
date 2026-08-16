@@ -17,6 +17,27 @@ namespace SmartGuard.API.Controllers
             _alertsService = service;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public override Task<Alert> Insert([FromBody] AlertInsertRequest insert)
+        {
+            return base.Insert(insert);
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,HomeOwner")]
+        public override Task<Alert> Update(int id, [FromBody] AlertUpdateRequest update)
+        {
+            return base.Update(id, update);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public override Task<bool> Delete(int id)
+        {
+            return base.Delete(id);
+        }
+
         [HttpPost("{id}/dismiss")]
         [Authorize(Roles = "Admin,HomeOwner")]
         public virtual Task<Alert> Dismiss(int id, [FromBody] AlertDismissRequest request)

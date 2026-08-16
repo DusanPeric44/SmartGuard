@@ -10,6 +10,7 @@ using SmartGuard.Model.Requests;
 using SmartGuard.Model.SearchObjects;
 using SmartGuard.Services.Audit;
 using SmartGuard.Services.Database;
+using SmartGuard.Services.Security;
 
 namespace SmartGuard.Services
 {
@@ -17,12 +18,22 @@ namespace SmartGuard.Services
     {
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IFileStorageService _fileStorage;
+        private readonly IUserContext _userContext;
+        private readonly IDeviceAccessService _deviceAccessService;
         private readonly ILogger<FaceDetectionEventsService> _logger;
 
-        public FaceDetectionEventsService(SmartGuardContext context, IPublishEndpoint publishEndpoint, IFileStorageService fileStorage, ILogger<FaceDetectionEventsService> logger) : base(context)
+        public FaceDetectionEventsService(
+            SmartGuardContext context,
+            IPublishEndpoint publishEndpoint,
+            IFileStorageService fileStorage,
+            IUserContext userContext,
+            IDeviceAccessService deviceAccessService,
+            ILogger<FaceDetectionEventsService> logger) : base(context)
         {
             _publishEndpoint = publishEndpoint;
             _fileStorage = fileStorage;
+            _userContext = userContext;
+            _deviceAccessService = deviceAccessService;
             _logger = logger;
         }
 
@@ -102,7 +113,7 @@ namespace SmartGuard.Services
             }
 
             var device = await _context.Devices.AsNoTracking().SingleOrDefaultAsync(d => d.Id == deviceId);
-            if (device == null || device.ApiKey != deviceToken)
+            if (device == null || !ApiKeyHasher.Verify(deviceToken, device.ApiKeyHash))
             {
                 throw new UnauthorizedAccessException();
             }
@@ -169,6 +180,13 @@ namespace SmartGuard.Services
                 .AsNoTracking()
                 .Where(x => x.PersonId == personId);
 
+            if (!_userContext.IsAdmin)
+            {
+                var userId = _userContext.UserId;
+                query = query.Where(x => x.DeviceId.HasValue &&
+                    _context.UserDeviceAccesses.Any(a => a.UserId == userId && a.DeviceId == x.DeviceId));
+            }
+
             if (search.From.HasValue)
             {
                 var from = search.From.Value;
@@ -185,11 +203,8 @@ namespace SmartGuard.Services
 
             var count = await query.CountAsync();
 
-            if (search.Page.HasValue == true && search.PageSize.HasValue == true)
-            {
-                int pageSize = search.PageSize.Value > 100 ? 100 : search.PageSize.Value;
-                query = query.Skip((search.Page.Value - 1) * pageSize).Take(pageSize);
-            }
+            var (page, pageSize) = PaginationHelper.Normalize(search.Page, search.PageSize);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
 
             var result = await query
                 .Select(x => new FaceDetectionEventImage

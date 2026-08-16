@@ -11,12 +11,38 @@ namespace SmartGuard.Services
 {
     public class RecordingsService : BaseCRUDService<Model.DTOs.Recording, Database.Recording, RecordingSearchObject, RecordingInsertRequest, RecordingUpdateRequest>, IRecordingsService
     {
-        public RecordingsService(SmartGuardContext context) : base(context)
+        private readonly IUserContext _userContext;
+        private readonly IDeviceAccessService _deviceAccessService;
+
+        public RecordingsService(SmartGuardContext context, IUserContext userContext, IDeviceAccessService deviceAccessService) : base(context)
         {
+            _userContext = userContext;
+            _deviceAccessService = deviceAccessService;
+        }
+
+        public override async Task<bool> DeleteAsync(int id)
+        {
+            var entity = await _context.Recordings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            if (entity == null) return false;
+
+            if (!entity.DeviceId.HasValue ||
+                !await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, entity.DeviceId.Value, DeviceAccessPermission.Download, _userContext.IsAdmin))
+            {
+                throw new UnauthorizedAccessException("You don't have access to this recording's device");
+            }
+
+            return await base.DeleteAsync(id);
         }
 
         protected override IQueryable<Database.Recording> AddFilter(IQueryable<Database.Recording> query, RecordingSearchObject search = null)
         {
+            if (!_userContext.IsAdmin)
+            {
+                var userId = _userContext.UserId;
+                query = query.Where(x => x.DeviceId.HasValue &&
+                    _context.UserDeviceAccesses.Any(a => a.UserId == userId && a.DeviceId == x.DeviceId));
+            }
+
             if (search == null)
             {
                 return query;

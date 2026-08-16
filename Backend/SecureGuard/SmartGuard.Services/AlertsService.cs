@@ -15,11 +15,23 @@ namespace SmartGuard.Services
     {
         private readonly ILogger<AlertsService> _logger;
         private readonly IUserContext _userContext;
+        private readonly IDeviceAccessService _deviceAccessService;
 
-        public AlertsService(SmartGuardContext context, ILogger<AlertsService> logger, IUserContext userContext) : base(context)
+        public AlertsService(SmartGuardContext context, ILogger<AlertsService> logger, IUserContext userContext, IDeviceAccessService deviceAccessService) : base(context)
         {
             _logger = logger;
             _userContext = userContext;
+            _deviceAccessService = deviceAccessService;
+        }
+
+        private async Task EnsureCanAccessAlertDeviceAsync(Database.Alert alert)
+        {
+            if (_userContext.IsAdmin) return;
+            if (!alert.DeviceId.HasValue ||
+                !await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, alert.DeviceId.Value, DeviceAccessPermission.View, _userContext.IsAdmin))
+            {
+                throw new UnauthorizedAccessException("You don't have access to this alert's device");
+            }
         }
 
         public async Task<Model.DTOs.Alert> ConfirmAsync(int id)
@@ -46,6 +58,13 @@ namespace SmartGuard.Services
         {
             query = base.AddFilter(query, search);
 
+            if (!_userContext.IsAdmin)
+            {
+                var userId = _userContext.UserId;
+                query = query.Where(x => x.DeviceId.HasValue &&
+                    _context.UserDeviceAccesses.Any(a => a.UserId == userId && a.DeviceId == x.DeviceId));
+            }
+
             if (!string.IsNullOrWhiteSpace(search?.StatusName))
             {
                 var statusName = search.StatusName.Trim().ToLower();
@@ -68,6 +87,8 @@ namespace SmartGuard.Services
         {
             var entity = await _context.Alerts.FindAsync(id);
             if (entity == null) throw new UserException("Alert not found");
+
+            await EnsureCanAccessAlertDeviceAsync(entity);
 
             if (update.StatusId.HasValue)
             {
@@ -98,6 +119,8 @@ namespace SmartGuard.Services
         {
             var entity = await _context.Alerts.SingleOrDefaultAsync(x => x.Id == id);
             if (entity == null) throw new UserException("Alert not found");
+
+            await EnsureCanAccessAlertDeviceAsync(entity);
 
             ValidateStateTransition(entity.StatusId, statusId);
 

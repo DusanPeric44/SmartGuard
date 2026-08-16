@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using MassTransit;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartGuard.Model.DTOs;
 using SmartGuard.Model.Events;
@@ -20,7 +21,22 @@ namespace SmartGuard.API.Controllers
             _publishEndpoint = publishEndpoint;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin,HomeOwner")]
+        public override Task<Recording> Insert([FromBody] RecordingInsertRequest insert)
+        {
+            return base.Insert(insert);
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,HomeOwner")]
+        public override Task<Recording> Update(int id, [FromBody] RecordingUpdateRequest update)
+        {
+            return base.Update(id, update);
+        }
+
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,HomeOwner")]
         public override async Task<bool> Delete(int id)
         {
             var recording = await _service.GetByIdAsync(id);

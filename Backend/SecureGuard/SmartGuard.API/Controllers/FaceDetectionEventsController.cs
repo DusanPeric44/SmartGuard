@@ -17,6 +17,27 @@ namespace SmartGuard.API.Controllers
             _faceDetectionEventsService = service;
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public override Task<FaceDetectionEvent> Insert([FromBody] FaceDetectionEventInsertRequest insert)
+        {
+            return base.Insert(insert);
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public override Task<FaceDetectionEvent> Update(int id, [FromBody] FaceDetectionEventUpdateRequest update)
+        {
+            return base.Update(id, update);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public override Task<bool> Delete(int id)
+        {
+            return base.Delete(id);
+        }
+
         [HttpPost("detect")]
         [AllowAnonymous]
         public async Task<ActionResult<FaceDetectionEvent>> Detect([FromBody] FaceDetectionVectorDetectRequest request)
