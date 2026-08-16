@@ -367,7 +367,7 @@ namespace SmartGuard.Services.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApiKey")
+                    b.Property<string>("ApiKeyHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -436,6 +436,9 @@ namespace SmartGuard.Services.Database.Migrations
                     b.Property<string>("Image")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<FaceDetectionNotificationStatus>("NotificationStatus")
+                        .HasColumnType("int");
 
                     b.Property<int?>("PersonId")
                         .HasColumnType("int");

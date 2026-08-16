@@ -22,6 +22,7 @@ namespace SmartGuard.Services.Database
         public string Image { get; set; }
         public DateTime Timestamp { get; set; }
         public byte[] Embedding { get; set; }
+        public FaceDetectionNotificationStatus NotificationStatus { get; set; } = FaceDetectionNotificationStatus.Sent;
 
         public ICollection<Alert> Alerts { get; set; }
     }

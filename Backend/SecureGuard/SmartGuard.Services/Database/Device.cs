@@ -12,7 +12,7 @@ namespace SmartGuard.Services.Database
         public string Name { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
         public string MacAddress { get; set; } = string.Empty;
-        public string ApiKey { get; set; } = string.Empty;
+        public string ApiKeyHash { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastSeenAt { get; set; }
