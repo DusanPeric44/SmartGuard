@@ -93,7 +93,7 @@ namespace SmartGuard.API.Consumers
                 var cooldownExists = await _cache.GetStringAsync(cooldownKey, context.CancellationToken);
                 if (!string.IsNullOrWhiteSpace(cooldownExists))
                 {
-                    _context.FaceDetectionEvents.Remove(faceEvent);
+                    faceEvent.NotificationStatus = FaceDetectionNotificationStatus.Suppressed;
                     await _context.SaveChangesAsync(context.CancellationToken);
                     return;
                 }
@@ -110,103 +110,108 @@ namespace SmartGuard.API.Consumers
                 var personIdValue = personId ?? message.MatchedPersonId.Value;
                 var cooldownKeyValue = cooldownKey ?? $"face-match-notify:{deviceId}:{personIdValue}";
 
-                if (faceEvent.PersonId != personIdValue)
+                List<string> enabledUserIds;
+
+                await using (var tx = await _context.Database.BeginTransactionAsync(context.CancellationToken))
                 {
-                    faceEvent.PersonId = personIdValue;
-                    if (knownPerson != null)
-                        knownPerson.DetectionCount++;
-                    await _context.SaveChangesAsync(context.CancellationToken);
-                }
-
-                if (knownPerson != null && string.Equals(knownPerson.FirstName, "Intruder", StringComparison.OrdinalIgnoreCase))
-                {
-                    var alarmCooldownKey = $"face-match-alarm:{deviceId}:{personIdValue}";
-                    var alarmCooldownExists = await _cache.GetStringAsync(alarmCooldownKey, context.CancellationToken);
-                    if (string.IsNullOrWhiteSpace(alarmCooldownExists))
+                    if (faceEvent.PersonId != personIdValue)
                     {
-                        var intruderName = knownPerson.FirstName + " " + knownPerson.LastName;
-                        var alertDescription = $"Intruder detected: {intruderName} on {deviceName}.";
-                        await CreateIntruderAlertAsync(deviceId, faceEvent.Id, alertDescription, context.CancellationToken);
-
-                        await _cache.SetStringAsync(
-                            alarmCooldownKey,
-                            "1",
-                            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
-                            context.CancellationToken);
-                    }
-                }
-
-                if (knownPerson != null)
-                {
-                    var embeddingsBytes = await _context.FaceDetectionEvents
-                        .AsNoTracking()
-                        .Where(e => e.PersonId == personIdValue && e.Embedding != null)
-                        .OrderByDescending(e => e.Timestamp)
-                        .Select(e => e.Embedding)
-                        .Take(20)
-                        .ToListAsync(context.CancellationToken);
-
-                    var embeddings = new List<float[]>(embeddingsBytes.Count);
-                    foreach (var bytes in embeddingsBytes)
-                    {
-                        try
-                        {
-                            var unpacked = VectorPacking.UnpackFloat32(bytes);
-                            if (unpacked.Length == 128)
-                            {
-                                embeddings.Add(unpacked);
-                            }
-                        }
-                        catch (ArgumentException)
-                        {
-                        }
-                    }
-
-                    if (embeddings.Count > 0)
-                    {
-                        var centroid = ComputeCentroid(embeddings);
-                        knownPerson.Embedding = VectorPacking.PackFloat32(centroid);
+                        faceEvent.PersonId = personIdValue;
+                        if (knownPerson != null)
+                            knownPerson.DetectionCount++;
                         await _context.SaveChangesAsync(context.CancellationToken);
                     }
-                }
 
-                var userIdsForMissingPreference = await _context.Users
-                    .Where(x => !x.IsDeleted)
-                    .Select(x => x.Id)
-                    .Distinct()
-                    .ToListAsync(context.CancellationToken);
-
-                if (userIdsForMissingPreference.Count == 0)
-                {
-                    return;
-                }
-
-                var existingPreferenceUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId))
-                    .Select(x => x.UserId)
-                    .ToListAsync(context.CancellationToken);
-
-                var existingPreferenceSet = existingPreferenceUserIds.ToHashSet();
-                var missingPreferenceUserIds = userIdsForMissingPreference.Where(id => !existingPreferenceSet.Contains(id)).ToList();
-
-                if (missingPreferenceUserIds.Count > 0)
-                {
-                    var newPreferences = missingPreferenceUserIds.Select(userId => new UserNotificationPreference
+                    if (knownPerson != null && string.Equals(knownPerson.FirstName, "Intruder", StringComparison.OrdinalIgnoreCase))
                     {
-                        UserId = userId,
-                        PersonId = personIdValue,
-                        Enabled = true
-                    });
-                    _context.UserNotificationPreferences.AddRange(newPreferences);
-                    await _context.SaveChangesAsync(context.CancellationToken);
+                        var alarmCooldownKey = $"face-match-alarm:{deviceId}:{personIdValue}";
+                        var alarmCooldownExists = await _cache.GetStringAsync(alarmCooldownKey, context.CancellationToken);
+                        if (string.IsNullOrWhiteSpace(alarmCooldownExists))
+                        {
+                            var intruderName = knownPerson.FirstName + " " + knownPerson.LastName;
+                            var alertDescription = $"Intruder detected: {intruderName} on {deviceName}.";
+                            await CreateIntruderAlertAsync(deviceId, faceEvent.Id, alertDescription, context.CancellationToken);
+
+                            await _cache.SetStringAsync(
+                                alarmCooldownKey,
+                                "1",
+                                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) },
+                                context.CancellationToken);
+                        }
+                    }
+
+                    if (knownPerson != null)
+                    {
+                        var embeddingsBytes = await _context.FaceDetectionEvents
+                            .AsNoTracking()
+                            .Where(e => e.PersonId == personIdValue && e.Embedding != null)
+                            .OrderByDescending(e => e.Timestamp)
+                            .Select(e => e.Embedding)
+                            .Take(20)
+                            .ToListAsync(context.CancellationToken);
+
+                        var embeddings = new List<float[]>(embeddingsBytes.Count);
+                        foreach (var bytes in embeddingsBytes)
+                        {
+                            try
+                            {
+                                var unpacked = VectorPacking.UnpackFloat32(bytes);
+                                if (unpacked.Length == 128)
+                                {
+                                    embeddings.Add(unpacked);
+                                }
+                            }
+                            catch (ArgumentException)
+                            {
+                            }
+                        }
+
+                        if (embeddings.Count > 0)
+                        {
+                            var centroid = ComputeCentroid(embeddings);
+                            knownPerson.Embedding = VectorPacking.PackFloat32(centroid);
+                            await _context.SaveChangesAsync(context.CancellationToken);
+                        }
+                    }
+
+                    var userIdsForMissingPreference = await _notifications.GetDeviceAssignedUserIdsAsync(deviceId, context.CancellationToken);
+
+                    if (userIdsForMissingPreference.Count == 0)
+                    {
+                        await tx.CommitAsync(context.CancellationToken);
+                        return;
+                    }
+
+                    var existingPreferenceUserIds = await _context.UserNotificationPreferences
+                        .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId))
+                        .Select(x => x.UserId)
+                        .ToListAsync(context.CancellationToken);
+
+                    var existingPreferenceSet = existingPreferenceUserIds.ToHashSet();
+                    var missingPreferenceUserIds = userIdsForMissingPreference.Where(id => !existingPreferenceSet.Contains(id)).ToList();
+
+                    if (missingPreferenceUserIds.Count > 0)
+                    {
+                        var newPreferences = missingPreferenceUserIds.Select(userId => new UserNotificationPreference
+                        {
+                            UserId = userId,
+                            PersonId = personIdValue,
+                            Enabled = true
+                        });
+                        _context.UserNotificationPreferences.AddRange(newPreferences);
+                        await _context.SaveChangesAsync(context.CancellationToken);
+                    }
+
+                    enabledUserIds = await _context.UserNotificationPreferences
+                        .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId) && x.Enabled)
+                        .Select(x => x.UserId)
+                        .Distinct()
+                        .ToListAsync(context.CancellationToken);
+
+                    await tx.CommitAsync(context.CancellationToken);
                 }
 
-                var enabledUserIds = await _context.UserNotificationPreferences
-                    .Where(x => x.PersonId == personIdValue && userIdsForMissingPreference.Contains(x.UserId) && x.Enabled)
-                    .Select(x => x.UserId)
-                    .Distinct()
-                    .ToListAsync(context.CancellationToken);
-
+                // Outbound notifications only fire after the detection-outcome writes above have committed.
                 if (enabledUserIds.Count == 0)
                 {
                     return;
@@ -242,57 +247,62 @@ namespace SmartGuard.API.Consumers
                 return;
             }
 
-            var nextNumber = await _context.KnownPersons.CountAsync(context.CancellationToken) + 1;
-            var newPerson = new KnownPerson
+            List<string> userIds;
+
+            await using (var tx = await _context.Database.BeginTransactionAsync(context.CancellationToken))
             {
-                FirstName = "Intruder",
-                LastName = nextNumber.ToString(),
-                Description = string.Empty,
-                Picture = faceEvent.Image,
-                FaceId = null,
-                DetectionCount = 1,
-                Embedding = faceEvent.Embedding
-            };
+                var nextNumber = await _context.KnownPersons.CountAsync(context.CancellationToken) + 1;
+                var newPerson = new KnownPerson
+                {
+                    FirstName = "Intruder",
+                    LastName = nextNumber.ToString(),
+                    Description = string.Empty,
+                    Picture = faceEvent.Image,
+                    FaceId = null,
+                    DetectionCount = 1,
+                    Embedding = faceEvent.Embedding
+                };
 
-            _context.KnownPersons.Add(newPerson);
-            await _context.SaveChangesAsync(context.CancellationToken);
-
-            faceEvent.PersonId = newPerson.Id;
-            await _context.SaveChangesAsync(context.CancellationToken);
-
-            var newAlertDescription = $"Unknown face detected on {deviceName}.";
-            await CreateIntruderAlertAsync(deviceId, faceEvent.Id, newAlertDescription, context.CancellationToken);
-
-            var userIds = await _context.Users
-                .Where(x => !x.IsDeleted)
-                .Select(x => x.Id)
-                .Distinct()
-                .ToListAsync(context.CancellationToken);
-
-            if (userIds.Count == 0)
-            {
-                return;
-            }
-
-            var existingUserIds = await _context.UserNotificationPreferences
-                .Where(x => x.PersonId == newPerson.Id && userIds.Contains(x.UserId))
-                .Select(x => x.UserId)
-                .ToListAsync(context.CancellationToken);
-
-            var existingSet = existingUserIds.ToHashSet();
-            var preferences = userIds.Where(u => !existingSet.Contains(u)).Select(u => new UserNotificationPreference
-            {
-                UserId = u,
-                PersonId = newPerson.Id,
-                Enabled = true
-            }).ToList();
-
-            if (preferences.Count > 0)
-            {
-                _context.UserNotificationPreferences.AddRange(preferences);
+                _context.KnownPersons.Add(newPerson);
                 await _context.SaveChangesAsync(context.CancellationToken);
+
+                faceEvent.PersonId = newPerson.Id;
+                await _context.SaveChangesAsync(context.CancellationToken);
+
+                var newAlertDescription = $"Unknown face detected on {deviceName}.";
+                await CreateIntruderAlertAsync(deviceId, faceEvent.Id, newAlertDescription, context.CancellationToken);
+
+                userIds = await _notifications.GetDeviceAssignedUserIdsAsync(deviceId, context.CancellationToken);
+
+                if (userIds.Count == 0)
+                {
+                    await tx.CommitAsync(context.CancellationToken);
+                    return;
+                }
+
+                var existingUserIds = await _context.UserNotificationPreferences
+                    .Where(x => x.PersonId == newPerson.Id && userIds.Contains(x.UserId))
+                    .Select(x => x.UserId)
+                    .ToListAsync(context.CancellationToken);
+
+                var existingSet = existingUserIds.ToHashSet();
+                var preferences = userIds.Where(u => !existingSet.Contains(u)).Select(u => new UserNotificationPreference
+                {
+                    UserId = u,
+                    PersonId = newPerson.Id,
+                    Enabled = true
+                }).ToList();
+
+                if (preferences.Count > 0)
+                {
+                    _context.UserNotificationPreferences.AddRange(preferences);
+                    await _context.SaveChangesAsync(context.CancellationToken);
+                }
+
+                await tx.CommitAsync(context.CancellationToken);
             }
 
+            // Outbound notifications only fire after the detection-outcome writes above have committed.
             var unknownTitle = "SmartGuard - Intruder detected";
             var unknownBody = $"Unknown face detected on {deviceName}.";
 
