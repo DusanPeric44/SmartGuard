@@ -145,8 +145,36 @@ namespace SmartGuard.Services
             return entity.Adapt<Model.DTOs.FaceDetectionEvent>();
         }
 
+        // GetByIdAsync bypasses AddFilter (the base looks the row up by key), so the detail view
+        // needs the same per-device rule the list applies.
+        public override async Task<Model.DTOs.FaceDetectionEvent> GetByIdAsync(int id)
+        {
+            var faceEvent = await base.GetByIdAsync(id);
+            if (faceEvent == null)
+            {
+                return null;
+            }
+
+            if (!await _deviceAccessService.CanAccessDeviceAsync(
+                    _userContext.UserId, faceEvent.DeviceId, DeviceAccessPermission.View, _userContext.IsAdmin))
+            {
+                return null;
+            }
+
+            return faceEvent;
+        }
+
         protected override IQueryable<Database.FaceDetectionEvent> AddFilter(IQueryable<Database.FaceDetectionEvent> query, FaceDetectionEventSearchObject search = null)
         {
+            // Face captures belong to a specific camera, so a caller may only list events from
+            // devices they have been granted access to (same rule as GetImagesForPersonAsync).
+            if (!_userContext.IsAdmin)
+            {
+                var currentUserId = _userContext.UserId;
+                query = query.Where(x => x.DeviceId.HasValue &&
+                    _context.UserDeviceAccesses.Any(a => a.UserId == currentUserId && a.DeviceId == x.DeviceId));
+            }
+
             if (search?.DeviceId.HasValue == true)
             {
                 query = query.Where(x => x.DeviceId == search.DeviceId.Value);

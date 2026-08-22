@@ -35,6 +35,7 @@ namespace SmartGuard.Services
             services.AddScoped<IUserContext, UserContext>();
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IDeviceAccessService, DeviceAccessService>();
+            services.AddScoped<IFileAccessService, FileAccessService>();
             
             // Reference Services
             services.AddScoped<IDeviceStatusesService, DeviceStatusesService>();

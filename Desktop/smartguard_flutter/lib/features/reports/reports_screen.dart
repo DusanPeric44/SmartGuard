@@ -12,6 +12,7 @@ import 'package:smartguard_flutter/features/reports/viewmodel/reports_view_model
 import 'package:smartguard_flutter/features/reports/widgets/generate_report_dialog.dart';
 import 'package:smartguard_flutter/features/reports/widgets/report_row_card.dart';
 import 'package:smartguard_flutter/features/reports/widgets/reports_filters_card.dart';
+import 'package:smartguard_flutter/features/reports/widgets/reports_format.dart';
 import 'package:smartguard_flutter/features/reports/widgets/reports_pager.dart';
 import 'package:smartguard_flutter/shared/widgets/async_state_panel.dart';
 
@@ -247,7 +248,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     final filePath = await _saveAs(
       _suggestedFileName(
-        row.reportStatus.name + (row.generatedAtUtc?.toString() ?? ''),
+        '${row.reportType.name}_${fmtFileStamp(row.generatedAtUtc)}',
       ),
       bytes,
     );
@@ -294,9 +295,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   String _suggestedFileName(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return 'report.pdf';
-    return trimmed.toLowerCase().endsWith('.pdf') ? trimmed : '$trimmed.pdf';
+    // Windows rejects \ / : * ? " < > | in file names, so strip them before the name reaches
+    // the save dialog - otherwise the download silently fails to write.
+    final sanitized = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '-').trim();
+    if (sanitized.isEmpty) return 'report.pdf';
+    return sanitized.toLowerCase().endsWith('.pdf')
+        ? sanitized
+        : '$sanitized.pdf';
   }
 
   Future<void> _openGenerate(ReportsViewModel vm) async {

@@ -23,10 +23,29 @@ namespace SmartGuard.API.Controllers
             _logger = logger;
         }
 
+        private const string DeviceIdHeader = "X-Device-Id";
+        private const string DeviceTokenHeader = "X-Device-Token";
+
         [AllowAnonymous]
         [HttpGet("ws")]
         public async Task Get([FromQuery] string deviceId, [FromQuery] string token)
         {
+            // Headers are the preferred transport: unlike the query string they do not end up in
+            // access logs. The query parameters stay supported so firmware flashed before this
+            // change keeps connecting - either way the credentials are verified below.
+            var headerDeviceId = HttpContext.Request.Headers[DeviceIdHeader].ToString();
+            var headerToken = HttpContext.Request.Headers[DeviceTokenHeader].ToString();
+
+            if (!string.IsNullOrWhiteSpace(headerDeviceId))
+            {
+                deviceId = headerDeviceId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(headerToken))
+            {
+                token = headerToken;
+            }
+
             if (string.IsNullOrEmpty(deviceId))
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;

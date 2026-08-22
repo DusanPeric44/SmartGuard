@@ -12,6 +12,8 @@ namespace SmartGuard.Model.DTOs
         public double? Score { get; set; }
         public string Image { get; set; }
         public DateTime Timestamp { get; set; }
-        public byte[] Embedding { get; set; }
+        // Embedding is deliberately NOT exposed here: the raw face vector is biometric data and
+        // only leaves the API over the internal gRPC service (VectorMatchingGrpcService), which is
+        // gated by the internal service token and not published outside the Docker network.
     }
 }

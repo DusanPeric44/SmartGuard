@@ -8,7 +8,7 @@
 /**
  * Initializes the SignalR connection and streaming logic.
  */
-void setupStreamManager(const char* host, int port, const char* path);
+void setupStreamManager(const char* host, int port, const char* path, const char* extraHeaders = nullptr);
 
 /**
  * Handles the background tasks for streaming.

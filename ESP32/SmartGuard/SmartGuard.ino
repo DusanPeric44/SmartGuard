@@ -20,6 +20,7 @@
 static const int JPEG_QUALITY_STREAM = 20;
 
 String webSocketPath;
+String webSocketHeaders;  // kept alive for the lifetime of the WebSocket client
 Preferences devicePrefs;
 
 static TaskHandle_t g_streamTaskHandle = NULL;
@@ -205,9 +206,13 @@ void setup() {
   }
 
   if (deviceId > 0) {
-    webSocketPath = String("/api/esp32/ws?deviceId=") + String(deviceId) + "&token=" + getDeviceToken();
-    Serial.println("Initializing Stream Manager with path: /api/esp32/ws?deviceId=" + String(deviceId) + "&token=****");
-    setupStreamManager(SIGNALR_HOST, SIGNALR_PORT, webSocketPath.c_str());
+    // Credentials go in headers rather than the query string so the device token stays out
+    // of the backend access log. The API still accepts the old query form as a fallback.
+    webSocketPath = String("/api/esp32/ws");
+    webSocketHeaders = String("X-Device-Id: ") + String(deviceId) + "\r\n" +
+                       "X-Device-Token: " + getDeviceToken();
+    Serial.println("Initializing Stream Manager with path: /api/esp32/ws (device " + String(deviceId) + ", token ****)");
+    setupStreamManager(SIGNALR_HOST, SIGNALR_PORT, webSocketPath.c_str(), webSocketHeaders.c_str());
   } else {
     Serial.println("Device ID not available. Stream Manager not started.");
   }

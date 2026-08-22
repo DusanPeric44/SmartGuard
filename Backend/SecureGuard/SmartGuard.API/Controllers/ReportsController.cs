@@ -41,8 +41,11 @@ namespace SmartGuard.API.Controllers
         [HttpPost("generate")]
         public async Task<Report> GenerateSecurityActivity([FromBody] SecurityActivityReportGenerateRequest request)
         {
-            var email = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return await _reportsService.GenerateSecurityActivityAsync(request.Start, request.End, email);
+            // The "UserId" claim carries the Identity id; ClaimTypes.NameIdentifier carries the email
+            // (see AuthService.GenerateJwtToken). Reports are owned by user id, which is what
+            // OpenReportFileAsync and the list filter compare against.
+            var userId = User.FindFirstValue("UserId");
+            return await _reportsService.GenerateSecurityActivityAsync(request.Start, request.End, userId);
         }
 
         [HttpGet("{id}/download")]

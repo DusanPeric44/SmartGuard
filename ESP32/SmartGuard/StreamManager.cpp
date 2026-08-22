@@ -70,10 +70,16 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   }
 }
 
-void setupStreamManager(const char* host, int port, const char* path) {
+void setupStreamManager(const char* host, int port, const char* path, const char* extraHeaders) {
   // Disable WiFi sleep for better performance and to prevent handshake timeouts
   WiFi.setSleep(false);
-  
+
+  // Device credentials travel as X-Device-Id / X-Device-Token headers on the upgrade request so
+  // the token never lands in the server access log the way a query string would.
+  if (extraHeaders != nullptr) {
+    webSocket.setExtraHeaders(extraHeaders);
+  }
+
   // Use the parameters passed from SmartGuard.ino
   webSocket.begin(host, port, path);
   webSocket.onEvent(webSocketEvent);

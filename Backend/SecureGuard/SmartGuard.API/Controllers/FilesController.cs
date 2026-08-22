@@ -14,10 +14,12 @@ namespace SmartGuard.API.Controllers
         private const long MaxImageSizeBytes = 5 * 1024 * 1024;
 
         private readonly IFileStorageService _fileStorage;
+        private readonly IFileAccessService _fileAccess;
 
-        public FilesController(IFileStorageService fileStorage)
+        public FilesController(IFileStorageService fileStorage, IFileAccessService fileAccess)
         {
             _fileStorage = fileStorage;
+            _fileAccess = fileAccess;
         }
 
         [HttpPost("images")]
@@ -56,6 +58,14 @@ namespace SmartGuard.API.Controllers
             if (string.IsNullOrWhiteSpace(url))
             {
                 return BadRequest();
+            }
+
+            // Being authenticated is not enough: /uploads holds face captures and report PDFs, so
+            // the path has to resolve to something this caller is entitled to. NotFound rather than
+            // Forbid, so a rejected request does not confirm that the file exists.
+            if (!await _fileAccess.CanViewAsync(url))
+            {
+                return NotFound();
             }
 
             try

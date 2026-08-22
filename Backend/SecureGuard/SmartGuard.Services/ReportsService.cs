@@ -41,8 +41,35 @@ namespace SmartGuard.Services
             }
         }
 
+        // GetByIdAsync bypasses AddFilter (the base looks the row up by key), so the detail view
+        // needs the same ownership rule the list and the download already apply.
+        public override async Task<Model.DTOs.Report> GetByIdAsync(int id)
+        {
+            var report = await base.GetByIdAsync(id);
+            if (report == null)
+            {
+                return null;
+            }
+
+            if (!_userContext.IsAdmin && report.GeneratedByUserId != _userContext.UserId)
+            {
+                return null;
+            }
+
+            return report;
+        }
+
         protected override IQueryable<Database.Report> AddFilter(IQueryable<Database.Report> query, ReportSearchObject search = null)
         {
+            // A report is private to whoever generated it: the PDF holds that user's security
+            // activity, and the DTO carries FileUrl. Without this, any authenticated caller could
+            // list every report and fetch the file through another endpoint.
+            if (!_userContext.IsAdmin)
+            {
+                var currentUserId = _userContext.UserId;
+                query = query.Where(x => x.GeneratedByUserId == currentUserId);
+            }
+
             if (search?.Start.HasValue == true)
             {
                 query = query.Where(x => x.PeriodStartUtc >= search.Start.Value);
