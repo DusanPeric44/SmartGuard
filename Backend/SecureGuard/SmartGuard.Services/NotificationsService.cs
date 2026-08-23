@@ -15,6 +15,17 @@ namespace SmartGuard.Services
             _userContext = userContext;
         }
 
+        public override async Task<Model.DTOs.Notification> GetByIdAsync(int id)
+        {
+            var notification = await base.GetByIdAsync(id);
+            if (notification == null || notification.UserId != _userContext.UserId)
+            {
+                return null;
+            }
+
+            return notification;
+        }
+
         public async Task<bool> MarkAsReadAsync(int id)
         {
             var entity = await _context.Notifications.FindAsync(id);

@@ -34,6 +34,26 @@ namespace SmartGuard.Services
             }
         }
 
+        public override async Task<Model.DTOs.Alert> GetByIdAsync(int id)
+        {
+            var alert = await base.GetByIdAsync(id);
+            if (alert == null)
+            {
+                return null;
+            }
+
+            if (!_userContext.IsAdmin)
+            {
+                if (alert.DeviceId <= 0 ||
+                    !await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, alert.DeviceId, DeviceAccessPermission.View, _userContext.IsAdmin))
+                {
+                    return null;
+                }
+            }
+
+            return alert;
+        }
+
         public async Task<Model.DTOs.Alert> ConfirmAsync(int id)
         {
             return await UpdateStatusAsync(id, 2, dismissalReason: null);

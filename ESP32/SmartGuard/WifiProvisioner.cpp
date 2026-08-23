@@ -1,5 +1,6 @@
 #include "WifiProvisioner.h"
 #include <Preferences.h>
+#include <esp_system.h>
 #include "FlashManager.h"
 
 WebServer server(80);
@@ -74,15 +75,27 @@ String getRegistrationKey() {
   return registration_key;
 }
 
-// Derives a per-device provisioning AP password from the chip's unique efuse MAC, so devices
-// don't all share the same guessable "password123" during the (brief, physically-local) setup
-// window. Printed to Serial once so whoever is provisioning the device (with physical/USB access)
-// can read it off.
 String getDeviceApPassword() {
-  uint64_t chipId = ESP.getEfuseMac();
-  char buf[13];
-  snprintf(buf, sizeof(buf), "sg%010llx", (unsigned long long)(chipId & 0xFFFFFFFFFFULL));
-  return String(buf);
+  wifiPrefs.begin("wifi-config", false);
+  String pass = wifiPrefs.getString("ap_pass", "");
+
+  if (pass.length() < 8) {
+    uint8_t randomBytes[6];
+    for (int i = 0; i < 6; i++) {
+      randomBytes[i] = (uint8_t)(esp_random() & 0xFF);
+    }
+
+    char hex[13];
+    snprintf(hex, sizeof(hex), "%02x%02x%02x%02x%02x%02x",
+             randomBytes[0], randomBytes[1], randomBytes[2],
+             randomBytes[3], randomBytes[4], randomBytes[5]);
+
+    pass = "sg" + String(hex);
+    wifiPrefs.putString("ap_pass", pass);
+  }
+
+  wifiPrefs.end();
+  return pass;
 }
 
 void setupWifiProvisioning() {

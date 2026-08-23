@@ -20,6 +20,26 @@ namespace SmartGuard.Services
             _deviceAccessService = deviceAccessService;
         }
 
+        public override async Task<Model.DTOs.Recording> GetByIdAsync(int id)
+        {
+            var recording = await base.GetByIdAsync(id);
+            if (recording == null)
+            {
+                return null;
+            }
+
+            if (!_userContext.IsAdmin)
+            {
+                if (recording.DeviceId <= 0 ||
+                    !await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, recording.DeviceId, DeviceAccessPermission.View, _userContext.IsAdmin))
+                {
+                    return null;
+                }
+            }
+
+            return recording;
+        }
+
         public override async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.Recordings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);

@@ -25,6 +25,16 @@ namespace SmartGuard.Services
             _logger = logger;
         }
 
+        public override async Task<Model.DTOs.Device> GetByIdAsync(int id)
+        {
+            if (!await _deviceAccessService.CanAccessDeviceAsync(_userContext.UserId, id, DeviceAccessPermission.View, _userContext.IsAdmin))
+            {
+                return null;
+            }
+
+            return await base.GetByIdAsync(id);
+        }
+
         protected override IQueryable<Database.Device> AddFilter(IQueryable<Database.Device> query, DeviceSearchObject search = null)
         {
             query = base.AddFilter(query, search);
