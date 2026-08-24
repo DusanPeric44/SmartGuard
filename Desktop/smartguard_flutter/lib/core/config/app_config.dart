@@ -1,11 +1,9 @@
 class AppConfig {
   const AppConfig._();
 
-  static const String defaultApiBaseUrl = 'https://api.smartguard.website';
-  static const String defaultArchiveBaseUrl =
-      'https://archive.smartguard.website';
-  static const String defaultNotificationsBaseUrl =
-      'https://notifications.smartguard.website';
+  static const String defaultApiBaseUrl = 'http://locahost:5000';
+  static const String defaultArchiveBaseUrl = 'http://locahost:5001';
+  static const String defaultNotificationsBaseUrl = 'http://locahost:5002';
   static const String appScheme = 'smartguard';
 
   /// SoftAP endpoint exposed by a SmartGuard camera while in provisioning mode.
